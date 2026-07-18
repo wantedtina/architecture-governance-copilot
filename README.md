@@ -66,8 +66,10 @@ The deterministic extractor is the required offline demo path. It validates the 
 SI/transcript pair and review metadata, then returns an independent copy of the known structured
 result. It supports only this frozen synthetic scenario and does not perform semantic extraction
 of arbitrary text. Pure deterministic generators now transform a validated result into Markdown
-review minutes and typed mock ADO action work items. Streamlit session state will eventually hold
-the current one-round review state; there is no database.
+review minutes and typed mock ADO action work items. `GovernanceReviewService` intentionally
+keeps analysis separate from output generation so a later UI can place human review and editing
+between them. Streamlit session state will eventually hold the current one-round review state;
+there is no database.
 
 Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
 does not connect to them.
@@ -154,8 +156,8 @@ provide the review workflow.
 
 ## Current implementation status
 
-**Domain models, synthetic demo dataset, deterministic extractor, and output generators
-complete; application workflow not implemented.**
+**Domain models, synthetic demo dataset, deterministic extractor, output generators, and
+governance-service orchestration complete; UI workflow not implemented.**
 
 Implemented:
 
@@ -172,12 +174,13 @@ Implemented:
 - a synchronous `GovernanceExtractor` protocol; and
 - a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback;
 - deterministic Markdown SI review-minutes generation; and
-- typed mock ADO work-item generation with no external request.
+- typed mock ADO work-item generation with no external request;
+- an immutable `GovernanceOutputs` bundle; and
+- `GovernanceReviewService`, with separate analysis and reviewed-result generation stages.
 
 Not yet implemented:
 
 - real LLM extraction;
-- governance service orchestration;
 - parent ADO governance-ticket update generation;
 - Streamlit input, review, approval, or output UI;
 - external integrations; or
@@ -185,8 +188,9 @@ Not yet implemented:
 
 The deterministic provider supports only the bundled synthetic sample; it does not claim to
 analyze arbitrary documents. Mock ADO work items are local preview models and are never submitted
-to Azure DevOps. The next proposed phase is governance-service orchestration. A real LLM provider
-remains an optional later phase.
+to Azure DevOps. The service does not approve or edit records: the future UI must explicitly
+place human review between analysis and output generation. The next proposed phase is the
+Streamlit UI. A real LLM provider remains an optional later phase.
 
 ## PoC and data statement
 

@@ -272,7 +272,8 @@ Governance service
   session-state transitions.
 - `models.py`: strict Pydantic enums and models for one SI review round.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
-- `governance_service.py`: coordinates analysis, validation, review approval, and generation.
+- `governance_service.py`: separately coordinates extractor analysis and output generation from
+  a caller-supplied reviewed result; it does not approve records.
 - `minutes_generator.py`: pure deterministic transformation to review minutes.
 - `ado_generator.py`: pure deterministic transformation to mock governance-ticket and action
   payloads.
@@ -409,6 +410,17 @@ response parsing, and API errors stay behind this interface. Providers do not ap
 generate downstream outputs. `GovernanceExtractor` is a synchronous structural protocol; the
 fixture-backed `DeterministicDemoExtractor` is its only current implementation.
 
+The implemented service boundary deliberately keeps the human-review point between two calls:
+
+```text
+Analyze → Human review/edit in a future UI → Generate outputs from reviewed result
+```
+
+`GovernanceReviewService.analyze_review` delegates only to the injected extractor.
+`GovernanceReviewService.generate_outputs` does not rerun extraction; it transforms the
+caller-supplied validated result into immutable `GovernanceOutputs`. The service carries no
+approval flag, UI state, or governance authority.
+
 ## Deterministic demo-provider design
 
 The implemented deterministic provider:
@@ -448,7 +460,7 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
-| 6. Governance service | `governance_service.py`, service tests | Analyze, validate, approve, and generate without UI dependencies. | Approval-gating and stale-state tests. | Phases 3–5. |
+| 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
 | 7. Streamlit UI | `app.py` | Load both sources, show seven sections and evidence, approve, and display outputs. | Manual one-round smoke test. | Phase 6. |
 | 8. Editable human review | `app.py`, focused tests | Edit/remove items and invalidate approval on changes. | Manual review paths and edited-output tests. | Phase 7. |
 | 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
