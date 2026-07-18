@@ -31,7 +31,7 @@ them.
 
 The PoC will show that one synthetic SI and one synthetic review transcript can be transformed
 into a structured, evidence-backed review proposal. A human reviewer can correct that proposal
-and explicitly approve the review record before minutes and mock ADO outputs are generated.
+and explicitly confirm the reviewed record before minutes and mock ADO outputs are generated.
 Formal approval remains the responsibility of the human Domain Architect.
 
 ## Target users
@@ -57,27 +57,26 @@ metadata, produce a structured proposal containing:
 - missing governance information; and
 - supporting evidence from the SI or meeting transcript.
 
-After human review and approval of the record, generate:
+After human review and confirmation of the reviewed record, generate:
 
 1. a structured SI review record;
 2. standardized review meeting minutes; and
-3. mock ADO governance-ticket updates and action work items.
+3. mock ADO action work items linked to the governance ticket where available.
 
 Success means the deterministic demo completes this one-round workflow reliably. It does not
 mean that the PoC can govern arbitrary projects or replace Domain Architect judgment.
 
 ## Core end-to-end user journey
 
-1. Load synthetic SI content.
-2. Load a synthetic review transcript.
-3. Analyze the review using the SI, transcript, and review metadata.
-4. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
+1. Load the bundled synthetic SI, review transcript, and review metadata.
+2. Analyze the review using the SI, transcript, and review metadata.
+3. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
    information.
-5. Show supporting SI or transcript evidence for each extracted claim.
-6. Allow human review, editing, and removal of proposed items.
-7. Let the Domain Architect explicitly approve the reviewed record.
-8. Generate the structured review record, review minutes, and mock ADO outputs from the approved
-   state.
+4. Show supporting SI or transcript evidence for each extracted claim.
+5. Allow human review, editing, and removal of proposed items.
+6. Let the Domain Architect explicitly confirm the reviewed record for output generation.
+7. Generate the structured review record, review minutes, and mock ADO outputs from the
+   human-confirmed state.
 
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
 record for future tracking, but the application will not compare versions, persist history, or
@@ -87,10 +86,9 @@ automatically carry findings between rounds.
 
 ### Inputs
 
-- Provide a **Load Sample Solution Intent** action.
+- Provide a **Load Sample Review** action.
 - Load synthetic SI content from `samples/solution_intent.md`.
 - Display the SI in a readable multiline area.
-- Provide a **Load Sample Review Transcript** action.
 - Load a synthetic Teams-style Domain Architecture review transcript.
 - Display the transcript in a separate multiline area.
 - Collect or preload basic metadata:
@@ -113,8 +111,8 @@ automatically carry findings between rounds.
 - Return a validated `GovernanceResult` for exactly one review round.
 - Display these sections in a stable order:
   1. Review Outcome
-  2. Review Findings
-  3. Decisions
+  2. Decisions
+  3. Review Findings
   4. Risks
   5. Action Items
   6. Open Questions
@@ -134,22 +132,22 @@ automatically carry findings between rounds.
   identify absence without a direct quote.
 - Do not apply strict source-specific locator validation in the MVP.
 
-### Human review and approval
+### Human review and confirmation
 
 - Allow the reviewer to edit meaningful extracted fields.
 - Allow the reviewer to remove proposed list items.
 - Keep supporting evidence visible during review.
 - Treat evidence as traceability metadata rather than freeform text to casually rewrite.
-- Prevent approval when the reviewed record fails validation.
-- Require an explicit **Approve SI Review Record** action.
-- Present formal approval as the human Domain Architect's responsibility.
-- Generate outputs from the approved, edited state rather than the original provider response.
-- Invalidate approval and outputs after reanalysis or subsequent edits.
+- Prevent output generation when the reviewed record fails validation.
+- Require an explicit **Confirm Reviewed Record & Generate Outputs** action.
+- State that formal governance decisions remain the Domain Architect's responsibility.
+- Generate outputs from the confirmed, edited state rather than the original provider response.
+- Invalidate reviewed outputs after reanalysis or subsequent input edits.
 
-### Approved outputs
+### Reviewed outputs
 
-- Generate outputs only after explicit human approval.
-- Display a structured, JSON-serializable SI review record.
+- Generate outputs only after explicit human confirmation of the reviewed record.
+- Keep the validated reviewed `GovernanceResult` as the source for generated outputs.
 - Generate deterministic Markdown meeting minutes containing:
   - review context;
   - review outcome;
@@ -160,9 +158,8 @@ automatically carry findings between rounds.
   - open questions;
   - missing information; and
   - evidence references.
-- Generate a mock update for the parent ADO governance ticket.
-- Generate one mock ADO action work item per approved action.
-- Allow mock work items to include the parent ticket, SI section, and acceptance criteria.
+- Generate one mock ADO action work item per included reviewed action.
+- Allow mock work items to reference the parent ticket, SI section, and acceptance criteria.
 - Clearly state that no payload is sent to Azure DevOps.
 
 ## Non-functional requirements
@@ -174,7 +171,8 @@ automatically carry findings between rounds.
 - **Simplicity:** use direct Python modules, Pydantic, and Streamlit session state.
 - **Testability:** models and pure transformations must be testable without Streamlit.
 - **Readability:** the review and evidence must be legible during a short screen recording.
-- **State safety:** stale approval and outputs must not survive changes to source or review data.
+- **State safety:** stale confirmation and outputs must not survive changes to source or review
+  data.
 - **Data safety:** use synthetic data only and commit no secrets or confidential information.
 - **Maintainability:** Python 3.12, modern type syntax, a src layout, concise public docstrings,
   pytest, and Ruff.
@@ -226,7 +224,7 @@ The PoC is done when:
 
 - `uv sync` creates a working Python 3.12 environment.
 - `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass.
-- The sample SI and matching review transcript load independently.
+- The sample SI, matching review transcript, and metadata load together.
 - Basic review metadata identifies one SI review round.
 - Analyze works in deterministic mode without network or API credentials.
 - The seven required result sections appear in the planned order.
@@ -234,11 +232,11 @@ The PoC is done when:
 - Evidence is visibly distinguished as SI or transcript evidence.
 - Review Outcome and all required list items contain valid evidence.
 - The reviewer can edit and remove proposed items.
-- Invalid reviewed data cannot be approved.
-- Approval is an explicit Domain Architect action.
-- Generated outputs reflect the edited, approved record.
+- Invalid reviewed data cannot generate outputs.
+- Reviewed-record confirmation is explicit and does not imply formal SI approval.
+- Generated outputs reflect the edited, confirmed record.
 - The structured record, minutes, and mock ADO outputs are clearly labeled.
-- Reanalysis or edits invalidate stale approval and generated outputs.
+- Reanalysis or input edits invalidate stale generated outputs.
 - No live Confluence, Teams, or ADO operation occurs.
 - Tests cover the model, deterministic provider, generators, and core orchestration.
 - Documentation matches the implemented one-round SI workflow.
@@ -263,26 +261,26 @@ Governance service
     |
     +--> Review-record / minutes generator
     |
-    \--> Mock ADO update and work-item generator
+    \--> Mock ADO action work-item generator
 ```
 
 ### Module responsibilities
 
-- `app.py`: UI, input loading, review widgets, evidence presentation, explicit approval, and
-  session-state transitions.
+- `app.py`: one-page UI, input loading, review widgets, read-only evidence, explicit reviewed
+  record confirmation, output rendering, and session-state transitions.
+- `ui_support.py`: pure sample, state, fingerprint, optional-field, and reviewed-result helpers.
 - `models.py`: strict Pydantic enums and models for one SI review round.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
 - `governance_service.py`: separately coordinates extractor analysis and output generation from
   a caller-supplied reviewed result; it does not approve records.
 - `minutes_generator.py`: pure deterministic transformation to review minutes.
-- `ado_generator.py`: pure deterministic transformation to mock governance-ticket and action
-  payloads.
+- `ado_generator.py`: pure deterministic transformation to mock ADO action-work-item payloads.
 - `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
 - `tests/`: validation and transformation tests independent of external services.
 
-Streamlit session state is the only planned runtime state. It will hold the three inputs, latest
-analysis, editable reviewed record, approval state, and generated outputs. It will not hold or
-simulate review history.
+Streamlit session state is the only runtime state. It holds the three inputs, latest analysis,
+independent review draft, validated reviewed record, generated outputs, errors, and analyzed-input
+fingerprint. It does not hold or simulate review history.
 
 ## Model design
 
@@ -413,7 +411,7 @@ fixture-backed `DeterministicDemoExtractor` is its only current implementation.
 The implemented service boundary deliberately keeps the human-review point between two calls:
 
 ```text
-Analyze → Human review/edit in a future UI → Generate outputs from reviewed result
+Analyze → Human review/edit in the Streamlit UI → Generate outputs from reviewed result
 ```
 
 `GovernanceReviewService.analyze_review` delegates only to the injected extractor.
@@ -441,10 +439,10 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | --- | --- |
 | Findings are not traceable to the SI | Require typed evidence and map findings to SI sections where supported. |
 | Transcript is treated as the reviewed object | Keep SI content visually primary and require both documents as analysis inputs. |
-| The tool appears to approve architecture autonomously | Make approval an explicit Domain Architect action and state this in UI and narration. |
+| The tool appears to approve architecture autonomously | Label the action as reviewed-record confirmation and state that formal decisions remain with the Domain Architect. |
 | Fixture and model drift | Validate the complete expected result in automated tests. |
 | Streamlit reruns lose reviewed state | Define explicit state transitions and invalidate stale outputs. |
-| Generated outputs ignore human edits | Generate only from the approved reviewed model and test edited values. |
+| Generated outputs ignore human edits | Generate only from the validated reviewed model and test edited values. |
 | ADO previews look like live updates | Label them as mock and perform no external request. |
 | Multi-round capability expands the MVP | Store only `review_round`; exclude history, comparison, and resolution logic. |
 | Video exceeds four minutes | Use one round, one key finding, one decision, one risk, two actions, and one open item. |
@@ -461,8 +459,8 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
-| 7. Streamlit UI | `app.py` | Load both sources, show seven sections and evidence, approve, and display outputs. | Manual one-round smoke test. | Phase 6. |
-| 8. Editable human review | `app.py`, focused tests | Edit/remove items and invalidate approval on changes. | Manual review paths and edited-output tests. | Phase 7. |
+| 7. Streamlit UI (complete) | `app.py`, `ui_support.py`, UI tests | Load the synthetic review, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, pure support tests, and headless startup. | Phase 6. |
+| 8. Editable human review (complete) | `app.py`, `ui_support.py`, focused tests | Edit/exclude items, validate a reconstructed result, and prevent stale generation. | Edit, exclusion, validation, mutation, reset, and stale-input tests. | Phase 7. |
 | 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
 | 10. Final hardening | Tests and docs | Clean setup, stable demo, aligned documentation, timed recording. | Full `uv` checks and two successful rehearsals. | Phases 1–8. |
 

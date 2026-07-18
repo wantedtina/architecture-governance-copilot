@@ -4,8 +4,8 @@
 
 In less than four minutes, demonstrate one reliable Solution Intent review round: load a
 synthetic SI and its review transcript, produce a source-backed review proposal, let a human
-Domain Architect edit and approve the record, and generate review minutes plus mock Azure DevOps
-outputs.
+reviewer edit and confirm the record, and generate review minutes plus mock Azure DevOps outputs.
+Formal governance decisions remain with the Domain Architect.
 
 The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
 not show a second review round.
@@ -63,40 +63,40 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 ## Exact click-by-click workflow and expected state
 
-### Step 1 — Open the application
+### Step 1 — Launch the application
 
-**Action:** Open the local Streamlit URL.
+**Action:** Start `uv run streamlit run app.py` and open the local Streamlit URL.
 
 **Expected state:**
 
-- **Architecture Governance Copilot** and **Solution Intent Review** are visible.
+- **Architecture Governance Copilot** and the Solution Intent review subtitle are visible.
 - The page states that the PoC uses synthetic data.
 - Deterministic demo mode is clearly identified.
 - SI and transcript areas are empty.
 - No analysis or outputs are displayed.
 
-### Step 2 — Load the Solution Intent
+### Step 2 — Load the complete sample
 
-**Click:** **Load Sample Solution Intent**.
+**Click:** **Load Sample Review**.
 
 **Expected state:**
 
 - The SI area contains the Digital Payment Notification Service SI with visible section headings.
+- The transcript area contains the matching synthetic review meeting.
 - Review metadata identifies SI version 1.2, status `under_review`, round 2, and governance ticket
   `ARCH-POC-1024`.
-- The SI is visually the primary object under review.
+- A visible message confirms that the synthetic sample is loaded.
 - No result is displayed yet.
 
-### Step 3 — Load the review transcript
+### Step 3 — Inspect the inputs
 
-**Click:** **Load Sample Review Transcript**.
+**Action:** Briefly switch between the **Solution Intent** and **Review Transcript** tabs.
 
 **Expected state:**
 
-- The transcript area contains one synthetic Domain Architecture review meeting.
-- Synthetic speakers and timestamps or references are visible.
-- Both inputs are now present.
-- **Analyze Review** is enabled.
+- The SI headings and synthetic disclaimer are visible.
+- The transcript preserves speaker names, timestamps, and line breaks.
+- The metadata remains visible without exposing local file paths.
 
 ### Step 4 — Analyze the review
 
@@ -105,85 +105,98 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 **Expected state:**
 
 - Analysis completes quickly in deterministic mode.
-- These sections appear in order:
-  1. Review Outcome
-  2. Review Findings
-  3. Decisions
-  4. Risks
-  5. Action Items
-  6. Open Questions
-  7. Missing Information
+- **Stage 2 — Human Review** and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
-- The failover finding shows **Availability and Resilience** as its SI section.
-- One decision, three findings, one risk, two actions, and the unresolved Redis question are
-  visible.
+- Metrics show one decision, three findings, one risk, two actions, one open question, and two
+  missing-information entries.
 - Every required item offers supporting evidence.
-- No minutes or ADO outputs appear before approval.
+- No generated minutes or ADO work items appear automatically.
 
-### Step 5 — Inspect both evidence sources
+### Step 5 — Review the outcome and counts
 
-**Click:** Expand the failover finding's evidence.
-
-**Expected state:**
-
-- One quote is labeled **Solution Intent** with section **Availability and Resilience**.
-- One quote is labeled **Meeting Transcript** with a speaker and timestamp.
-- The evidence supports the finding without implying a live Confluence or Teams connection.
-
-### Step 6 — Perform human review
-
-**Action:** Edit the first action title to the rehearsed wording:
-**Clarify traffic failover and update the deployment diagram**.
+**Action:** Point to **Changes Requested** and scan the seven summary metrics.
 
 **Expected state:**
 
-- The edited wording persists.
+- The structured proposal is clearly labeled draft.
+- Human review is visibly separated from deterministic analysis.
+
+### Step 6 — Make a human edit
+
+**Action:** Change the first action owner from **Alex Chen** to **Taylor Kim**.
+
+**Expected state:**
+
+- The edited owner remains in the form.
 - Evidence remains visible and unchanged.
-- The record remains unapproved.
-- The page identifies the Domain Architect as the human approver.
+- The record remains a human-reviewed draft, not a formal SI approval.
 
-Optionally remove one low-value duplicate proposal only if the finalized fixture contains one.
-Do not add this interaction if it risks exceeding the time budget.
+### Step 7 — Exclude the Redis question
 
-### Step 7 — Approve the review record
-
-**Click:** **Approve SI Review Record**.
+**Click:** Clear **Include in reviewed record** for the Redis open question.
 
 **Expected state:**
 
-- The UI confirms human approval of the review record.
-- It does not claim that an AI approved the Solution Intent.
-- A **Structured SI Review Record** section appears.
-- **Review Meeting Minutes** appears.
-- **Mock Azure DevOps Outputs** appears.
-- The minutes contain the edited action wording.
-- The mock ADO parent update references synthetic governance ticket `ARCH-POC-1024`.
-- Two mock action work items are shown and linked to the parent ID where available.
-- Relevant work items show SI-section and acceptance-criteria context.
+- The Redis evidence remains read-only in the current form.
+- The question is marked for omission from the reviewed result.
+
+### Step 8 — Confirm the reviewed record
+
+**Click:** **Confirm Reviewed Record & Generate Outputs**.
+
+**Expected state:**
+
+- The UI confirms validation and output generation without claiming formal SI approval.
+- **Stage 3 — Generated Outputs** appears.
+- The reviewed record excludes the Redis question.
+- Two mock action work items remain because no action was excluded.
 - Nothing is sent to an external service.
 
-### Step 8 — Close on scope
+### Step 9 — Show the generated minutes
 
-**Action:** Position the page so the approved outputs and mock labels are visible.
+**Action:** Show the **Rendered Markdown** view, then briefly select **Raw Markdown**.
 
 **Expected state:**
 
-- The complete one-round workflow is clear.
+- The generated record shows **Changes Requested** and the edited action owner.
+- Redis is absent.
+- The accountability notice says the record must be reviewed before publication.
+
+### Step 10 — Show the mock ADO work items
+
+**Action:** Scroll to **Mock Azure DevOps Work Items**.
+
+**Expected state:**
+
+- Exactly two mock work-item cards are visible.
+- The first item is assigned to **Taylor Kim**.
+- Parent ID, due dates, priorities, tags, descriptions, and source indices are visible.
+- The page states: **No real Azure DevOps work item has been created.**
+
+### Step 11 — Close on accountability and scope
+
+**Action:** Position the page so the generated-record notice and mock-integration notice are
+visible.
+
+**Expected state:**
+
+- The complete human-controlled one-round workflow is clear.
 - Synthetic data, deterministic mode, and mock integrations remain visible.
+- Formal governance responsibility remains with the Domain Architect.
 - There is no review history, second round, SI diff, or automatic finding resolution.
 
 ## Preliminary narration
 
 1. “A Solution Intent is the project's detailed architecture design. Domain Architects review it
    over one or more rounds, but this PoC deliberately proves one round.”
-2. “I’ll load a synthetic SI first, then the supporting review transcript and metadata.”
+2. “One click loads the synthetic SI, matching transcript, and review metadata.”
 3. “Deterministic offline analysis combines both sources into a structured review proposal.”
 4. “This finding maps back to the SI's Availability and Resilience section, and its evidence
    includes both the document and the meeting.”
 5. “The machine proposes the record; the Domain Architect remains responsible for review and
    formal approval.”
-6. “I’ll edit one action before approving the record.”
-7. “Only the approved, edited state generates review minutes and mock ADO updates.”
+6. “I’ll change one action owner and exclude the unresolved Redis question.”
+7. “Only the validated, human-reviewed state generates minutes and mock ADO work items.”
 8. “There is no live Confluence, Teams, or Azure DevOps integration and no multi-round workflow
    in this MVP.”
 
@@ -192,12 +205,11 @@ Do not add this interaction if it risks exceeding the time budget.
 | Time | Segment | Focus |
 | --- | --- | --- |
 | 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
-| 0:20–0:50 | Load inputs | Load SI, transcript, and identify review metadata. |
-| 0:50–1:35 | Analyze | Show Changes Requested and scan the seven result sections. |
-| 1:35–2:10 | Trace evidence | Expand the mapped finding and show both evidence sources. |
-| 2:10–2:35 | Human review | Edit one action and emphasize Domain Architect control. |
-| 2:35–3:15 | Approve and generate | Show structured record, minutes, and mock ADO outputs. |
-| 3:15–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
+| 0:20–0:45 | Load inputs | Load the complete sample and inspect both tabs. |
+| 0:45–1:25 | Analyze | Show Changes Requested, counts, and read-only evidence. |
+| 1:25–2:05 | Human review | Edit one owner, exclude Redis, and emphasize human control. |
+| 2:05–3:10 | Confirm and generate | Show rendered/raw minutes and two mock ADO items. |
+| 3:10–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
 
 Hard stop at 3:35. Do not show environment setup, code, a second review round, optional LLM mode,
 or every output field.
@@ -212,9 +224,9 @@ or every output field.
 - Mapping findings to SI sections where supported.
 - Showing findings, decisions, risks, actions, questions, and missing information.
 - Editing and removing proposed review items in the session.
-- Explicit human approval gating.
-- Generating deterministic structured output and minutes from the approved record.
-- Generating local JSON-ready mock ADO updates.
+- Explicit human confirmation before output generation.
+- Generating deterministic structured output and minutes from the reviewed record.
+- Generating local JSON-ready mock ADO action work items.
 - Automated validation and transformation tests.
 
 ### Mocked or simulated
@@ -222,7 +234,7 @@ or every output field.
 - The SI resembles content normally held in Confluence but is loaded locally.
 - The transcript resembles Teams output but is loaded locally.
 - Deterministic analysis returns a curated fixture for the bundled pair.
-- ADO governance updates and work items are previews and are never submitted.
+- ADO action work items are previews and are never submitted.
 - No identity, authorization, persistence, audit history, or production operations exist.
 - The `review_round` field does not implement multi-round tracking.
 
@@ -241,16 +253,16 @@ or every output field.
 
 | Failure | Response |
 | --- | --- |
-| App is not running | Restart with the planned `uv` command and begin a new take. |
+| App is not running | Restart with the documented `uv` command and begin a new take. |
 | SI or transcript does not load | Refresh once, reload both samples, and restart the take if needed. |
 | Deterministic input mismatch | Reload both bundled inputs without editing them before Analyze. |
 | Analysis fixture fails validation | Stop; align models and fixture before recording. |
 | An edit is lost | Stop; repair session-state behavior before making the human-review claim. |
-| Approval is blocked | Restore the rehearsed valid edit or reanalyze; never bypass validation. |
-| Outputs ignore the edit | Stop; fix generation from approved state before recording. |
+| Confirmation is blocked | Restore the rehearsed valid edit or reanalyze; never bypass validation. |
+| Outputs ignore the edit | Stop; fix generation from reviewed state before recording. |
 | Optional LLM fails | Return to deterministic mode; the primary path never depends on it. |
 | Layout hides evidence | Restore rehearsed zoom and collapse unrelated sections. |
-| Runtime approaches 3:35 | Stop and record a shorter take; preserve evidence and approval steps. |
+| Runtime approaches 3:35 | Stop and record a shorter take; preserve evidence and confirmation steps. |
 | Network disconnects | Continue; deterministic mode is offline. |
 
 ## Recording checklist
@@ -259,16 +271,16 @@ or every output field.
 
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
 - [ ] Only one review round—round 2—is shown.
-- [ ] The SI loads before the transcript.
+- [ ] **Load Sample Review** populates both source tabs and metadata.
 - [ ] Changes Requested is shown.
 - [ ] At least one finding maps to an SI section.
 - [ ] One confirmed decision is visible.
 - [ ] One risk is visible.
 - [ ] Two actions are visible.
-- [ ] One unresolved governance item is visible.
+- [ ] The Redis question is visible before exclusion and absent from generated minutes.
 - [ ] SI and transcript evidence are both demonstrated.
 - [ ] The human edit persists.
-- [ ] Outputs remain hidden until approval.
+- [ ] Outputs remain hidden until reviewed-record confirmation.
 - [ ] Generated outputs reflect the edit.
 - [ ] ADO content is clearly labeled mock.
 
@@ -290,7 +302,7 @@ or every output field.
 - [ ] Text is legible at the recording resolution.
 - [ ] Cursor movement and scrolling are easy to follow.
 - [ ] Audio is clear.
-- [ ] Narration states synthetic data, deterministic analysis, human approval, and mock outputs.
+- [ ] Narration states synthetic data, deterministic analysis, human control, and mock outputs.
 - [ ] Final video is shorter than four minutes.
 - [ ] Exported video is played through once before submission.
 - [ ] Submission requirements and 22 July 2026 deadline are confirmed.

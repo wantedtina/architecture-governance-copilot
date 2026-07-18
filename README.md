@@ -4,8 +4,9 @@ Architecture Governance Copilot is a hackathon proof of concept for reviewing a 
 (SI). It combines synthetic SI content, a synthetic Domain Architecture review transcript, and
 basic review metadata to propose a structured, source-backed record for one review round.
 
-A human Domain Architect remains responsible for reviewing, editing, and approving the record.
-Only the approved state will generate standardized review minutes and mock Azure DevOps outputs.
+A human Domain Architect remains responsible for reviewing, editing, and making the formal
+governance decision. Only a validated, human-confirmed reviewed record generates standardized
+review minutes and mock Azure DevOps outputs.
 The final deliverable is a video shorter than four minutes, due on 22 July 2026.
 
 ## Business problem
@@ -20,23 +21,22 @@ is slow, and findings can lose their SI-section context or supporting evidence.
 
 ## Proposed solution
 
-The planned Solution Intent Review Copilot will:
+The implemented deterministic Solution Intent Review Copilot can:
 
-1. load one bundled synthetic SI;
-2. load one matching synthetic Teams-style review transcript;
-3. combine both sources with review-round metadata;
-4. display the outcome, findings, decisions, risks, actions, open questions, and missing
+1. load one bundled synthetic SI, matching Teams-style transcript, and review metadata;
+2. analyze both sources with the deterministic fixture-backed extractor;
+3. display the outcome, findings, decisions, risks, actions, open questions, and missing
    information;
-5. identify supporting evidence as either SI or transcript evidence;
-6. map findings to SI sections where possible;
-7. let a Domain Architect edit, remove, and approve the proposed record; and
-8. generate a structured review record, review minutes, and mock ADO updates from the approved
-   state.
+4. identify supporting evidence as either SI or transcript evidence;
+5. map findings to SI sections where supported;
+6. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
+7. validate the human-reviewed record before generating Markdown minutes and mock ADO action
+   work items.
 
 The MVP demonstrates one review round only. It does not compare SI versions, persist review
 history, resolve findings automatically, or implement a multi-round workflow.
 
-## Planned architecture
+## Architecture
 
 ```text
 Synthetic SI + synthetic transcript + review metadata
@@ -67,9 +67,9 @@ SI/transcript pair and review metadata, then returns an independent copy of the 
 result. It supports only this frozen synthetic scenario and does not perform semantic extraction
 of arbitrary text. Pure deterministic generators now transform a validated result into Markdown
 review minutes and typed mock ADO action work items. `GovernanceReviewService` intentionally
-keeps analysis separate from output generation so a later UI can place human review and editing
-between them. Streamlit session state will eventually hold the current one-round review state;
-there is no database.
+keeps analysis separate from output generation so the Streamlit UI can place human review and
+editing between them. Explicit session state holds only the current one-round inputs, analysis,
+reviewed record, generated outputs, and stale-input fingerprint; there is no database.
 
 Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
 does not connect to them.
@@ -94,6 +94,7 @@ architecture-governance-copilot/
 │       ├── models.py
 │       ├── extractors.py
 │       ├── governance_service.py
+│       ├── ui_support.py
 │       ├── minutes_generator.py
 │       └── ado_generator.py
 ├── samples/
@@ -105,6 +106,9 @@ architecture-governance-copilot/
     ├── test_models.py
     ├── test_sample_data.py
     ├── test_extractors.py
+    ├── test_governance_service.py
+    ├── test_ui_support.py
+    ├── test_app.py
     ├── test_minutes_generator.py
     └── test_ado_generator.py
 ```
@@ -126,7 +130,7 @@ Synchronize the environment:
 uv sync
 ```
 
-Run the planned Streamlit application:
+Run the Streamlit application:
 
 ```bash
 uv run streamlit run app.py
@@ -150,14 +154,13 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The model tests and quality commands work at the current stage. The Streamlit command is the
-planned run command, but the application entry point remains a placeholder and does not yet
-provide the review workflow.
+The one-page demo flow is: **Load Sample Review → Analyze Review → edit or exclude items →
+Confirm Reviewed Record & Generate Outputs**. The application is fixture-backed and supports
+only the bundled synthetic sample.
 
 ## Current implementation status
 
-**Domain models, synthetic demo dataset, deterministic extractor, output generators, and
-governance-service orchestration complete; UI workflow not implemented.**
+**The deterministic one-page PoC workflow is implemented and ready for demo hardening.**
 
 Implemented:
 
@@ -176,21 +179,24 @@ Implemented:
 - deterministic Markdown SI review-minutes generation; and
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and
-- `GovernanceReviewService`, with separate analysis and reviewed-result generation stages.
+- `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
+- a single-page Streamlit interface with explicit session state and stale-analysis protection;
+- editable human review with item exclusion and read-only evidence;
+- rendered/raw Markdown output and mock ADO work-item cards; and
+- pure UI-support tests plus Streamlit `AppTest` workflow coverage.
 
 Not yet implemented:
 
 - real LLM extraction;
 - parent ADO governance-ticket update generation;
-- Streamlit input, review, approval, or output UI;
 - external integrations; or
 - any multi-round workflow behavior.
 
 The deterministic provider supports only the bundled synthetic sample; it does not claim to
 analyze arbitrary documents. Mock ADO work items are local preview models and are never submitted
-to Azure DevOps. The service does not approve or edit records: the future UI must explicitly
-place human review between analysis and output generation. The next proposed phase is the
-Streamlit UI. A real LLM provider remains an optional later phase.
+to Azure DevOps. The UI confirms a reviewed record for output generation; it does not formally
+approve the Solution Intent or replace the Domain Architect. A real LLM provider remains an
+optional, unimplemented later phase.
 
 ## PoC and data statement
 
