@@ -1,52 +1,76 @@
 # Architecture Governance Copilot
 
-Architecture Governance Copilot is a short hackathon proof of concept for turning a synthetic
-Microsoft Teams-style architecture review transcript into a source-backed governance record.
-A human reviewer will be able to correct and approve the record before the application generates
-standardized meeting minutes and mock Azure DevOps work-item payloads.
+Architecture Governance Copilot is a hackathon proof of concept for reviewing a Solution Intent
+(SI). It combines synthetic SI content, a synthetic Domain Architecture review transcript, and
+basic review metadata to propose a structured, source-backed record for one review round.
 
-The final deliverable is a video shorter than four minutes, due on 22 July 2026. The goal is one
-reliable end-to-end workflow, not a production platform.
+A human Domain Architect remains responsible for reviewing, editing, and approving the record.
+Only the approved state will generate standardized review minutes and mock Azure DevOps outputs.
+The final deliverable is a video shorter than four minutes, due on 22 July 2026.
 
 ## Business problem
 
-Architecture governance meetings produce decisions, risks, actions, open questions, and requests
-for evidence. Manually converting the conversation into a consistent record takes time, and the
-result can lose ownership, deadlines, or traceability to the source discussion.
+A Solution Intent is the project's detailed design document, covering areas such as conceptual
+and detailed design, deployment, resilience, security, observability, and data. Product Owners
+and development teams maintain it while a Domain Architect reviews it over one or more rounds.
+
+Findings, decisions, risks, actions, and questions are often spread across the SI, review
+meetings, and governance tracking. Turning those sources into a traceable review record manually
+is slow, and findings can lose their SI-section context or supporting evidence.
 
 ## Proposed solution
 
-The planned Streamlit application will:
+The planned Solution Intent Review Copilot will:
 
-1. load one bundled synthetic Teams-style transcript;
-2. analyze it through a provider interface with an offline deterministic provider as the
-   reliable default;
-3. display the review outcome, decisions, risks, action items, open questions, and missing
-   evidence with source quotes or transcript references;
-4. let a human edit, remove, and explicitly approve the proposed record; and
-5. generate standardized Markdown minutes and mock ADO work-item JSON from the approved data.
+1. load one bundled synthetic SI;
+2. load one matching synthetic Teams-style review transcript;
+3. combine both sources with review-round metadata;
+4. display the outcome, findings, decisions, risks, actions, open questions, and missing
+   information;
+5. identify supporting evidence as either SI or transcript evidence;
+6. map findings to SI sections where possible;
+7. let a Domain Architect edit, remove, and approve the proposed record; and
+8. generate a structured review record, review minutes, and mock ADO updates from the approved
+   state.
 
-No real Teams, Confluence, or Azure DevOps integration is planned for the MVP.
+The MVP demonstrates one review round only. It does not compare SI versions, persist review
+history, resolve findings automatically, or implement a multi-round workflow.
 
 ## Planned architecture
 
 ```text
-Streamlit UI
-    -> Governance service
-        -> Extractor provider interface
-            -> Deterministic fixture-backed provider (required)
-            -> Optional real LLM provider (not on the demo critical path)
-        -> Pydantic governance models
-        -> Markdown minutes generator
-        -> Mock ADO work-item generator
+Synthetic SI + synthetic transcript + review metadata
+                         |
+                         v
+                    Streamlit UI
+                         |
+                         v
+                 Governance service
+                         |
+        +----------------+----------------+
+        |                                 |
+        v                                 v
+Extractor provider                 Pydantic models
+  - deterministic default            - review context
+  - optional LLM later               - findings and evidence
+                                      - decisions, risks, actions
+        |                                 |
+        +----------------+----------------+
+                         |
+             +-----------+-----------+
+             v                       v
+       Review minutes          Mock ADO outputs
 ```
 
-Streamlit session state will hold the current transcript, reviewed data, approval state, and
-generated outputs. There is no database. The extraction interface will keep all LLM-specific
-behavior outside the core workflow, and the application will remain usable without an LLM API.
+The deterministic provider will be the required offline demo path. It will validate the bundled
+SI/transcript pair and return a known structured result. Streamlit session state will hold the
+current one-round review state; there is no database.
 
-See [SPEC.md](SPEC.md) for the model and architecture proposal and [DEMO.md](DEMO.md) for the
-recording workflow.
+Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
+does not connect to them.
+
+See [SPEC.md](SPEC.md) for the complete domain and technical design and [DEMO.md](DEMO.md) for
+the planned recording flow.
 
 ## Repository structure
 
@@ -54,6 +78,7 @@ recording workflow.
 architecture-governance-copilot/
 ├── app.py
 ├── pyproject.toml
+├── uv.lock
 ├── README.md
 ├── SPEC.md
 ├── DEMO.md
@@ -75,14 +100,17 @@ architecture-governance-copilot/
     └── test_ado_generator.py
 ```
 
-## Planned local setup and commands
+A synthetic SI sample will be added in the next approved data-fixture phase. It has not been
+created during the current domain-model correction.
+
+## Setup and commands
 
 Prerequisites:
 
 - Python 3.12
 - [`uv`](https://docs.astral.sh/uv/)
 
-Install the declared project and development dependencies:
+Synchronize the environment:
 
 ```bash
 uv sync
@@ -94,7 +122,7 @@ Run the planned Streamlit application:
 uv run streamlit run app.py
 ```
 
-Run the planned automated tests:
+Run tests:
 
 ```bash
 uv run pytest
@@ -112,30 +140,42 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-These are the intended project commands. **They are not yet claimed to provide a working
-application or meaningful test suite:** dependencies have not been installed in the
-initialization task, source files are placeholders, and the functional implementation has not
-started. `uv.lock` will be created and maintained by `uv`, not edited manually.
+The model tests and quality commands work at the current stage. The Streamlit command is the
+planned run command, but the application entry point remains a placeholder and does not yet
+provide the review workflow.
 
 ## Current implementation status
 
-**Planning and initialization only.**
+**Domain model and planning correction complete; application functionality not implemented.**
 
-At this stage:
+Implemented:
 
-- the src-based package skeleton and placeholder tests exist;
-- `pyproject.toml` declares the planned runtime and development dependencies;
-- the product, technical, implementation, and demo plans are documented;
-- the transcript and expected-result files are placeholders; and
-- there is no Streamlit UI, model implementation, extraction, generation, service
-  orchestration, real LLM call, or functional automated test.
+- strict Pydantic models for one SI review round;
+- SI lifecycle and review outcome enums;
+- typed SI/transcript evidence;
+- Solution Intent review metadata;
+- SI-section-aware review findings;
+- existing decisions, risks, actions, questions, and missing-information models;
+- enriched mock ADO work-item preview fields; and
+- comprehensive model validation tests.
 
-The next proposed task is phase 1 from `SPEC.md`: implement the Pydantic models and their
-validation tests, but only after the planning output is reviewed and approved.
+Not yet implemented:
+
+- synthetic SI and finalized transcript fixtures;
+- deterministic or LLM extraction;
+- governance service orchestration;
+- review-record, minutes, or ADO generation;
+- Streamlit input, review, approval, or output UI;
+- external integrations; or
+- any multi-round workflow behavior.
+
+The next proposed phase is to create one coherent synthetic SI, one matching review transcript,
+review metadata, and a validated expected result. Do not begin it until the domain correction is
+reviewed and approved.
 
 ## PoC and data statement
 
-This repository is a hackathon PoC using synthetic data only. It must not contain company-
-confidential information, real meeting transcripts, personal data, secrets, or API credentials.
-It is not production-ready and does not provide live Microsoft Teams, Confluence, or Azure
-DevOps connectivity.
+This is a hackathon PoC using synthetic data only. It must contain no real internal SI,
+confidential architecture information, meeting transcript, personal data, secret, or API
+credential. It is not production-ready and does not provide live Confluence, Microsoft Teams,
+or Azure DevOps connectivity.

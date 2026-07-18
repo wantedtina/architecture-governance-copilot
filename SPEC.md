@@ -2,489 +2,456 @@
 
 ## Document purpose
 
-This document defines the hackathon proof of concept (PoC) to be demonstrated in a video
-shorter than four minutes and delivered by 22 July 2026. It is a planning document, not an
-implementation claim. The current repository contains only project configuration,
-documentation, and placeholder files.
+This document defines a hackathon proof of concept (PoC) for reviewing a Solution Intent (SI).
+The final deliverable is a video shorter than four minutes, due on 22 July 2026. The PoC proves
+one reliable, human-controlled SI review round; it is not a production platform.
+
+## Domain context
+
+A Solution Intent is the detailed project design document jointly prepared by the Product Owner
+and development team. It normally covers conceptual and detailed design, deployment, resilience,
+security, observability, data, and related architecture concerns. In the production process, the
+SI is maintained in Confluence and has a corresponding Azure DevOps (ADO) governance ticket.
+
+A Domain Architect reviews the SI over one or more rounds. A round may combine document review,
+a meeting, written feedback, required changes, risks, decisions, and open questions. The project
+team updates the SI until the Domain Architect approves it, often while software development
+continues in parallel.
+
+This PoC models one such review round. Confluence, Teams, and ADO are future production
+integration targets; none is connected in the MVP.
 
 ## Problem statement
 
-Architecture governance meetings create decisions, risks, follow-up actions, and evidence
-requirements that must be converted from conversation into a durable governance record.
-Doing this manually is slow and inconsistent. Important context can be lost, action ownership
-can remain ambiguous, and reviewers may struggle to trace a recorded item back to what was
-actually said.
+SI review information is split across a large design document, meeting discussion, and
+governance tracking. Manually turning these sources into a consistent review record is slow and
+error-prone. Findings can lose their SI-section context, actions can lack clear ownership, and
+recorded conclusions may be difficult to trace back to the document or discussion that supports
+them.
 
-The PoC will show that a transcript can be converted into structured, source-backed governance
-information, reviewed by a human, and then reused to produce standardized minutes and
-work-item payloads. It will prove one controlled workflow; it will not prove production-scale
-accuracy, integration, or operations.
+The PoC will show that one synthetic SI and one synthetic review transcript can be transformed
+into a structured, evidence-backed review proposal. A human reviewer can correct that proposal
+and explicitly approve the review record before minutes and mock ADO outputs are generated.
+Formal approval remains the responsibility of the human Domain Architect.
 
 ## Target users
 
-- **Primary:** architecture governance reviewers who validate meeting outcomes and evidence.
-- **Secondary:** solution and enterprise architects who need a clear record of decisions,
-  conditions, risks, and follow-up work.
-- **Secondary:** delivery leads and action owners who need governance actions represented as
-  trackable work.
-- **Demo audience:** hackathon judges and stakeholders evaluating whether the workflow is
-  useful and credible.
+- **Primary:** Domain Architects who review Solution Intents and own the formal review outcome.
+- **Secondary:** Product Owners and development teams who prepare and update the SI.
+- **Secondary:** solution and enterprise architects who need traceable decisions, findings, and
+  risks.
+- **Secondary:** delivery leads and action owners who need follow-up work represented clearly.
+- **Demo audience:** hackathon judges and stakeholders evaluating the usefulness of the workflow.
 
 ## Product goal
 
-Given a synthetic Microsoft Teams-style architecture governance meeting transcript, extract a
-structured governance record with supporting source evidence for every item. Allow a human to
-edit, remove, and approve that record. Only after approval, generate standardized meeting
-minutes and mock Azure DevOps (ADO) work-item payloads for the approved action items.
+Given synthetic SI content, a synthetic Teams-style review transcript, and basic review
+metadata, produce a structured proposal containing:
 
-Success means the demo reliably completes this end-to-end journey. It does not mean that the
-PoC is suitable for production use.
+- the current review-round outcome;
+- review findings mapped to SI sections where possible;
+- confirmed architecture decisions;
+- risks;
+- actions, owners, due dates, and priorities;
+- open questions;
+- missing governance information; and
+- supporting evidence from the SI or meeting transcript.
+
+After human review and approval of the record, generate:
+
+1. a structured SI review record;
+2. standardized review meeting minutes; and
+3. mock ADO governance-ticket updates and action work items.
+
+Success means the deterministic demo completes this one-round workflow reliably. It does not
+mean that the PoC can govern arbitrary projects or replace Domain Architect judgment.
 
 ## Core end-to-end user journey
 
-1. The reviewer opens the Streamlit application in deterministic demo mode.
-2. The reviewer clicks **Load Sample Transcript**.
-3. The bundled synthetic Teams-style transcript appears in an editable text area.
-4. The reviewer clicks **Analyze**.
-5. The deterministic provider returns the known structured result for the bundled sample.
-6. The UI displays Review Outcome, Decisions, Risks, Action Items, Open Questions, and Missing
-   Evidence. Every outcome or item has a source quote or transcript reference.
-7. The reviewer inspects the proposed record, edits at least one field, and may remove an item.
-8. The reviewer clicks **Approve Governance Record**.
-9. The application freezes the reviewed state as the approved record for that run.
-10. The application displays standardized meeting minutes and mock ADO work-item JSON payloads
-    derived only from the approved data.
+1. Load synthetic SI content.
+2. Load a synthetic review transcript.
+3. Analyze the review using the SI, transcript, and review metadata.
+4. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
+   information.
+5. Show supporting SI or transcript evidence for each extracted claim.
+6. Allow human review, editing, and removal of proposed items.
+7. Let the Domain Architect explicitly approve the reviewed record.
+8. Generate the structured review record, review minutes, and mock ADO outputs from the approved
+   state.
 
-If the transcript changes after analysis, the prior analysis and approval state must become
-stale or be cleared so that outputs cannot silently diverge from their source.
+The MVP performs this journey for one review round only. `review_round` metadata prepares the
+record for future tracking, but the application will not compare versions, persist history, or
+automatically carry findings between rounds.
 
 ## Functional requirements
 
-### Transcript input
+### Inputs
 
-- Provide a **Load Sample Transcript** button.
-- Load only the bundled synthetic transcript from `samples/review_transcript.txt`.
-- Display the transcript in a multiline editable text area.
-- Provide an **Analyze** button.
-- Reject empty or whitespace-only input with a clear message.
-- Make deterministic demo mode visible in the interface.
+- Provide a **Load Sample Solution Intent** action.
+- Load synthetic SI content from a bundled sample file in a future implementation phase.
+- Display the SI in a readable multiline area.
+- Provide a **Load Sample Review Transcript** action.
+- Load a synthetic Teams-style Domain Architecture review transcript.
+- Display the transcript in a separate multiline area.
+- Collect or preload basic metadata:
+  - project name;
+  - SI title and version;
+  - current SI status;
+  - review-round number;
+  - optional ADO governance-ticket ID;
+  - optional Domain Architect; and
+  - optional review date.
+- Reject missing required input with clear feedback.
+- Clearly label all content as synthetic.
 
-### Analysis and structured record
+### Analysis
 
-- Hide transcript analysis behind a provider interface.
-- Use the deterministic demo provider by default.
+- Hide analysis behind a small provider interface.
+- Use a deterministic demo provider by default.
+- Analyze SI content and the transcript together rather than treating the transcript as the
+  primary object.
+- Return a validated `GovernanceResult` for exactly one review round.
 - Display these sections in a stable order:
   1. Review Outcome
-  2. Decisions
-  3. Risks
-  4. Action Items
-  5. Open Questions
-  6. Missing Evidence
-- Show the supporting source quote and transcript reference for every displayed outcome or
-  item.
-- Preserve stable item identifiers through review and generation.
-- Show a clear empty state for a category with no items.
-- Surface validation or provider errors without losing the transcript.
+  2. Review Findings
+  3. Decisions
+  4. Risks
+  5. Action Items
+  6. Open Questions
+  7. Missing Information
+- Map a finding to an SI section when the source supports that mapping.
+- Do not invent a section, owner, date, or outcome.
+- Show an explicit empty state when a category has no items.
 
-### Human review
+### Evidence and traceability
 
-- Allow the reviewer to edit the meaningful extracted fields presented in each section.
-- Allow the reviewer to remove list items before approval.
-- Keep source evidence visible during editing.
-- Do not let the reviewer approve a record that fails model validation.
-- Make approval an explicit button action.
-- Make approved outputs reflect the reviewed values, not the original provider response.
-- Invalidate prior approval and generated outputs when the transcript is reanalyzed or the
-  reviewed record changes.
+- Every outcome other than `not_stated` must have evidence.
+- Every finding, decision, risk, action, and open question must have at least one evidence item.
+- Evidence must identify its source as `solution_intent` or `meeting_transcript`.
+- SI evidence should show its section when available.
+- Transcript evidence should show speaker and timestamp when available.
+- Missing-information evidence may be empty because a checklist or document inspection can
+  identify absence without a direct quote.
+- Do not apply strict source-specific locator validation in the MVP.
 
-For the PoC, source evidence itself should be treated as traceability metadata rather than
-freeform content to rewrite. If evidence needs correction, the item should be removed and the
-transcript reanalyzed. This reduces demo complexity and avoids presenting altered quotes as
-source text.
+### Human review and approval
+
+- Allow the reviewer to edit meaningful extracted fields.
+- Allow the reviewer to remove proposed list items.
+- Keep supporting evidence visible during review.
+- Treat evidence as traceability metadata rather than freeform text to casually rewrite.
+- Prevent approval when the reviewed record fails validation.
+- Require an explicit **Approve SI Review Record** action.
+- Present formal approval as the human Domain Architect's responsibility.
+- Generate outputs from the approved, edited state rather than the original provider response.
+- Invalidate approval and outputs after reanalysis or subsequent edits.
 
 ### Approved outputs
 
-- Generate outputs only after **Approve Governance Record** is clicked.
-- Generate deterministic Markdown meeting minutes with:
-  - meeting metadata,
-  - review outcome,
-  - confirmed decisions,
-  - risks,
-  - actions with owner, due date, and priority,
-  - open questions,
-  - missing governance evidence,
-  - source references.
-- Generate one mock ADO work-item payload for each approved action item.
-- Clearly label ADO payloads as mock data that is not sent to Azure DevOps.
-- Keep generated outputs stable for the same approved input.
+- Generate outputs only after explicit human approval.
+- Display a structured, JSON-serializable SI review record.
+- Generate deterministic Markdown meeting minutes containing:
+  - review context;
+  - review outcome;
+  - findings with SI sections;
+  - decisions;
+  - risks;
+  - actions;
+  - open questions;
+  - missing information; and
+  - evidence references.
+- Generate a mock update for the parent ADO governance ticket.
+- Generate one mock ADO action work item per approved action.
+- Allow mock work items to include the parent ticket, SI section, and acceptance criteria.
+- Clearly state that no payload is sent to Azure DevOps.
 
 ## Non-functional requirements
 
-- **Demo reliability:** the bundled sample and expected result must work offline with no LLM
-  credentials or network access.
-- **Traceability:** every extracted outcome and list item must include at least one valid source
-  evidence record.
-- **Human control:** no minutes or work-item payloads are generated from an unapproved record.
-- **Readability:** the main workflow and six result sections must be understandable at normal
-  laptop resolution during screen recording.
-- **Simplicity:** use direct Python modules and Streamlit session state; do not introduce an
-  agent framework, persistence layer, or unnecessary abstractions.
-- **Determinism:** the demo provider, generators, and tests must give stable results for stable
-  inputs.
-- **Testability:** models and pure generator functions must be testable without starting
-  Streamlit.
-- **Maintainability:** Python 3.12, type hints for public functions, Pydantic v2 models, and a
-  src-based package layout.
-- **Quality gates:** planned automated checks are `pytest`, `ruff check`, and
-  `ruff format --check`, all invoked through `uv`.
-- **Data safety:** use synthetic data only and commit no API keys, secrets, personal data, or
-  company-confidential information.
-- **Performance:** analysis of the bundled sample should appear effectively immediate in
-  deterministic mode; a specific production service-level objective is out of scope.
-- **Accessibility:** use clear labels, headings, button text, and status messages; do not rely
-  on color alone to communicate state.
+- **Reliability:** the bundled scenario must work offline without credentials or an LLM API.
+- **Human accountability:** the system proposes a record; it does not approve the SI.
+- **Traceability:** claims retain evidence source, quote, and available locator information.
+- **Determinism:** stable inputs produce stable results and generated outputs.
+- **Simplicity:** use direct Python modules, Pydantic, and Streamlit session state.
+- **Testability:** models and pure transformations must be testable without Streamlit.
+- **Readability:** the review and evidence must be legible during a short screen recording.
+- **State safety:** stale approval and outputs must not survive changes to source or review data.
+- **Data safety:** use synthetic data only and commit no secrets or confidential information.
+- **Maintainability:** Python 3.12, modern type syntax, a src layout, concise public docstrings,
+  pytest, and Ruff.
+- **Dependency management:** use `pyproject.toml`, `uv`, and the generated `uv.lock`; do not use
+  `requirements.txt`.
+- **Accessibility:** use clear labels and do not rely on color alone to communicate state.
 
 ## Assumptions
 
-- The final demo runs locally on a laptop with Python 3.12 and `uv` available.
-- Internet access and LLM credentials may be unavailable during recording or judging.
-- The demonstration uses exactly one bundled synthetic meeting scenario.
-- The transcript is plain text formatted to resemble a Teams transcript, including speakers
-  and timestamps or stable line references.
-- The human reviewer is responsible for the final approved wording.
-- ADO output is inspected as JSON in the UI and is never submitted to a service.
-- A single Streamlit browser session is sufficient; concurrent users and durable state are not
-  required.
-- The optional real LLM provider, if attempted, comes after the deterministic workflow is
-  complete and does not become a dependency of the demo.
+- The demo runs locally with Python 3.12 and `uv`.
+- One bundled SI and one matching transcript are sufficient for the recorded scenario.
+- The SI may contain headings and plain text rather than production Confluence markup.
+- The transcript contains synthetic speakers and timestamps or line references.
+- The Domain Architect reviews and owns the final outcome.
+- The ADO ticket identifier is metadata only.
+- A single Streamlit session is sufficient; no durable state or concurrent use is required.
+- The optional LLM provider is not required for the primary demo.
 
 ## Explicit MVP exclusions
 
-- Production readiness, deployment, observability, scaling, and support.
-- Authentication, authorization, role management, and audit-log persistence.
-- A database or any other durable state.
-- Real Microsoft Teams ingestion or Microsoft Graph integration.
-- Real Confluence publishing.
-- Real Azure DevOps API calls, authentication, or work-item creation.
-- RAG, vector databases, embeddings, document retrieval, or knowledge bases.
-- Agent frameworks, tool-calling agents, autonomous workflows, or multi-agent systems.
-- Dashboards, analytics, reporting history, and cross-meeting search.
-- Live audio, transcription, diarization, or meeting-bot functionality.
-- Multiple transcript formats, bulk processing, and file upload.
-- Production-grade prompt evaluation, model routing, retries, or cost controls.
-- Use of real internal company information.
+- More than one active review round.
+- SI version comparison or document diffing.
+- Automatic resolution, reopening, or carry-forward of findings.
+- Review history persistence or multi-round workflow logic.
+- Database, audit-log storage, authentication, or authorization.
+- Real Confluence access, page updates, identifiers, or URLs.
+- Real Teams or Microsoft Graph transcript ingestion.
+- Real ADO authentication, ticket updates, or work-item creation.
+- RAG, embeddings, vector databases, or enterprise knowledge retrieval.
+- Agent frameworks or autonomous workflows.
+- File upload, bulk review, dashboards, analytics, and cross-project search.
+- Production deployment, monitoring, scaling, support, or service-level objectives.
+- Live audio transcription or meeting-bot behavior.
+- Use of real company-confidential or personal data.
+
+### Future extensions, not MVP commitments
+
+- Persisted review history across multiple rounds.
+- Comparison of SI versions and finding status across rounds.
+- Confluence retrieval and publication.
+- Teams transcript ingestion.
+- Real ADO governance-ticket and action updates.
+
+These extensions must not appear in the required demo path.
 
 ## Definition of Done
 
-The PoC is done when all of the following are true:
+The PoC is done when:
 
-- The repository follows the agreed structure and uses only `pyproject.toml` and the
-  tool-generated `uv.lock` for dependency management.
-- A fresh environment can be created with `uv sync`.
+- `uv sync` creates a working Python 3.12 environment.
 - `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass.
-- **Load Sample Transcript** loads the synthetic transcript into the text area.
-- **Analyze** uses deterministic demo mode successfully without any LLM API.
-- All six required result sections are displayed.
-- Review Outcome and every extracted list item display valid supporting evidence.
-- The reviewer can edit meaningful fields and remove list items.
+- The sample SI and matching review transcript load independently.
+- Basic review metadata identifies one SI review round.
+- Analyze works in deterministic mode without network or API credentials.
+- The seven required result sections appear in the planned order.
+- At least one finding maps to an SI section.
+- Evidence is visibly distinguished as SI or transcript evidence.
+- Review Outcome and all required list items contain valid evidence.
+- The reviewer can edit and remove proposed items.
 - Invalid reviewed data cannot be approved.
-- **Approve Governance Record** generates minutes and mock ADO payloads from the reviewed data.
-- The number and content of mock ADO payloads match the approved action items.
-- Generated outputs are clearly distinguished from external integrations.
-- Reanalysis or review changes cannot leave stale approved outputs visible as current.
-- The deterministic result and generated outputs have automated coverage for core behavior.
-- `README.md`, this specification, and `DEMO.md` match the implemented workflow.
-- The recorded demonstration uses only synthetic data, completes the workflow reliably, and is
-  shorter than four minutes.
+- Approval is an explicit Domain Architect action.
+- Generated outputs reflect the edited, approved record.
+- The structured record, minutes, and mock ADO outputs are clearly labeled.
+- Reanalysis or edits invalidate stale approval and generated outputs.
+- No live Confluence, Teams, or ADO operation occurs.
+- Tests cover the model, deterministic provider, generators, and core orchestration.
+- Documentation matches the implemented one-round SI workflow.
+- The recorded demo uses only synthetic data and remains shorter than four minutes.
 
 ## Technical architecture
 
-The PoC uses a small layered design:
-
 ```text
-Streamlit UI (app.py)
-        |
-        v
-Governance service (workflow orchestration)
-        |
-        +--> ExtractorProvider interface
-        |        +--> DeterministicDemoProvider (required)
-        |        \--> Optional real LLM provider (future)
-        |
-        +--> Pydantic governance models
-        |
-        +--> Minutes generator (pure transformation)
-        |
-        \--> Mock ADO generator (pure transformation)
+Streamlit UI
+    |
+    |-- synthetic SI content
+    |-- synthetic review transcript
+    |-- SolutionIntentReviewContext
+    v
+Governance service
+    |
+    +--> ExtractorProvider
+    |       +--> DeterministicDemoProvider (required)
+    |       \--> Optional real LLM provider (future)
+    |
+    +--> Pydantic one-round review models
+    |
+    +--> Review-record / minutes generator
+    |
+    \--> Mock ADO update and work-item generator
 ```
 
 ### Module responsibilities
 
-- `app.py`: Streamlit layout, event handling, editable review widgets, approval action, and
-  session-state presentation. It should contain no extraction or output-mapping logic.
-- `models.py`: Pydantic models, enums, field validation, and cross-model invariants.
-- `extractors.py`: the provider protocol and deterministic provider. An optional real provider
-  may later live here while the interface remains small.
-- `governance_service.py`: coordinates provider analysis, record validation, approval, and
-  generation. It should accept dependencies explicitly and remain independent of Streamlit.
-- `minutes_generator.py`: deterministic conversion of an approved `GovernanceResult` to
-  standardized Markdown.
-- `ado_generator.py`: deterministic conversion of approved action items to
-  `MockAdoWorkItem` objects or JSON-ready dictionaries.
-- `samples/review_transcript.txt`: synthetic, Teams-style demo transcript.
-- `samples/expected_result.json`: known valid structured response used by deterministic mode.
+- `app.py`: UI, input loading, review widgets, evidence presentation, explicit approval, and
+  session-state transitions.
+- `models.py`: strict Pydantic enums and models for one SI review round.
+- `extractors.py`: provider protocol and deterministic fixture-backed provider.
+- `governance_service.py`: coordinates analysis, validation, review approval, and generation.
+- `minutes_generator.py`: pure deterministic transformation to review minutes.
+- `ado_generator.py`: pure deterministic transformation to mock governance-ticket and action
+  payloads.
+- `samples/`: future synthetic SI, transcript, and expected result fixtures.
+- `tests/`: validation and transformation tests independent of external services.
 
-Streamlit session state is the only planned runtime state. The UI owns a transcript, the latest
-analyzed result, the editable reviewed result, its approval state, and generated outputs. No
-state is persisted between sessions.
+Streamlit session state is the only planned runtime state. It will hold the three inputs, latest
+analysis, editable reviewed record, approval state, and generated outputs. It will not hold or
+simulate review history.
 
-## Proposed Pydantic model design
+## Model design
 
-The following designs are proposals for phase 1. They are intentionally not implemented yet.
-All models should reject unknown fields (`extra="forbid"`) to expose drift between providers,
-fixtures, and generators. Strings should be trimmed. Required descriptive strings should reject
-empty or whitespace-only values. IDs should be stable, human-readable strings unique within a
-`GovernanceResult`, such as `DEC-001` or `ACT-001`.
+All models inherit one small strict base configuration with `extra="forbid"` and whitespace
+normalization. Required strings reject blank values after trimming. Dates use `datetime.date`.
+Collection defaults use independent factories. All models serialize with
+`model_dump(mode="json")`.
 
-### Shared value conventions
+### Enums
 
-- Dates use `datetime.date` and serialize as ISO 8601 `YYYY-MM-DD`.
-- Timestamps, when present, use a display-oriented `HH:MM:SS` string validated for valid clock
-  time; they are transcript offsets, not time-zone-aware event times.
-- Priorities use a small enum: `high`, `medium`, or `low`.
-- Review outcome status uses: `approved`, `approved_with_conditions`, `deferred`, or `rejected`.
-- Risk severity uses: `high`, `medium`, or `low`.
-- Optional owner or due-date fields may be `None` when the transcript does not establish them;
-  corresponding ambiguity should appear as an open question or missing-evidence item.
+| Enum | Values | Purpose |
+| --- | --- | --- |
+| `EvidenceSource` | `solution_intent`, `meeting_transcript` | Identifies the evidence origin. |
+| `SolutionIntentStatus` | `draft`, `under_review`, `changes_requested`, `conditionally_approved`, `approved`, `rejected` | Current overall SI lifecycle status. |
+| `ReviewOutcome` | `changes_requested`, `conditionally_approved`, `approved`, `rejected`, `pending`, `not_stated` | Outcome of this review round only. |
+| `FindingSeverity` | `low`, `medium`, `high`, `critical` | Impact of a review finding. |
+| `FindingStatus` | `open`, `resolved`, `deferred`, `accepted` | Finding tracking state; normally `open` in the MVP. |
+| `RiskSeverity` | `low`, `medium`, `high`, `critical` | Severity of a risk. |
+| `ActionPriority` | `low`, `medium`, `high` | Priority of an action. |
 
 ### `SourceEvidence`
 
-Represents the trace from one structured claim to the transcript.
-
-| Field | Type | Rules |
+| Field | Type | Validation |
 | --- | --- | --- |
-| `evidence_id` | `str` | Required, non-empty; unique within the complete result. |
-| `quote` | `str` | Required exact excerpt, non-empty; concise enough for the review UI. |
-| `speaker` | `str \| None` | Trimmed; `None` only if the source format lacks a speaker. |
-| `timestamp` | `str \| None` | Valid `HH:MM:SS` when present. |
-| `line_start` | `int \| None` | Positive when present. |
-| `line_end` | `int \| None` | Positive and greater than or equal to `line_start`; present only when `line_start` is present. |
+| `source_type` | `EvidenceSource` | Required. |
+| `quote` | non-empty string | Required. |
+| `speaker` | non-empty string or `None` | Optional; primarily transcript evidence. |
+| `timestamp` | non-empty string or `None` | Optional; no timestamp parsing yet. |
+| `section` | non-empty string or `None` | Optional; primarily SI evidence. |
+| `reference` | non-empty string or `None` | Optional source reference. |
 
-At least one locator must be present: `timestamp` or `line_start`. The quote is stored with the
-item so the demo remains readable, while the locator supports verification against the source.
+The model deliberately does not enforce source-specific locators yet.
 
-### `ReviewOutcome`
+### `SolutionIntentReviewContext`
 
-Represents the meeting-level governance disposition.
-
-| Field | Type | Rules |
+| Field | Type | Validation |
 | --- | --- | --- |
-| `status` | outcome enum | Required and limited to the four declared values. |
-| `summary` | `str` | Required, non-empty, concise human-readable conclusion. |
-| `conditions` | `list[str]` | Defaults to empty; each entry non-empty and unique after normalization. |
-| `evidence` | `list[SourceEvidence]` | Required and must contain at least one entry. |
+| `project_name` | non-empty string | Required. |
+| `si_title` | non-empty string | Required. |
+| `si_version` | non-empty string | Required. |
+| `current_si_status` | `SolutionIntentStatus` | Required. |
+| `review_round` | integer | Required and at least 1. |
+| `ado_ticket_id` | non-empty string or `None` | Optional; no company-specific format validation. |
+| `domain_architect` | non-empty string or `None` | Optional. |
+| `review_date` | date or `None` | Optional ISO date in JSON. |
 
-`approved_with_conditions` must contain at least one condition. Other statuses may have an empty
-conditions list. Duplicate evidence references within the outcome are rejected.
+The context identifies one round but contains no prior or subsequent rounds and no Confluence
+identifier.
 
-### `Decision`
+### `ReviewFinding`
 
-Represents a confirmed architecture decision, not a suggestion or unresolved question.
-
-| Field | Type | Rules |
+| Field | Type | Validation |
 | --- | --- | --- |
-| `id` | `str` | Required stable identifier; `DEC-` prefix proposed. |
-| `title` | `str` | Required, non-empty, short display label. |
-| `description` | `str` | Required, non-empty statement of the confirmed decision. |
-| `rationale` | `str \| None` | Optional non-empty text when the rationale was stated. |
-| `evidence` | `list[SourceEvidence]` | Required and non-empty. |
+| `title` | non-empty string | Required. |
+| `description` | non-empty string | Required. |
+| `category` | non-empty string or `None` | Optional. |
+| `si_section` | non-empty string or `None` | Optional mapping to the SI. |
+| `severity` | `FindingSeverity` | Required. |
+| `status` | `FindingStatus` | Defaults to `open`. |
+| `recommended_change` | non-empty string or `None` | Optional. |
+| `owner` | non-empty string or `None` | Optional; never invented. |
+| `due_date` | date or `None` | Optional. |
+| `evidence` | list of `SourceEvidence` | Required and non-empty; may mix both sources. |
 
-The model does not include a decision status because only confirmed decisions belong in this
-collection. Proposed or pending choices belong in `OpenQuestion`.
+There is no finding identifier, persistence state, or automatic resolution behavior.
 
-### `Risk`
+### Existing review-item models
 
-Represents an identified architecture or delivery risk.
+- `Decision`: required statement, optional rationale, and non-empty evidence.
+- `Risk`: required description and severity, optional owner, and non-empty evidence.
+- `ActionItem`: required title and priority, optional owner and due date, and non-empty evidence.
+- `OpenQuestion`: required question, optional owner, and non-empty evidence.
+- `MissingEvidence`: required item, optional reason, and evidence defaulting to an empty list.
 
-| Field | Type | Rules |
-| --- | --- | --- |
-| `id` | `str` | Required stable identifier; `RSK-` prefix proposed. |
-| `title` | `str` | Required, non-empty summary. |
-| `description` | `str` | Required, non-empty explanation of the risk. |
-| `impact` | `str` | Required, non-empty consequence if the risk materializes. |
-| `severity` | severity enum | Required: `high`, `medium`, or `low`. |
-| `mitigation` | `str \| None` | Optional; non-empty if supplied. |
-| `owner` | `str \| None` | Optional because the meeting may not assign one. |
-| `evidence` | `list[SourceEvidence]` | Required and non-empty. |
-
-Priority is intentionally reserved for actions; risks use severity. The UI can expose an
-unassigned owner without inventing one.
-
-### `ActionItem`
-
-Represents agreed follow-up work.
-
-| Field | Type | Rules |
-| --- | --- | --- |
-| `id` | `str` | Required stable identifier; `ACT-` prefix proposed. |
-| `title` | `str` | Required, non-empty, suitable as a work-item title. |
-| `description` | `str` | Required, non-empty statement of the required work. |
-| `owner` | `str \| None` | Trimmed name; `None` if no owner was confirmed. |
-| `due_date` | `date \| None` | ISO date when serialized; `None` if no date was confirmed. |
-| `priority` | priority enum | Required: `high`, `medium`, or `low`. |
-| `evidence` | `list[SourceEvidence]` | Required and non-empty. |
-
-The model accepts missing owner or due date so the record can faithfully represent incomplete
-governance. The deterministic sample should make at least one action complete enough to generate
-a useful payload. Missing information is not silently defaulted.
-
-### `OpenQuestion`
-
-Represents an unresolved question explicitly raised or clearly left open.
-
-| Field | Type | Rules |
-| --- | --- | --- |
-| `id` | `str` | Required stable identifier; `QUE-` prefix proposed. |
-| `question` | `str` | Required, non-empty, ending punctuation normalized by presentation rather than validation. |
-| `owner` | `str \| None` | Optional person expected to resolve it. |
-| `due_date` | `date \| None` | Optional follow-up date. |
-| `evidence` | `list[SourceEvidence]` | Required and non-empty. |
-
-The model does not infer an answer. Once answered and approved, the item should be removed or
-converted into the appropriate decision/action through reanalysis or review.
-
-### `MissingEvidence`
-
-Represents governance material that the meeting says is absent, incomplete, or still required.
-
-| Field | Type | Rules |
-| --- | --- | --- |
-| `id` | `str` | Required stable identifier; `EVD-` prefix proposed. |
-| `item` | `str` | Required, non-empty name of the missing artifact or proof. |
-| `reason_required` | `str` | Required, non-empty explanation of its governance relevance. |
-| `owner` | `str \| None` | Optional person responsible for supplying it. |
-| `due_date` | `date \| None` | Optional committed date. |
-| `evidence` | `list[SourceEvidence]` | Required and non-empty evidence that the gap was identified. |
-
-This records evidence missing from the governance submission. Its `evidence` field is different:
-it cites the transcript statement that identified the gap.
+These models accept evidence from either source through `SourceEvidence`.
 
 ### `GovernanceResult`
 
-The canonical analyzed and reviewed governance record.
-
-| Field | Type | Rules |
+| Field | Type | Validation |
 | --- | --- | --- |
-| `schema_version` | `str` | Required fixed initial value such as `1.0`. |
-| `meeting_title` | `str` | Required, non-empty. |
-| `meeting_date` | `date` | Required ISO date. |
+| `context` | `SolutionIntentReviewContext` | Required. |
 | `review_outcome` | `ReviewOutcome` | Required. |
-| `decisions` | `list[Decision]` | Defaults to empty. |
-| `risks` | `list[Risk]` | Defaults to empty. |
-| `action_items` | `list[ActionItem]` | Defaults to empty. |
-| `open_questions` | `list[OpenQuestion]` | Defaults to empty. |
-| `missing_evidence` | `list[MissingEvidence]` | Defaults to empty. |
+| `outcome_evidence` | list of `SourceEvidence` | Defaults empty; must be non-empty unless outcome is `not_stated`. |
+| `findings` | list of `ReviewFinding` | Independent empty default. |
+| `decisions` | list of `Decision` | Independent empty default. |
+| `risks` | list of `Risk` | Independent empty default. |
+| `action_items` | list of `ActionItem` | Independent empty default. |
+| `open_questions` | list of `OpenQuestion` | Independent empty default. |
+| `missing_evidence` | list of `MissingEvidence` | Independent empty default. |
 
-Cross-model validation must ensure:
-
-- item IDs are unique across all five item collections;
-- evidence IDs are unique, or a deliberate shared-evidence policy is defined before
-  implementation (the simpler proposed rule is unique evidence objects per item);
-- every collection item and the outcome have at least one source record;
-- meeting metadata are present;
-- the serialized fixture round-trips without loss.
-
-Approval metadata should not be embedded in this provider-facing result for the MVP. The service
-and UI can track whether the current reviewed instance has been explicitly approved.
+The result contains one round only. It excludes generated outputs, UI state, approval history,
+and multi-round history.
 
 ### `MockAdoWorkItem`
 
-Represents a JSON-ready preview, not a real Azure DevOps API request.
-
-| Field | Type | Rules |
+| Field | Type | Validation |
 | --- | --- | --- |
-| `work_item_type` | `Literal["Task"]` | Fixed to `Task` for the PoC. |
-| `title` | `str` | Required; copied from the approved action title; enforce a reasonable limit such as 128 characters. |
-| `description` | `str` | Required; includes the approved action description and source references. |
-| `assigned_to` | `str \| None` | Copied from the approved action; never invented. |
-| `due_date` | `date \| None` | Copied from the approved action. |
-| `priority` | priority enum | Copied from the approved action. |
-| `tags` | `list[str]` | Non-empty unique tags, including `Architecture Governance` and `Hackathon PoC`. |
-| `source_action_id` | `str` | Required and equal to the originating approved action ID. |
+| `title` | non-empty string | Required. |
+| `assigned_to` | non-empty string or `None` | Optional. |
+| `due_date` | date or `None` | Optional. |
+| `priority` | `ActionPriority` | Required. |
+| `description` | non-empty string | Required. |
+| `tags` | list of non-empty strings | Independent empty default. |
+| `source_action_index` | integer | Required and non-negative. |
+| `parent_work_item_id` | non-empty string or `None` | Optional governance ticket reference. |
+| `si_section` | non-empty string or `None` | Optional SI-section context. |
+| `acceptance_criteria` | list of non-empty strings | Independent empty default. |
 
-Unknown fields are rejected. The payload is intentionally provider-neutral JSON rather than the
-Azure DevOps JSON Patch wire format, which would imply an integration that the PoC does not
-provide.
+This is a preview model only. Action-to-ADO conversion and API submission are future work.
 
-## LLM provider abstraction
+## Provider abstraction
 
-Use one small interface, tentatively:
+The proposed provider boundary becomes:
 
 ```text
-ExtractorProvider.analyze(transcript: str) -> GovernanceResult
+ExtractorProvider.analyze(
+    solution_intent: str,
+    transcript: str,
+    context: SolutionIntentReviewContext,
+) -> GovernanceResult
 ```
 
-The interface should be represented by a Python `Protocol` or abstract base class only if the
-implementation benefits from it; a `Protocol` is the lighter proposal. The governance service
-receives a provider instance through its constructor or function argument. It validates the
-returned model and does not know whether the provider is deterministic or LLM-backed.
-
-Provider-specific prompt construction, response parsing, API credentials, and SDK exceptions
-must stay behind the provider boundary. No provider may generate minutes or ADO payloads. A
-future real provider must return the same `GovernanceResult` and must not be required to run the
-app in demo mode.
+The governance service receives the provider explicitly. Provider-specific prompts, credentials,
+response parsing, and API errors stay behind this interface. Providers do not approve the SI or
+generate downstream outputs.
 
 ## Deterministic demo-provider design
 
-The required demo provider is a fixture adapter, not a simulated language model:
+The required provider will:
 
-1. Read the bundled transcript and expected JSON fixture using paths resolved from the project,
-   not the current working directory.
-2. Normalize only line endings and insignificant outer whitespace.
-3. Verify that the analyzed transcript matches the bundled sample, preferably with a stable
-   digest or exact normalized comparison.
-4. On a match, load `samples/expected_result.json` and validate it as `GovernanceResult`.
-5. Return a fresh model instance so UI edits cannot mutate a cached fixture.
-6. On a mismatch, show a clear deterministic-mode limitation and retain the transcript. Do not
-   fabricate a result for arbitrary input.
+1. Load the bundled synthetic SI, transcript, and expected result.
+2. Normalize only line endings and outer whitespace.
+3. confirm that both input documents match their fixtures;
+4. validate metadata expected by the scenario;
+5. parse the expected JSON as `GovernanceResult`; and
+6. return a fresh model instance.
 
-This design guarantees a known demo result, catches fixture drift early, works with no network or
-API key, and honestly limits deterministic mode to the sample. Unit tests should prove fixture
-validity, sample matching, mismatch behavior, and repeatable output. The provider selector
-should default to deterministic mode even if an optional API key exists.
+If either source differs, deterministic mode must report its limitation rather than fabricate an
+analysis. It requires no network, credential, model SDK, Confluence page, Teams API, or ADO API.
 
 ## Main technical and demo risks
 
-| Risk | Impact | Mitigation |
-| --- | --- | --- |
-| Extraction output does not match the transcript | Demo loses credibility. | Use a curated synthetic transcript and reviewed expected fixture; require evidence on every item; rehearse quote verification. |
-| LLM API, credentials, network, quota, or latency fails | Analyze step stalls or fails during recording. | Make deterministic mode the default and fully offline; do not require the optional provider for any demo step. |
-| Fixture and Pydantic schema drift apart | Deterministic mode fails at runtime. | Validate the fixture in automated tests and during service startup or first analysis; update schema and fixture in the same phase. |
-| Streamlit reruns erase edits or approval state | Human-review sequence becomes unreliable. | Define explicit session-state keys and state transitions; add focused service tests and rehearse the exact click path. |
-| Generated outputs use pre-edit extraction | Demo violates the human-in-the-loop claim. | Generate only from the approved reviewed model; include an edited value in generator tests and the demo script. |
-| Stale outputs remain after transcript or record changes | Minutes no longer match the displayed source. | Clear approval and outputs on transcript reload, reanalysis, and review changes; display current state clearly. |
-| Evidence is hidden or hard to read on video | Traceability benefit is not visible. | Use compact expanders or cards with a visible quote/reference; test at recording resolution and zoom. |
-| Too many fields make review slow | Video exceeds four minutes. | Use one concise scenario, stable section order, preplanned single edit and removal, and a 3:35 target timeline. |
-| Missing owner or due date breaks ADO generation | Action conversion fails or invents data. | Keep fields nullable, preserve nulls in mock payloads, and represent the gap in open questions or missing evidence. |
-| Users mistake mock output for a live integration | Scope and trust are misrepresented. | Label deterministic mode and mock ADO JSON prominently in the UI, documentation, and narration. |
-| Accidental use of confidential data | Creates data-handling risk. | Commit only an obviously fictional scenario with fictional names and systems; review the recording before submission. |
-| Dependency setup changes close to the deadline | Local run becomes unreliable. | Keep dependencies minimal, let `uv` generate the lockfile during implementation, and perform a clean-environment rehearsal before recording. |
-| Optional real provider consumes core schedule | Reliable path remains unfinished. | Treat it as phase 9 and start it only after phases 1–8 pass; omit it entirely if time is constrained. |
+| Risk | Mitigation |
+| --- | --- |
+| Findings are not traceable to the SI | Require typed evidence and map findings to SI sections where supported. |
+| Transcript is treated as the reviewed object | Keep SI content visually primary and require both documents as analysis inputs. |
+| The tool appears to approve architecture autonomously | Make approval an explicit Domain Architect action and state this in UI and narration. |
+| Fixture and model drift | Validate the complete expected result in automated tests. |
+| Streamlit reruns lose reviewed state | Define explicit state transitions and invalidate stale outputs. |
+| Generated outputs ignore human edits | Generate only from the approved reviewed model and test edited values. |
+| ADO previews look like live updates | Label them as mock and perform no external request. |
+| Multi-round capability expands the MVP | Store only `review_round`; exclude history, comparison, and resolution logic. |
+| Video exceeds four minutes | Use one round, one key finding, one decision, one risk, two actions, and one open item. |
+| Network or LLM failure | Record in deterministic offline mode. |
+| Confidential data enters the demo | Use obviously fictional project, document, and people data only. |
 
 ## Implementation plan
 
-Each phase is small enough to verify independently. Work should stop after a phase if its
-verification fails. The optional real provider is not on the critical path.
-
-| Phase | Files to modify | Expected outcome | Verification method | Depends on |
+| Phase | Files | Expected outcome | Verification | Depends on |
 | --- | --- | --- | --- | --- |
-| 1. Pydantic models and validation tests | `src/architecture_governance_copilot/models.py`, `tests/test_models.py` | Implement the proposed models, enums, and invariants with representative valid/invalid cases. | `uv run pytest tests/test_models.py`; Ruff checks for changed files. | Planning only. |
-| 2. Synthetic transcript and deterministic expected result | `samples/review_transcript.txt`, `samples/expected_result.json`, possibly `tests/test_models.py` | Add one fictional Teams-style review and a source-backed fixture valid against the models. | Parse the JSON as `GovernanceResult`; manually verify every quote/reference against the transcript; run model tests. | Phase 1. |
-| 3. Deterministic extractor provider | `src/architecture_governance_copilot/extractors.py`, add focused extractor tests | Return the fixture only for the normalized bundled sample and provide a clear mismatch error. | Tests for sample match, mismatch, repeatability, missing/corrupt fixture, and no network requirement. | Phases 1–2. |
-| 4. Meeting-minutes generator | `src/architecture_governance_copilot/minutes_generator.py`, `tests/test_minutes_generator.py` | Produce stable, readable Markdown containing all approved sections and source references. | Snapshot-like assertions for headings, reviewed values, empty sections, and deterministic output. | Phases 1–2. |
-| 5. Mock ADO work-item generator | `src/architecture_governance_copilot/ado_generator.py`, `tests/test_ado_generator.py` | Produce one validated mock work item per action, preserving owner, due date, priority, and source ID. | Tests for mapping, ordering, nullable fields, edited values, and action-count parity. | Phases 1–2. |
-| 6. Governance service orchestration | `src/architecture_governance_copilot/governance_service.py`, add service tests | Coordinate analysis, validation, approval, and both generators without Streamlit dependencies. | Service tests with the deterministic provider, including validation failure and generation only after approval. | Phases 3–5. |
-| 7. Streamlit UI | `app.py`, possibly small presentation helpers, README run notes | Deliver transcript loading, analysis, stable result sections, evidence display, approval, and output panes. | Manual smoke test with `uv run streamlit run app.py` through the core path; Ruff and full tests. | Phase 6. |
-| 8. Editable human-review workflow | `app.py`, service/models only if validation feedback requires it, add relevant tests | Support edits and removals, validate reviewed data, and invalidate stale approvals/outputs. | Manual test edit/remove/approve/reanalyze paths; automated tests proving outputs use edited data. | Phase 7. |
-| 9. Optional real LLM provider | `src/architecture_governance_copilot/extractors.py` or a narrowly scoped provider module, `pyproject.toml` only if an SDK is justified, provider tests, README | Optionally transform arbitrary synthetic transcripts into the same schema without changing deterministic mode. | Mocked provider tests plus one synthetic manual trial; deterministic tests remain fully offline. | Phases 1–8; skip if schedule or credentials are uncertain. |
-| 10. Final tests and demo hardening | All tests as needed, `README.md`, `SPEC.md`, `DEMO.md`, fixture/UI wording | Align docs and behavior, fix edge cases, rehearse a sub-four-minute stable demo, and verify no sensitive data. | Run all five documented `uv` commands as applicable, clean-environment smoke test, timed rehearsal, and recording checklist. | Phases 1–8; phase 9 optional. |
+| 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
+| 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, model tests as needed | One internally consistent fictional review-round fixture. | Validate JSON and manually verify every quote. | Phase 1. |
+| 3. Deterministic provider | `extractors.py`, new provider tests | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
+| 4. Review minutes generator | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
+| 5. Mock ADO output generator | `ado_generator.py`, generator tests | Parent-ticket preview plus one action payload per action. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
+| 6. Governance service | `governance_service.py`, service tests | Analyze, validate, approve, and generate without UI dependencies. | Approval-gating and stale-state tests. | Phases 3–5. |
+| 7. Streamlit UI | `app.py` | Load both sources, show seven sections and evidence, approve, and display outputs. | Manual one-round smoke test. | Phase 6. |
+| 8. Editable human review | `app.py`, focused tests | Edit/remove items and invalidate approval on changes. | Manual review paths and edited-output tests. | Phase 7. |
+| 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
+| 10. Final hardening | Tests and docs | Clean setup, stable demo, aligned documentation, timed recording. | Full `uv` checks and two successful rehearsals. | Phases 1–8. |
+
+Multi-round tracking, version comparison, and finding resolution are deliberately absent from
+this plan's MVP phases.

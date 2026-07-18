@@ -11,14 +11,51 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
-class ReviewOutcome(StrEnum):
-    """Possible outcomes of an architecture governance review."""
+class EvidenceSource(StrEnum):
+    """Sources that can support a structured review item."""
 
+    SOLUTION_INTENT = "solution_intent"
+    MEETING_TRANSCRIPT = "meeting_transcript"
+
+
+class SolutionIntentStatus(StrEnum):
+    """Lifecycle status of the Solution Intent under review."""
+
+    DRAFT = "draft"
+    UNDER_REVIEW = "under_review"
+    CHANGES_REQUESTED = "changes_requested"
+    CONDITIONALLY_APPROVED = "conditionally_approved"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class ReviewOutcome(StrEnum):
+    """Possible outcomes of the current Solution Intent review round."""
+
+    CHANGES_REQUESTED = "changes_requested"
     APPROVED = "approved"
     CONDITIONALLY_APPROVED = "conditionally_approved"
     REJECTED = "rejected"
     PENDING = "pending"
     NOT_STATED = "not_stated"
+
+
+class FindingSeverity(StrEnum):
+    """Severity assigned to a Solution Intent review finding."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
+class FindingStatus(StrEnum):
+    """Tracking status of a Solution Intent review finding."""
+
+    OPEN = "open"
+    RESOLVED = "resolved"
+    DEFERRED = "deferred"
+    ACCEPTED = "accepted"
 
 
 class RiskSeverity(StrEnum):
@@ -45,16 +82,46 @@ class _GovernanceModel(BaseModel):
 
 
 class SourceEvidence(_GovernanceModel):
-    """Evidence quoted from or referenced within a meeting transcript."""
+    """Evidence quoted from a Solution Intent or review transcript."""
 
+    source_type: EvidenceSource
     quote: NonEmptyString
     speaker: NonEmptyString | None = None
     timestamp: NonEmptyString | None = None
+    section: NonEmptyString | None = None
     reference: NonEmptyString | None = None
 
 
+class SolutionIntentReviewContext(_GovernanceModel):
+    """Metadata identifying one Solution Intent review round."""
+
+    project_name: NonEmptyString
+    si_title: NonEmptyString
+    si_version: NonEmptyString
+    current_si_status: SolutionIntentStatus
+    review_round: int = Field(ge=1)
+    ado_ticket_id: NonEmptyString | None = None
+    domain_architect: NonEmptyString | None = None
+    review_date: date | None = None
+
+
+class ReviewFinding(_GovernanceModel):
+    """A source-backed issue identified during Solution Intent review."""
+
+    title: NonEmptyString
+    description: NonEmptyString
+    category: NonEmptyString | None = None
+    si_section: NonEmptyString | None = None
+    severity: FindingSeverity
+    status: FindingStatus = FindingStatus.OPEN
+    recommended_change: NonEmptyString | None = None
+    owner: NonEmptyString | None = None
+    due_date: date | None = None
+    evidence: list[SourceEvidence] = Field(min_length=1)
+
+
 class Decision(_GovernanceModel):
-    """A confirmed architecture decision supported by transcript evidence."""
+    """A confirmed architecture decision supported by review evidence."""
 
     statement: NonEmptyString
     rationale: NonEmptyString | None = None
@@ -97,10 +164,12 @@ class MissingEvidence(_GovernanceModel):
 
 
 class GovernanceResult(_GovernanceModel):
-    """The complete structured result of a governance transcript analysis."""
+    """The structured result of one Solution Intent review round."""
 
+    context: SolutionIntentReviewContext
     review_outcome: ReviewOutcome
     outcome_evidence: list[SourceEvidence] = Field(default_factory=list)
+    findings: list[ReviewFinding] = Field(default_factory=list)
     decisions: list[Decision] = Field(default_factory=list)
     risks: list[Risk] = Field(default_factory=list)
     action_items: list[ActionItem] = Field(default_factory=list)
@@ -125,3 +194,6 @@ class MockAdoWorkItem(_GovernanceModel):
     description: NonEmptyString
     tags: list[NonEmptyString] = Field(default_factory=list)
     source_action_index: int = Field(ge=0)
+    parent_work_item_id: NonEmptyString | None = None
+    si_section: NonEmptyString | None = None
+    acceptance_criteria: list[NonEmptyString] = Field(default_factory=list)

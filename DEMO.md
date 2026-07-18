@@ -2,286 +2,287 @@
 
 ## Demo objective
 
-In less than four minutes, show one reliable path from a synthetic Teams-style architecture
-review transcript to a human-approved governance record, standardized meeting minutes, and mock
-Azure DevOps work-item payloads. The recording should emphasize traceability and human control,
-not breadth or production readiness.
+In less than four minutes, demonstrate one reliable Solution Intent review round: load a
+synthetic SI and its review transcript, produce a source-backed review proposal, let a human
+Domain Architect edit and approve the record, and generate review minutes plus mock Azure DevOps
+outputs.
 
-The target runtime is **3 minutes 35 seconds**, leaving 25 seconds of safety margin.
+The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
+not show a second review round.
 
 ## Synthetic scenario
 
-The planned fictional meeting reviews **Project Northstar**, a customer self-service portal.
-All people, systems, dates, and statements must be obviously synthetic.
+The fictional **Project Northstar** team has prepared version **0.4** of the **Northstar Customer
+Portal Solution Intent**. Its status is `under_review`, and this is review round 1. A fictional
+Domain Architect reviews the SI with the Product Owner and development team in a Teams-style
+meeting.
 
-The compact scenario should contain:
+The synthetic SI should contain concise sections for:
 
-- a review outcome of **approved with conditions**;
-- a confirmed decision to place the public API behind Azure API Management;
-- a confirmed decision to use managed identities for service-to-service access;
-- a high-severity risk concerning regional failover evidence;
-- action items with clearly stated owners, due dates, and priorities;
-- one open question about the recovery-time objective;
-- missing threat-model and failover-test evidence;
-- a short source quote plus timestamp or transcript line reference for every extracted item.
+- Conceptual Design
+- Deployment Design
+- Resilience and Recovery
+- Security
+- Observability
+- Data Design
 
-At least one low-value or duplicate action should be present so the reviewer can demonstrate
-removal without undermining the final record. The script should also edit one action title or due
-date to prove that approved outputs come from human-reviewed data.
+The review scenario must yield:
 
-The exact transcript and expected JSON will be authored together in implementation phase 2.
-They are placeholders at initialization time.
+- a **Changes Requested** outcome;
+- one high-severity finding mapped to **Resilience and Recovery** because regional failover is
+  incomplete;
+- one confirmed decision to put the public API behind Azure API Management;
+- one risk that regional failover has not been demonstrated;
+- two actions:
+  - document the regional failover sequence and attach evidence;
+  - update the Security section with the agreed managed-identity flow;
+- one unresolved governance item asking the business to confirm the recovery-time objective;
+- missing failover-test evidence; and
+- evidence drawn from both the SI and the review transcript.
+
+The record may contain more supporting detail, but the recording should focus on these items. All
+names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 ## Preconditions
 
-- Use a local clean checkout containing only synthetic data.
-- Complete dependency setup before recording; do not run setup on camera.
+- Use a clean local checkout with the finalized synthetic fixtures.
+- Complete `uv sync` before recording.
 - Start the app with `uv run streamlit run app.py`.
-- Select or retain **Deterministic demo mode**.
-- Use a browser window and zoom level that show headings, evidence, and buttons clearly.
-- Reset Streamlit session state immediately before the take.
-- Close notifications, unrelated tabs, terminals containing sensitive text, and password tools.
-- Confirm that no API key is needed and disconnecting the network does not break the demo path.
+- Use **Deterministic demo mode**.
+- Reset Streamlit session state before the take.
+- Use the rehearsed browser resolution and zoom.
+- Disable notifications and close unrelated or sensitive applications.
+- Confirm that the workflow works with network access disabled.
 
-## Exact click-by-click workflow and expected screen state
+## Exact click-by-click workflow and expected state
 
 ### Step 1 — Open the application
 
-**Action:** Navigate to the local Streamlit URL.
+**Action:** Open the local Streamlit URL.
 
-**Expected screen state:**
+**Expected state:**
 
-- The title **Architecture Governance Copilot** is visible.
-- A short synthetic-data PoC disclaimer is visible.
-- **Deterministic demo mode** is visibly selected or labeled.
-- The transcript text area is empty.
-- **Load Sample Transcript** is enabled.
-- **Analyze** is disabled or produces a clear empty-input validation message.
-- No analysis, approval, minutes, or ADO output is visible.
+- **Architecture Governance Copilot** and **Solution Intent Review** are visible.
+- The page states that the PoC uses synthetic data.
+- Deterministic demo mode is clearly identified.
+- SI and transcript areas are empty.
+- No analysis or outputs are displayed.
 
-### Step 2 — Load the sample
+### Step 2 — Load the Solution Intent
 
-**Click:** **Load Sample Transcript**.
+**Click:** **Load Sample Solution Intent**.
 
-**Expected screen state:**
+**Expected state:**
 
-- The text area contains the Project Northstar Teams-style transcript.
-- Synthetic speaker names, timestamps, and meeting dialogue are readable.
-- A status message confirms that the sample was loaded.
-- **Analyze** is enabled.
-- No extracted governance result is displayed yet.
-- Approval and generated outputs remain absent.
+- The SI area contains the Northstar SI with visible section headings.
+- Review metadata identifies Project Northstar, SI version 0.4, status `under_review`, and round
+  1.
+- The SI is visually the primary object under review.
+- No result is displayed yet.
 
-### Step 3 — Analyze
+### Step 3 — Load the review transcript
 
-**Click:** **Analyze**.
+**Click:** **Load Sample Review Transcript**.
 
-**Expected screen state:**
+**Expected state:**
 
-- A brief analyzing indicator may appear and resolve quickly.
-- A success message identifies deterministic demo analysis.
-- These six sections appear in this exact order:
+- The transcript area contains one synthetic Domain Architecture review meeting.
+- Synthetic speakers and timestamps or references are visible.
+- Both inputs are now present.
+- **Analyze Review** is enabled.
+
+### Step 4 — Analyze the review
+
+**Click:** **Analyze Review**.
+
+**Expected state:**
+
+- Analysis completes quickly in deterministic mode.
+- These sections appear in order:
   1. Review Outcome
-  2. Decisions
-  3. Risks
-  4. Action Items
-  5. Open Questions
-  6. Missing Evidence
-- Review Outcome shows **Approved with conditions** and its conditions.
-- Each section contains the expected fixture values.
-- Every outcome or item visibly exposes a source quote and timestamp or line reference.
-- Editable controls and remove controls are available for the reviewed record.
-- **Approve Governance Record** is available.
-- Minutes and mock ADO outputs are not yet generated.
+  2. Review Findings
+  3. Decisions
+  4. Risks
+  5. Action Items
+  6. Open Questions
+  7. Missing Information
+- Outcome shows **Changes Requested**.
+- The failover finding shows **Resilience and Recovery** as its SI section.
+- One decision, one risk, two actions, and the unresolved recovery objective are visible.
+- Every required item offers supporting evidence.
+- No minutes or ADO outputs appear before approval.
 
-### Step 4 — Inspect evidence
+### Step 5 — Inspect both evidence sources
 
-**Click:** Expand one decision's evidence control if evidence is collapsed.
+**Click:** Expand the failover finding's evidence.
 
-**Expected screen state:**
+**Expected state:**
 
-- The exact synthetic quote is visible.
-- The speaker and timestamp or transcript line reference are visible.
-- The evidence clearly supports the selected API Management decision.
-- The transcript remains available on the page for comparison.
+- One quote is labeled **Solution Intent** with section **Resilience and Recovery**.
+- One quote is labeled **Meeting Transcript** with a speaker and timestamp.
+- The evidence supports the finding without implying a live Confluence or Teams connection.
 
-### Step 5 — Edit one action
+### Step 6 — Perform human review
 
-**Click/type:** Edit the planned action field chosen during rehearsal, for example changing the
-title from **Provide failover test** to **Provide regional failover test evidence**.
+**Action:** Edit the first action title to the rehearsed wording:
+**Document regional failover and attach test evidence**.
 
-**Expected screen state:**
+**Expected state:**
 
-- The edited value remains visible after Streamlit reruns.
-- The action's original source evidence remains visible and unchanged.
-- The record is visibly unapproved.
-- No generated minutes or ADO payloads are visible.
-- No validation error appears for the rehearsed edit.
-
-### Step 6 — Remove one item
-
-**Click:** The remove control on the rehearsed low-value or duplicate action item.
-
-**Expected screen state:**
-
-- That item disappears from Action Items.
-- Other item IDs, values, and evidence remain stable.
-- The action count decreases by one.
+- The edited wording persists.
+- Evidence remains visible and unchanged.
 - The record remains unapproved.
-- No generated outputs appear.
+- The page identifies the Domain Architect as the human approver.
 
-### Step 7 — Approve
+Optionally remove one low-value duplicate proposal only if the finalized fixture contains one.
+Do not add this interaction if it risks exceeding the time budget.
 
-**Click:** **Approve Governance Record**.
+### Step 7 — Approve the review record
 
-**Expected screen state:**
+**Click:** **Approve SI Review Record**.
 
-- A success message confirms explicit human approval.
-- The reviewed record is shown as approved for the current analysis.
-- A **Standardized Meeting Minutes** section appears.
-- A **Mock Azure DevOps Work Items** section appears.
-- The minutes contain the edited action wording and exclude the removed action.
-- The number of mock ADO payloads equals the number of remaining approved actions.
-- A payload contains the edited action wording, owner, due date, priority, source action ID, and
-  governance tags.
-- Mock outputs are labeled as previews and no external submission is implied.
+**Expected state:**
+
+- The UI confirms human approval of the review record.
+- It does not claim that an AI approved the Solution Intent.
+- A **Structured SI Review Record** section appears.
+- **Review Meeting Minutes** appears.
+- **Mock Azure DevOps Outputs** appears.
+- The minutes contain the edited action wording.
+- The mock ADO parent update references the synthetic governance ticket.
+- Two mock action work items are shown and linked to the parent ID where available.
+- Relevant work items show SI-section and acceptance-criteria context.
+- Nothing is sent to an external service.
 
 ### Step 8 — Close on scope
 
-**Action:** Scroll or position the page so both output headings and the mock label are visible.
-No further click is required.
+**Action:** Position the page so the approved outputs and mock labels are visible.
 
-**Expected screen state:**
+**Expected state:**
 
-- The end-to-end result is visually clear.
-- The screen still identifies deterministic mode and synthetic data.
-- There is no claim of live Teams, Confluence, Azure DevOps, or production integration.
+- The complete one-round workflow is clear.
+- Synthetic data, deterministic mode, and mock integrations remain visible.
+- There is no review history, second round, SI diff, or automatic finding resolution.
 
-## Preliminary narration points
+## Preliminary narration
 
-Use natural language rather than reading every field:
-
-1. “Architecture reviews create decisions and actions, but turning a meeting into a traceable
-   governance record is manual and inconsistent.”
-2. “This hackathon PoC uses a synthetic Teams-style transcript and deterministic offline mode so
-   the workflow is reliable without an LLM API.”
-3. “Analysis structures the outcome, decisions, risks, actions, open questions, and missing
-   evidence.”
-4. “Every item retains a source quote and transcript reference, so the reviewer can verify why
-   it exists.”
-5. “The machine proposes; the reviewer controls the record. I’ll make one edit and remove one
-   item before approval.”
-6. “Only the approved, edited record generates the standardized minutes and mock work-item
-   payloads.”
-7. “Nothing is sent to Teams, Confluence, or Azure DevOps. This proves the controlled workflow,
-   not a production integration.”
+1. “A Solution Intent is the project's detailed architecture design. Domain Architects review it
+   over one or more rounds, but this PoC deliberately proves one round.”
+2. “I’ll load a synthetic SI first, then the supporting review transcript and metadata.”
+3. “Deterministic offline analysis combines both sources into a structured review proposal.”
+4. “This finding maps back to the SI's Resilience and Recovery section, and its evidence includes
+   both the document and the meeting.”
+5. “The machine proposes the record; the Domain Architect remains responsible for review and
+   formal approval.”
+6. “I’ll edit one action before approving the record.”
+7. “Only the approved, edited state generates review minutes and mock ADO updates.”
+8. “There is no live Confluence, Teams, or Azure DevOps integration and no multi-round workflow
+   in this MVP.”
 
 ## Video structure
 
-| Time | Segment | Visual and narration focus |
+| Time | Segment | Focus |
 | --- | --- | --- |
-| 0:00–0:20 | Problem and scope | App title; explain the manual governance problem and one-workflow PoC. |
-| 0:20–0:45 | Load sample | Click the sample button; identify synthetic Teams-style input and deterministic mode. |
-| 0:45–1:30 | Analyze and scan | Click Analyze; quickly scan the six required sections and outcome. |
-| 1:30–2:00 | Verify evidence | Expand one decision; connect quote/reference to structured decision. |
-| 2:00–2:35 | Human review | Edit the rehearsed action and remove the rehearsed duplicate/low-value item. |
-| 2:35–3:15 | Approve and generate | Approve; show minutes and mock ADO payloads reflecting the reviewed record. |
-| 3:15–3:35 | Close | State what is real, what is mocked, and the value demonstrated. |
+| 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
+| 0:20–0:50 | Load inputs | Load SI, transcript, and identify review metadata. |
+| 0:50–1:35 | Analyze | Show Changes Requested and scan the seven result sections. |
+| 1:35–2:10 | Trace evidence | Expand the mapped finding and show both evidence sources. |
+| 2:10–2:35 | Human review | Edit one action and emphasize Domain Architect control. |
+| 2:35–3:15 | Approve and generate | Show structured record, minutes, and mock ADO outputs. |
+| 3:15–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
 
-Hard stop at 3:35. Do not spend recording time on setup, installation, code walkthroughs, optional
-providers, or scrolling through every item.
+Hard stop at 3:35. Do not show environment setup, code, a second review round, optional LLM mode,
+or every output field.
 
 ## What is real and what is mocked
 
 ### Real in the PoC
 
-- Loading a local synthetic transcript into the UI.
-- Validating structured data with Pydantic.
-- Rendering all required governance categories.
-- Showing source quotes and transcript references.
-- Editing and removing structured items in the local session.
-- Explicit approval gating.
-- Deterministically generating meeting-minutes Markdown from the approved record.
-- Deterministically generating JSON-ready mock work-item objects from approved actions.
-- Automated model and generator tests.
+- Loading local synthetic SI and transcript content.
+- Validating one-round review metadata and results with Pydantic.
+- Distinguishing SI evidence from transcript evidence.
+- Mapping findings to SI sections where supported.
+- Showing findings, decisions, risks, actions, questions, and missing information.
+- Editing and removing proposed review items in the session.
+- Explicit human approval gating.
+- Generating deterministic structured output and minutes from the approved record.
+- Generating local JSON-ready mock ADO updates.
+- Automated validation and transformation tests.
 
 ### Mocked or simulated
 
-- The transcript resembles Teams output but is not fetched from Microsoft Teams.
-- Deterministic analysis loads a curated expected result; it does not call or imitate an LLM.
-- A future real LLM provider is optional and should not be used for the recorded path.
-- ADO work-item payloads are previews only and are not sent to Azure DevOps.
-- Meeting minutes are displayed locally and are not published to Confluence or another system.
-- User identity, permissions, audit history, persistence, and production operations do not exist.
+- The SI resembles content normally held in Confluence but is loaded locally.
+- The transcript resembles Teams output but is loaded locally.
+- Deterministic analysis returns a curated fixture for the bundled pair.
+- ADO governance updates and work items are previews and are never submitted.
+- No identity, authorization, persistence, audit history, or production operations exist.
+- The `review_round` field does not implement multi-round tracking.
 
 ## Deterministic demo mode
 
-- It is the default and the only required mode for the final recording.
-- It recognizes the bundled normalized transcript and returns the validated bundled expected
-  result.
-- It requires no API key, network, model SDK, or external service.
-- It must fail clearly rather than return misleading results if the transcript no longer matches
-  the bundled sample.
-- The recording should explicitly disclose that deterministic mode is fixture-backed.
-- The mode proves review, traceability, approval, and generation behavior; it does not claim
-  general extraction intelligence.
-- If an optional real provider exists, do not switch to it during the primary take.
+- It is the default and required recording mode.
+- It matches both bundled inputs and validated metadata.
+- It returns a known `GovernanceResult` fixture.
+- It requires no LLM, API key, SDK, network, Confluence page, Teams meeting, or ADO account.
+- It fails clearly when either input does not match the sample.
+- The narration must disclose that it is fixture-backed.
+- It proves review, traceability, human control, and downstream generation—not general-purpose
+  extraction intelligence.
 
-## Demo failure fallbacks
+## Failure fallbacks
 
-| Failure | Immediate fallback |
+| Failure | Response |
 | --- | --- |
-| App is not running | Keep a prepared terminal with `uv run streamlit run app.py`; restart, reset session state, and begin a new take. |
-| Sample does not load | Refresh once; if still broken, stop the take and restore the known-good commit rather than pasting unverified text. |
-| Analyze reports transcript mismatch | Click **Load Sample Transcript** again and analyze without editing the transcript; if it persists, stop and validate fixture alignment. |
-| Optional LLM provider fails | Return to deterministic mode and reload the sample. The primary script must never depend on the optional provider. |
-| Edit is lost on rerun | Stop the take; do not claim human review. Fix session-state behavior and rerun its smoke test before recording again. |
-| Validation blocks approval | Restore the rehearsed valid edit or reload/reanalyze the sample. Do not bypass validation. |
-| Outputs do not reflect the edit/removal | Stop the take. This invalidates the core claim and must be fixed before recording. |
-| Browser layout hides evidence or buttons | Use the rehearsed resolution/zoom and collapse unrelated sections; restart the take if needed. |
-| Recording approaches 3:35 before approval | Stop and record a new take using the shorter narration; do not accelerate past evidence or approval. |
-| Network disconnects | Continue in deterministic mode; the demo path is designed to be offline. |
+| App is not running | Restart with the planned `uv` command and begin a new take. |
+| SI or transcript does not load | Refresh once, reload both samples, and restart the take if needed. |
+| Deterministic input mismatch | Reload both bundled inputs without editing them before Analyze. |
+| Analysis fixture fails validation | Stop; align models and fixture before recording. |
+| An edit is lost | Stop; repair session-state behavior before making the human-review claim. |
+| Approval is blocked | Restore the rehearsed valid edit or reanalyze; never bypass validation. |
+| Outputs ignore the edit | Stop; fix generation from approved state before recording. |
+| Optional LLM fails | Return to deterministic mode; the primary path never depends on it. |
+| Layout hides evidence | Restore rehearsed zoom and collapse unrelated sections. |
+| Runtime approaches 3:35 | Stop and record a shorter take; preserve evidence and approval steps. |
+| Network disconnects | Continue; deterministic mode is offline. |
 
-Screenshots or prerecorded output are not substitutes for the working end-to-end path. A backup
-screen recording of a successful rehearsal may be retained in case the recording tool, rather
-than the application, fails.
+## Recording checklist
 
-## Final video recording checklist
+### Content
 
-### Content and behavior
-
-- [ ] The transcript and all names, systems, and dates are synthetic.
-- [ ] Deterministic mode works with network access disabled.
-- [ ] The fixture validates against the current models.
-- [ ] All six required result sections appear in the planned order.
-- [ ] Every outcome and item has visible evidence.
-- [ ] The rehearsed edit persists.
-- [ ] The rehearsed removal affects both final outputs.
-- [ ] Approval is explicit and outputs do not appear before it.
-- [ ] Minutes contain the edited value.
-- [ ] Mock ADO item count equals approved action count.
-- [ ] Outputs are clearly labeled local/mock.
+- [ ] SI, transcript, people, ticket, and dates are synthetic.
+- [ ] Only review round 1 is shown.
+- [ ] The SI loads before the transcript.
+- [ ] Changes Requested or Conditionally Approved is shown.
+- [ ] At least one finding maps to an SI section.
+- [ ] One confirmed decision is visible.
+- [ ] One risk is visible.
+- [ ] Two actions are visible.
+- [ ] One unresolved governance item is visible.
+- [ ] SI and transcript evidence are both demonstrated.
+- [ ] The human edit persists.
+- [ ] Outputs remain hidden until approval.
+- [ ] Generated outputs reflect the edit.
+- [ ] ADO content is clearly labeled mock.
 
 ### Technical rehearsal
 
-- [ ] `uv sync` has completed successfully in the recording environment.
+- [ ] `uv sync` succeeds.
 - [ ] `uv run pytest` passes.
 - [ ] `uv run ruff check .` passes.
 - [ ] `uv run ruff format --check .` passes.
-- [ ] `uv run streamlit run app.py` starts the app.
-- [ ] The browser is at the rehearsed resolution and zoom.
-- [ ] Session state is reset and the transcript area begins empty.
-- [ ] The exact click path has completed successfully twice before recording.
+- [ ] `uv run streamlit run app.py` starts the implemented app.
+- [ ] Deterministic mode works offline.
+- [ ] The exact click path succeeds twice before recording.
 
-### Recording quality and safety
+### Recording safety and quality
 
-- [ ] Target script is 3:35 or shorter in a timed rehearsal.
+- [ ] Rehearsal is 3:35 or shorter.
 - [ ] Notifications and unrelated applications are closed.
-- [ ] No terminal, environment file, API key, account name, or confidential data is visible.
-- [ ] Cursor movement and scrolling are slow enough to follow.
-- [ ] Text is legible in the captured resolution.
-- [ ] Microphone level is clear and background noise is acceptable.
-- [ ] The recording includes disclosure of synthetic data, deterministic analysis, and mock ADO.
-- [ ] The final exported video is shorter than four minutes.
-- [ ] The exported video is played back once from start to finish before submission.
-- [ ] The submission file name, format, audio, and deadline (22 July 2026) are confirmed.
+- [ ] No credentials, secrets, account data, or confidential material are visible.
+- [ ] Text is legible at the recording resolution.
+- [ ] Cursor movement and scrolling are easy to follow.
+- [ ] Audio is clear.
+- [ ] Narration states synthetic data, deterministic analysis, human approval, and mock outputs.
+- [ ] Final video is shorter than four minutes.
+- [ ] Exported video is played through once before submission.
+- [ ] Submission requirements and 22 July 2026 deadline are confirmed.
