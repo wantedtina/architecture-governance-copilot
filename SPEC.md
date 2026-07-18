@@ -255,8 +255,8 @@ Streamlit UI
     v
 Governance service
     |
-    +--> ExtractorProvider
-    |       +--> DeterministicDemoProvider (required)
+    +--> GovernanceExtractor
+    |       +--> DeterministicDemoExtractor (required)
     |       \--> Optional real LLM provider (future)
     |
     +--> Pydantic one-round review models
@@ -394,30 +394,31 @@ This is a preview model only. Action-to-ADO conversion and API submission are fu
 
 ## Provider abstraction
 
-The proposed provider boundary becomes:
+The implemented provider boundary is:
 
 ```text
-ExtractorProvider.analyze(
+GovernanceExtractor.extract(
     solution_intent: str,
-    transcript: str,
+    review_transcript: str,
     context: SolutionIntentReviewContext,
 ) -> GovernanceResult
 ```
 
 The governance service receives the provider explicitly. Provider-specific prompts, credentials,
 response parsing, and API errors stay behind this interface. Providers do not approve the SI or
-generate downstream outputs.
+generate downstream outputs. `GovernanceExtractor` is a synchronous structural protocol; the
+fixture-backed `DeterministicDemoExtractor` is its only current implementation.
 
 ## Deterministic demo-provider design
 
-The required provider will:
+The implemented deterministic provider:
 
-1. Load the bundled synthetic SI, transcript, and expected result.
-2. Normalize only line endings and outer whitespace.
-3. confirm that both input documents match their fixtures;
-4. validate metadata expected by the scenario;
-5. parse the expected JSON as `GovernanceResult`; and
-6. return a fresh model instance.
+1. loads the bundled synthetic SI, transcript, metadata, and expected result;
+2. normalizes only line endings and outer whitespace;
+3. confirms that both input documents match their fixtures;
+4. validates metadata expected by the scenario;
+5. parses the expected JSON as `GovernanceResult`; and
+6. returns a deep independent model copy.
 
 If either source differs, deterministic mode must report its limitation rather than fabricate an
 analysis. It requires no network, credential, model SDK, Confluence page, Teams API, or ADO API.
@@ -444,7 +445,7 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | --- | --- | --- | --- | --- |
 | 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
 | 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
-| 3. Deterministic provider | `extractors.py`, new provider tests | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
+| 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO output generator | `ado_generator.py`, generator tests | Parent-ticket preview plus one action payload per action. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service | `governance_service.py`, service tests | Analyze, validate, approve, and generate without UI dependencies. | Approval-gating and stale-state tests. | Phases 3–5. |

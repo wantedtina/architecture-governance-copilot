@@ -62,9 +62,11 @@ Extractor provider                 Pydantic models
        Review minutes          Mock ADO outputs
 ```
 
-The deterministic provider will be the required offline demo path. It will validate the bundled
-SI/transcript pair and return a known structured result. Streamlit session state will hold the
-current one-round review state; there is no database.
+The deterministic extractor is the required offline demo path. It validates the bundled
+SI/transcript pair and review metadata, then returns an independent copy of the known structured
+result. It supports only this frozen synthetic scenario and does not perform semantic extraction
+of arbitrary text. Streamlit session state will eventually hold the current one-round review
+state; there is no database.
 
 Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
 does not connect to them.
@@ -99,6 +101,7 @@ architecture-governance-copilot/
 └── tests/
     ├── test_models.py
     ├── test_sample_data.py
+    ├── test_extractors.py
     ├── test_minutes_generator.py
     └── test_ado_generator.py
 ```
@@ -150,7 +153,8 @@ provide the review workflow.
 
 ## Current implementation status
 
-**Domain models and synthetic demo dataset complete; application functionality not implemented.**
+**Domain models, synthetic demo dataset, and deterministic extractor complete; application
+workflow not implemented.**
 
 Implemented:
 
@@ -160,22 +164,25 @@ Implemented:
 - Solution Intent review metadata;
 - SI-section-aware review findings;
 - existing decisions, risks, actions, questions, and missing-information models;
-- enriched mock ADO work-item preview fields; and
+- enriched mock ADO work-item preview fields;
 - comprehensive model validation tests;
-- a 1,136-word synthetic Solution Intent and 32-line matching review transcript; and
-- validated review metadata, expected governance result, and evidence-consistency tests.
+- a 1,136-word synthetic Solution Intent and 32-line matching review transcript;
+- validated review metadata, expected governance result, and evidence-consistency tests;
+- a synchronous `GovernanceExtractor` protocol; and
+- a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback.
 
 Not yet implemented:
 
-- deterministic or LLM extraction;
+- real LLM extraction;
 - governance service orchestration;
 - review-record, minutes, or ADO generation;
 - Streamlit input, review, approval, or output UI;
 - external integrations; or
 - any multi-round workflow behavior.
 
-The next proposed phase is the deterministic fixture-backed provider. It has not been implemented
-in the current dataset phase.
+The deterministic provider supports only the bundled synthetic sample; it does not claim to
+analyze arbitrary documents. The next proposed phase is the deterministic meeting-minutes
+generator. A real LLM provider remains an optional later phase.
 
 ## PoC and data statement
 
