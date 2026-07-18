@@ -446,8 +446,8 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
 | 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
 | 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
-| 4. Review minutes generator | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
-| 5. Mock ADO output generator | `ado_generator.py`, generator tests | Parent-ticket preview plus one action payload per action. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
+| 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
+| 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service | `governance_service.py`, service tests | Analyze, validate, approve, and generate without UI dependencies. | Approval-gating and stale-state tests. | Phases 3–5. |
 | 7. Streamlit UI | `app.py` | Load both sources, show seven sections and evidence, approve, and display outputs. | Manual one-round smoke test. | Phase 6. |
 | 8. Editable human review | `app.py`, focused tests | Edit/remove items and invalidate approval on changes. | Manual review paths and edited-output tests. | Phase 7. |

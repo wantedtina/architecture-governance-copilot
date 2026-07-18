@@ -65,8 +65,9 @@ Extractor provider                 Pydantic models
 The deterministic extractor is the required offline demo path. It validates the bundled
 SI/transcript pair and review metadata, then returns an independent copy of the known structured
 result. It supports only this frozen synthetic scenario and does not perform semantic extraction
-of arbitrary text. Streamlit session state will eventually hold the current one-round review
-state; there is no database.
+of arbitrary text. Pure deterministic generators now transform a validated result into Markdown
+review minutes and typed mock ADO action work items. Streamlit session state will eventually hold
+the current one-round review state; there is no database.
 
 Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
 does not connect to them.
@@ -153,8 +154,8 @@ provide the review workflow.
 
 ## Current implementation status
 
-**Domain models, synthetic demo dataset, and deterministic extractor complete; application
-workflow not implemented.**
+**Domain models, synthetic demo dataset, deterministic extractor, and output generators
+complete; application workflow not implemented.**
 
 Implemented:
 
@@ -169,20 +170,23 @@ Implemented:
 - a 1,136-word synthetic Solution Intent and 32-line matching review transcript;
 - validated review metadata, expected governance result, and evidence-consistency tests;
 - a synchronous `GovernanceExtractor` protocol; and
-- a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback.
+- a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback;
+- deterministic Markdown SI review-minutes generation; and
+- typed mock ADO work-item generation with no external request.
 
 Not yet implemented:
 
 - real LLM extraction;
 - governance service orchestration;
-- review-record, minutes, or ADO generation;
+- parent ADO governance-ticket update generation;
 - Streamlit input, review, approval, or output UI;
 - external integrations; or
 - any multi-round workflow behavior.
 
 The deterministic provider supports only the bundled synthetic sample; it does not claim to
-analyze arbitrary documents. The next proposed phase is the deterministic meeting-minutes
-generator. A real LLM provider remains an optional later phase.
+analyze arbitrary documents. Mock ADO work items are local preview models and are never submitted
+to Azure DevOps. The next proposed phase is governance-service orchestration. A real LLM provider
+remains an optional later phase.
 
 ## PoC and data statement
 
