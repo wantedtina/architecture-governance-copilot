@@ -12,32 +12,39 @@ not show a second review round.
 
 ## Synthetic scenario
 
-The fictional **Project Northstar** team has prepared version **0.4** of the **Northstar Customer
-Portal Solution Intent**. Its status is `under_review`, and this is review round 1. A fictional
-Domain Architect reviews the SI with the Product Owner and development team in a Teams-style
-meeting.
+The fictional **Digital Payment Notification Service** team has prepared version **1.2** of its
+Solution Intent. Its status is `under_review`, and the demo covers review round 2 only. Fictional
+Domain Architect **Jordan Lee** reviews the SI with Lead Developer **Alex Chen** and Product
+Owner **Priya Shah** in a Teams-style meeting.
 
-The synthetic SI should contain concise sections for:
+The finalized synthetic SI contains concise sections for:
 
-- Conceptual Design
-- Deployment Design
-- Resilience and Recovery
+- Document Information
+- Executive Summary
+- Scope
+- Conceptual Architecture
+- Detailed Application Design
+- Data Design
+- Availability and Resilience
 - Security
 - Observability
-- Data Design
+- Deployment Design
+- Operational Support
+- Assumptions and Open Items
 
 The review scenario must yield:
 
 - a **Changes Requested** outcome;
-- one high-severity finding mapped to **Resilience and Recovery** because regional failover is
-  incomplete;
-- one confirmed decision to put the public API behind Azure API Management;
-- one risk that regional failover has not been demonstrated;
+- three open findings covering traffic failover, missing RTO/RPO values, and production support
+  ownership;
+- the traffic-failover finding mapped to **Availability and Resilience**;
+- one confirmed decision accepting managed PostgreSQL as the system of record;
+- one risk that pending production database sizing may affect the planned August release;
 - two actions:
-  - document the regional failover sequence and attach evidence;
-  - update the Security section with the agreed managed-identity flow;
-- one unresolved governance item asking the business to confirm the recovery-time objective;
-- missing failover-test evidence; and
+  - Alex updates the resilience section and deployment diagram by 24 July 2026;
+  - Priya confirms RTO and RPO values by 25 July 2026;
+- one unresolved question about whether Redis should be used;
+- missing RTO/RPO values and production support ownership; and
 - evidence drawn from both the SI and the review transcript.
 
 The record may contain more supporting detail, but the recording should focus on these items. All
@@ -74,9 +81,9 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 **Expected state:**
 
-- The SI area contains the Northstar SI with visible section headings.
-- Review metadata identifies Project Northstar, SI version 0.4, status `under_review`, and round
-  1.
+- The SI area contains the Digital Payment Notification Service SI with visible section headings.
+- Review metadata identifies SI version 1.2, status `under_review`, round 2, and governance ticket
+  `ARCH-POC-1024`.
 - The SI is visually the primary object under review.
 - No result is displayed yet.
 
@@ -107,8 +114,9 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
   6. Open Questions
   7. Missing Information
 - Outcome shows **Changes Requested**.
-- The failover finding shows **Resilience and Recovery** as its SI section.
-- One decision, one risk, two actions, and the unresolved recovery objective are visible.
+- The failover finding shows **Availability and Resilience** as its SI section.
+- One decision, three findings, one risk, two actions, and the unresolved Redis question are
+  visible.
 - Every required item offers supporting evidence.
 - No minutes or ADO outputs appear before approval.
 
@@ -118,14 +126,14 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 **Expected state:**
 
-- One quote is labeled **Solution Intent** with section **Resilience and Recovery**.
+- One quote is labeled **Solution Intent** with section **Availability and Resilience**.
 - One quote is labeled **Meeting Transcript** with a speaker and timestamp.
 - The evidence supports the finding without implying a live Confluence or Teams connection.
 
 ### Step 6 — Perform human review
 
 **Action:** Edit the first action title to the rehearsed wording:
-**Document regional failover and attach test evidence**.
+**Clarify traffic failover and update the deployment diagram**.
 
 **Expected state:**
 
@@ -149,7 +157,7 @@ Do not add this interaction if it risks exceeding the time budget.
 - **Review Meeting Minutes** appears.
 - **Mock Azure DevOps Outputs** appears.
 - The minutes contain the edited action wording.
-- The mock ADO parent update references the synthetic governance ticket.
+- The mock ADO parent update references synthetic governance ticket `ARCH-POC-1024`.
 - Two mock action work items are shown and linked to the parent ID where available.
 - Relevant work items show SI-section and acceptance-criteria context.
 - Nothing is sent to an external service.
@@ -170,8 +178,8 @@ Do not add this interaction if it risks exceeding the time budget.
    over one or more rounds, but this PoC deliberately proves one round.”
 2. “I’ll load a synthetic SI first, then the supporting review transcript and metadata.”
 3. “Deterministic offline analysis combines both sources into a structured review proposal.”
-4. “This finding maps back to the SI's Resilience and Recovery section, and its evidence includes
-   both the document and the meeting.”
+4. “This finding maps back to the SI's Availability and Resilience section, and its evidence
+   includes both the document and the meeting.”
 5. “The machine proposes the record; the Domain Architect remains responsible for review and
    formal approval.”
 6. “I’ll edit one action before approving the record.”
@@ -250,9 +258,9 @@ or every output field.
 ### Content
 
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
-- [ ] Only review round 1 is shown.
+- [ ] Only one review round—round 2—is shown.
 - [ ] The SI loads before the transcript.
-- [ ] Changes Requested or Conditionally Approved is shown.
+- [ ] Changes Requested is shown.
 - [ ] At least one finding maps to an SI section.
 - [ ] One confirmed decision is visible.
 - [ ] One risk is visible.

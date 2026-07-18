@@ -92,16 +92,20 @@ architecture-governance-copilot/
 │       ├── minutes_generator.py
 │       └── ado_generator.py
 ├── samples/
+│   ├── solution_intent.md
+│   ├── review_metadata.json
 │   ├── review_transcript.txt
 │   └── expected_result.json
 └── tests/
     ├── test_models.py
+    ├── test_sample_data.py
     ├── test_minutes_generator.py
     └── test_ado_generator.py
 ```
 
-A synthetic SI sample will be added in the next approved data-fixture phase. It has not been
-created during the current domain-model correction.
+The samples freeze one fully synthetic Digital Payment Notification Service review scenario.
+Automated tests validate its metadata, model compatibility, evidence quotes, scenario
+cardinality, and basic data safety.
 
 ## Setup and commands
 
@@ -146,7 +150,7 @@ provide the review workflow.
 
 ## Current implementation status
 
-**Domain model and planning correction complete; application functionality not implemented.**
+**Domain models and synthetic demo dataset complete; application functionality not implemented.**
 
 Implemented:
 
@@ -157,11 +161,12 @@ Implemented:
 - SI-section-aware review findings;
 - existing decisions, risks, actions, questions, and missing-information models;
 - enriched mock ADO work-item preview fields; and
-- comprehensive model validation tests.
+- comprehensive model validation tests;
+- a 1,136-word synthetic Solution Intent and 32-line matching review transcript; and
+- validated review metadata, expected governance result, and evidence-consistency tests.
 
 Not yet implemented:
 
-- synthetic SI and finalized transcript fixtures;
 - deterministic or LLM extraction;
 - governance service orchestration;
 - review-record, minutes, or ADO generation;
@@ -169,9 +174,8 @@ Not yet implemented:
 - external integrations; or
 - any multi-round workflow behavior.
 
-The next proposed phase is to create one coherent synthetic SI, one matching review transcript,
-review metadata, and a validated expected result. Do not begin it until the domain correction is
-reviewed and approved.
+The next proposed phase is the deterministic fixture-backed provider. It has not been implemented
+in the current dataset phase.
 
 ## PoC and data statement
 

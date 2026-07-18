@@ -1,1 +1,32 @@
-TODO: Add the synthetic Teams-style architecture governance transcript in phase 2.
+[10:00] Priya Shah: Thanks for joining review round two for the Digital Payment Notification Service.
+[10:01] Jordan Lee: I have read Solution Intent version 1.2, and today I want to focus on the open governance points.
+[10:02] Alex Chen: The service consumes payment events and sends either email or SMS notifications.
+[10:03] Priya Shah: Correct. Payment processing itself remains outside this service.
+[10:04] Jordan Lee: The event-driven boundary is clear, and the ordinary notification flow is easy to follow.
+[10:05] Alex Chen: We are planning stateless workers in Kubernetes with two replicas.
+[10:06] Jordan Lee: I also saw the idempotency constraint and the retry and dead-letter handling.
+[10:07] Priya Shah: The 90-day retention period is still a product assumption, not a governance decision from this meeting.
+[10:08] Jordan Lee: I confirm that managed PostgreSQL is accepted as the system of record for this service.
+[10:09] Alex Chen: That matches the current schema and migration approach.
+[10:10] Jordan Lee: Let us move to the deployment and resilience sections.
+[10:11] Jordan Lee: The deployment design shows two replicas, but it does not explain how traffic fails over when one instance becomes unavailable.
+[10:12] Alex Chen: The diagram currently shows only the healthy steady-state path.
+[10:13] Jordan Lee: Please add the failure path and explain the expected Kubernetes service behaviour.
+[10:14] Alex Chen: I will update the Availability and Resilience section and the deployment diagram by 24 July 2026.
+[10:15] Priya Shah: That date works for the project team.
+[10:16] Jordan Lee: The RTO and RPO have not been stated, so that remains an open finding.
+[10:17] Priya Shah: I need to confirm those objectives with the product stakeholders.
+[10:18] Priya Shah: I will confirm the RTO and RPO values by 25 July 2026.
+[10:19] Jordan Lee: Thank you. Those values should be recorded in the Solution Intent, not only in meeting notes.
+[10:20] Jordan Lee: Production support ownership is not defined in the current Solution Intent.
+[10:21] Alex Chen: We have drafted runbook topics, but no support team or escalation path has been agreed.
+[10:22] Alex Chen: Production database sizing is still pending, and that may affect the planned August release.
+[10:23] Priya Shah: The final volume forecast is being prepared, but I am not assigning a new action for it in this review.
+[10:24] Jordan Lee: Understood. Record it as a delivery risk until sizing can be completed.
+[10:25] Jordan Lee: Redis has been discussed as a possible cache, but no decision has been made.
+[10:26] Alex Chen: The service does not depend on Redis today, so the question can remain open.
+[10:27] Priya Shah: The email and SMS provider details in the document are illustrative and do not identify real vendors.
+[10:28] Jordan Lee: The outcome for review round two is changes requested.
+[10:29] Jordan Lee: We can hold another review after the identified updates are completed.
+[10:30] Alex Chen: I will circulate the revised document when the two dated actions are complete.
+[10:31] Priya Shah: Thanks. We will keep the governance ticket updated with the review status.

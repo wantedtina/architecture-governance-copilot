@@ -88,7 +88,7 @@ automatically carry findings between rounds.
 ### Inputs
 
 - Provide a **Load Sample Solution Intent** action.
-- Load synthetic SI content from a bundled sample file in a future implementation phase.
+- Load synthetic SI content from `samples/solution_intent.md`.
 - Display the SI in a readable multiline area.
 - Provide a **Load Sample Review Transcript** action.
 - Load a synthetic Teams-style Domain Architecture review transcript.
@@ -276,7 +276,7 @@ Governance service
 - `minutes_generator.py`: pure deterministic transformation to review minutes.
 - `ado_generator.py`: pure deterministic transformation to mock governance-ticket and action
   payloads.
-- `samples/`: future synthetic SI, transcript, and expected result fixtures.
+- `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
 - `tests/`: validation and transformation tests independent of external services.
 
 Streamlit session state is the only planned runtime state. It will hold the three inputs, latest
@@ -443,7 +443,7 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | Phase | Files | Expected outcome | Verification | Depends on |
 | --- | --- | --- | --- | --- |
 | 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
-| 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, model tests as needed | One internally consistent fictional review-round fixture. | Validate JSON and manually verify every quote. | Phase 1. |
+| 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
 | 3. Deterministic provider | `extractors.py`, new provider tests | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO output generator | `ado_generator.py`, generator tests | Parent-ticket preview plus one action payload per action. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |

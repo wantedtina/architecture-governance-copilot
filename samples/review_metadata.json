@@ -1,0 +1,10 @@
+{
+  "project_name": "Digital Payment Notification Service",
+  "si_title": "Solution Intent - Digital Payment Notification Service",
+  "si_version": "1.2",
+  "current_si_status": "under_review",
+  "review_round": 2,
+  "ado_ticket_id": "ARCH-POC-1024",
+  "domain_architect": "Jordan Lee",
+  "review_date": "2026-07-18"
+}

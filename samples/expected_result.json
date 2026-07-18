@@ -1,1 +1,242 @@
-{}
+{
+  "context": {
+    "project_name": "Digital Payment Notification Service",
+    "si_title": "Solution Intent - Digital Payment Notification Service",
+    "si_version": "1.2",
+    "current_si_status": "under_review",
+    "review_round": 2,
+    "ado_ticket_id": "ARCH-POC-1024",
+    "domain_architect": "Jordan Lee",
+    "review_date": "2026-07-18"
+  },
+  "review_outcome": "changes_requested",
+  "outcome_evidence": [
+    {
+      "source_type": "meeting_transcript",
+      "quote": "The outcome for review round two is changes requested.",
+      "speaker": "Jordan Lee",
+      "timestamp": "10:28",
+      "reference": "transcript-line-29"
+    }
+  ],
+  "findings": [
+    {
+      "title": "Missing traffic-failover behaviour",
+      "description": "The design shows two replicas but does not define traffic behaviour when one application instance is unavailable.",
+      "category": "Resilience",
+      "si_section": "Availability and Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Describe the failure path and update the deployment diagram to show how traffic is handled when a replica is unavailable.",
+      "owner": "Alex Chen",
+      "due_date": "2026-07-24",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "behaviour when one replica becomes unavailable is not described.",
+          "section": "Availability and Resilience",
+          "reference": "SI-7-FAILOVER"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The deployment design shows two replicas, but it does not explain how traffic fails over when one instance becomes unavailable.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:11",
+          "reference": "transcript-line-12"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will update the Availability and Resilience section and the deployment diagram by 24 July 2026.",
+          "speaker": "Alex Chen",
+          "timestamp": "10:14",
+          "reference": "transcript-line-15"
+        }
+      ]
+    },
+    {
+      "title": "Missing RTO and RPO",
+      "description": "The Solution Intent does not define recovery time or recovery point objectives.",
+      "category": "Resilience",
+      "si_section": "Availability and Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Record the product-approved RTO and RPO values in the Solution Intent.",
+      "owner": "Priya Shah",
+      "due_date": "2026-07-25",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "recovery point objective (RPO) values are not yet defined.",
+          "section": "Availability and Resilience",
+          "reference": "SI-7-OBJECTIVES"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The RTO and RPO have not been stated, so that remains an open finding.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:16",
+          "reference": "transcript-line-17"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will confirm the RTO and RPO values by 25 July 2026.",
+          "speaker": "Priya Shah",
+          "timestamp": "10:18",
+          "reference": "transcript-line-19"
+        }
+      ]
+    },
+    {
+      "title": "Undefined production support ownership",
+      "description": "The production support team and escalation path have not been assigned.",
+      "category": "Operational Readiness",
+      "si_section": "Operational Support",
+      "severity": "medium",
+      "status": "open",
+      "recommended_change": "Name the production support owner and document the escalation path before release approval.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Production support ownership has not yet been assigned.",
+          "section": "Operational Support",
+          "reference": "SI-11-OWNERSHIP"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Production support ownership is not defined in the current Solution Intent.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:20",
+          "reference": "transcript-line-21"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "statement": "Managed PostgreSQL is accepted as the system of record.",
+      "rationale": "It supports the proposed notification-status and idempotency data design.",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I confirm that managed PostgreSQL is accepted as the system of record for this service.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:08",
+          "reference": "transcript-line-9"
+        }
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "description": "Pending production database sizing may affect the planned August release.",
+      "severity": "high",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Production database sizing remains pending",
+          "section": "Data Design",
+          "reference": "SI-6-SIZING"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Production database sizing is still pending, and that may affect the planned August release.",
+          "speaker": "Alex Chen",
+          "timestamp": "10:22",
+          "reference": "transcript-line-23"
+        }
+      ]
+    }
+  ],
+  "action_items": [
+    {
+      "title": "Update the resilience design and deployment diagram",
+      "owner": "Alex Chen",
+      "due_date": "2026-07-24",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will update the Availability and Resilience section and the deployment diagram by 24 July 2026.",
+          "speaker": "Alex Chen",
+          "timestamp": "10:14",
+          "reference": "transcript-line-15"
+        }
+      ]
+    },
+    {
+      "title": "Confirm the RTO and RPO values",
+      "owner": "Priya Shah",
+      "due_date": "2026-07-25",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will confirm the RTO and RPO values by 25 July 2026.",
+          "speaker": "Priya Shah",
+          "timestamp": "10:18",
+          "reference": "transcript-line-19"
+        }
+      ]
+    }
+  ],
+  "open_questions": [
+    {
+      "question": "Should Redis be used as a cache?",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Redis may be introduced as a cache",
+          "section": "Detailed Application Design",
+          "reference": "SI-5-REDIS"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Redis has been discussed as a possible cache, but no decision has been made.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:25",
+          "reference": "transcript-line-26"
+        }
+      ]
+    }
+  ],
+  "missing_evidence": [
+    {
+      "item": "Defined RTO and RPO values",
+      "reason": "The recovery objectives are required to assess the proposed resilience design.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "recovery point objective (RPO) values are not yet defined.",
+          "section": "Availability and Resilience",
+          "reference": "SI-7-OBJECTIVES"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The RTO and RPO have not been stated, so that remains an open finding.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:16",
+          "reference": "transcript-line-17"
+        }
+      ]
+    },
+    {
+      "item": "Confirmed production support ownership",
+      "reason": "An owning team and escalation path are required before release approval.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Production support ownership has not yet been assigned.",
+          "section": "Operational Support",
+          "reference": "SI-11-OWNERSHIP"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Production support ownership is not defined in the current Solution Intent.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:20",
+          "reference": "transcript-line-21"
+        }
+      ]
+    }
+  ]
+}
