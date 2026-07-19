@@ -12,19 +12,27 @@ from architecture_governance_copilot.extractors import DeterministicDemoExtracto
 from architecture_governance_copilot.governance_service import GovernanceReviewService
 from architecture_governance_copilot.models import GovernanceResult
 from architecture_governance_copilot.ui_support import (
+    ACTIVE_STAGE_KEY,
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
     ERROR_KEY,
+    INPUT_STAGE,
     LOADED_KEY,
+    OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
     REVIEW_DRAFT_KEY,
+    REVIEW_STAGE,
     REVIEW_WIDGET_PREFIX,
+    REVIEW_WIDGET_VALUES_KEY,
     REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_KEY,
+    SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
+    TRANSCRIPT_WIDGET_KEY,
+    active_stage,
     analysis_is_stale,
     build_reviewed_result,
     clear_outputs,
@@ -36,8 +44,11 @@ from architecture_governance_copilot.ui_support import (
     load_sample_review,
     optional_text,
     parse_optional_iso_date,
+    preserve_review_widget_state,
     reset_application_state,
+    restore_review_widget_state,
     sample_paths,
+    set_active_stage,
     store_analysis,
     store_outputs,
 )
@@ -135,6 +146,8 @@ def test_loading_sample_clears_previous_analysis_outputs_and_review_widgets(
     state[REVIEWED_RESULT_KEY] = sample_result
     state[OUTPUTS_KEY] = object()
     state[f"{REVIEW_WIDGET_PREFIX}finding_0_title"] = "Old edit"
+    state[SOLUTION_INTENT_WIDGET_KEY] = ""
+    state[TRANSCRIPT_WIDGET_KEY] = ""
     sample = load_sample_review()
 
     load_sample_into_state(state, sample)
@@ -147,6 +160,9 @@ def test_loading_sample_clears_previous_analysis_outputs_and_review_widgets(
     assert state[REVIEWED_RESULT_KEY] is None
     assert state[OUTPUTS_KEY] is None
     assert state[LOADED_KEY] is True
+    assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
+    assert state[SOLUTION_INTENT_WIDGET_KEY] == sample.solution_intent
+    assert state[TRANSCRIPT_WIDGET_KEY] == sample.transcript
     assert f"{REVIEW_WIDGET_PREFIX}finding_0_title" not in state
 
 
@@ -168,6 +184,20 @@ def test_storing_analysis_creates_independent_draft_and_clears_outputs(
     assert state[OUTPUTS_KEY] is None
     assert state[ANALYZED_FINGERPRINT_KEY] == "fingerprint"
     assert state[ANALYSIS_SUCCESS_KEY] is True
+    assert state[ACTIVE_STAGE_KEY] == REVIEW_STAGE
+
+
+def test_review_widget_values_are_preserved_across_routed_pages() -> None:
+    widget_key = f"{REVIEW_WIDGET_PREFIX}action_0_owner"
+    state: dict[str, object] = {widget_key: "Taylor Kim"}
+    initialize_session_state(state)
+
+    preserve_review_widget_state(state)
+    del state[widget_key]
+    restore_review_widget_state(state)
+
+    assert state[REVIEW_WIDGET_VALUES_KEY] == {widget_key: "Taylor Kim"}
+    assert state[widget_key] == "Taylor Kim"
 
 
 def test_reset_removes_application_state_and_restores_initial_values() -> None:
@@ -182,8 +212,25 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
 
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[OUTPUTS_KEY] is None
+    assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
     assert state["unrelated"] == "preserved"
+
+
+def test_active_stage_navigation_accepts_only_known_route_stages() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+
+    assert active_stage(state) == INPUT_STAGE
+    set_active_stage(state, REVIEW_STAGE)
+    assert active_stage(state) == REVIEW_STAGE
+    set_active_stage(state, OUTPUT_STAGE)
+    assert active_stage(state) == OUTPUT_STAGE
+
+    state[ACTIVE_STAGE_KEY] = "corrupt"
+    assert active_stage(state) == INPUT_STAGE
+    with pytest.raises(ValueError, match="Unknown application stage"):
+        set_active_stage(state, "later_phase")
 
 
 def test_input_fingerprint_detects_stale_si_transcript_and_context() -> None:
@@ -331,6 +378,7 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[REVIEWED_RESULT_KEY] is sample_result
     assert state[OUTPUTS_KEY] is outputs
     assert state[OUTPUT_SUCCESS_KEY] is True
+    assert state[ACTIVE_STAGE_KEY] == OUTPUT_STAGE
     assert state[ERROR_KEY] is None
 
     clear_outputs(state)

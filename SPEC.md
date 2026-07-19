@@ -78,6 +78,13 @@ mean that the PoC can govern arbitrary projects or replace Domain Architect judg
 7. Generate the structured review record, review minutes, and mock ADO outputs from the
    human-confirmed state.
 
+The implemented UI shows this journey as three routed Streamlit views: Review Inputs at the app
+root, Human Review at `/human-review`, and Generated Outputs at `/generated-outputs`. Route guards
+return incomplete deep links to Review Inputs. Back navigation preserves valid state, and Reset
+Demo restores the initial route and state. A persistent workspace sidebar, three-step status
+indicator, compact review-context and summary cards, and counted human-review tabs provide a
+polished internal-tool presentation without implying that the mocked integrations are real.
+
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
 record for future tracking, but the application will not compare versions, persist history, or
 automatically carry findings between rounds.
@@ -140,6 +147,9 @@ automatically carry findings between rounds.
 - Treat evidence as traceability metadata rather than freeform text to casually rewrite.
 - Prevent output generation when the reviewed record fails validation.
 - Require an explicit **Confirm Reviewed Record & Generate Outputs** action.
+- Advance to Human Review after successful analysis and to Generated Outputs after successful
+  reviewed-result validation.
+- Show only the active routed stage, with browser-style Back and Reset navigation.
 - State that formal governance decisions remain the Domain Architect's responsibility.
 - Generate outputs from the confirmed, edited state rather than the original provider response.
 - Invalidate reviewed outputs after reanalysis or subsequent input edits.
@@ -168,6 +178,9 @@ automatically carry findings between rounds.
 - **Human accountability:** the system proposes a record; it does not approve the SI.
 - **Traceability:** claims retain evidence source, quote, and available locator information.
 - **Determinism:** stable inputs produce stable results and generated outputs.
+- **Perceived responsiveness:** Analyze and Confirm show short, configurable processing phases
+  before routed navigation; the delay is demo presentation only and does not simulate external
+  integrations.
 - **Simplicity:** use direct Python modules, Pydantic, and Streamlit session state.
 - **Testability:** models and pure transformations must be testable without Streamlit.
 - **Readability:** the review and evidence must be legible during a short screen recording.
@@ -234,6 +247,8 @@ The PoC is done when:
 - The reviewer can edit and remove proposed items.
 - Invalid reviewed data cannot generate outputs.
 - Reviewed-record confirmation is explicit and does not imply formal SI approval.
+- Analysis and confirmation change the browser route rather than appending the next stage below
+  the previous one.
 - Generated outputs reflect the edited, confirmed record.
 - The structured record, minutes, and mock ADO outputs are clearly labeled.
 - Reanalysis or input edits invalidate stale generated outputs.
@@ -266,8 +281,11 @@ Governance service
 
 ### Module responsibilities
 
-- `app.py`: one-page UI, input loading, review widgets, read-only evidence, explicit reviewed
-  record confirmation, output rendering, and session-state transitions.
+- `app.py`: common application shell, route configuration, input loading, review widgets,
+  read-only evidence, explicit reviewed-record confirmation, output rendering, and state
+  transitions.
+- `pages/`: thin file-backed route entry points for Review Inputs, Human Review, and Generated
+  Outputs.
 - `ui_support.py`: pure sample, state, fingerprint, optional-field, and reviewed-result helpers.
 - `models.py`: strict Pydantic enums and models for one SI review round.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
@@ -279,8 +297,9 @@ Governance service
 - `tests/`: validation and transformation tests independent of external services.
 
 Streamlit session state is the only runtime state. It holds the three inputs, latest analysis,
-independent review draft, validated reviewed record, generated outputs, errors, and analyzed-input
-fingerprint. It does not hold or simulate review history.
+independent review draft, validated reviewed record, generated outputs, errors, analyzed-input
+fingerprint, durable in-progress review fields, and active route stage. It does not hold or
+simulate review history.
 
 ## Model design
 
@@ -459,7 +478,7 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
-| 7. Streamlit UI (complete) | `app.py`, `ui_support.py`, UI tests | Load the synthetic review, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, pure support tests, and headless startup. | Phase 6. |
+| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Load the synthetic review, navigate three guarded routes, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
 | 8. Editable human review (complete) | `app.py`, `ui_support.py`, focused tests | Edit/exclude items, validate a reconstructed result, and prevent stale generation. | Edit, exclusion, validation, mutation, reset, and stale-input tests. | Phase 7. |
 | 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
 | 10. Final hardening | Tests and docs | Clean setup, stable demo, aligned documentation, timed recording. | Full `uv` checks and two successful rehearsals. | Phases 1–8. |

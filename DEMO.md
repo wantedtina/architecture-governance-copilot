@@ -85,7 +85,10 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 - The transcript area contains the matching synthetic review meeting.
 - Review metadata identifies SI version 1.2, status `under_review`, round 2, and governance ticket
   `ARCH-POC-1024`.
-- A visible message confirms that the synthetic sample is loaded.
+- The review context is presented as a compact metadata card.
+- A visible message confirms that the synthetic sample is loaded and editable.
+- The workspace sidebar remains explicit that the extractor is deterministic, the data is
+  synthetic, and no external systems are connected.
 - No result is displayed yet.
 
 ### Step 3 — Inspect the inputs
@@ -104,11 +107,17 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 **Expected state:**
 
-- Analysis completes quickly in deterministic mode.
-- **Stage 2 — Human Review** and **Draft Structured Review** appear.
+- A short processing panel validates the review package, runs governance extraction, and prepares
+  the human-review workspace.
+- Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
+- The browser navigates to `/human-review`.
+- The progress indicator advances to step 2.
+- **Stage 2 — Human Review** replaces the full input view.
+- A compact analyzed-input summary and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
 - Metrics show one decision, three findings, one risk, two actions, one open question, and two
   missing-information entries.
+- Counted tabs organize Decisions, Findings, Risks, Actions, Questions, and Missing Information.
 - Every required item offers supporting evidence.
 - No generated minutes or ADO work items appear automatically.
 
@@ -123,7 +132,8 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 ### Step 6 — Make a human edit
 
-**Action:** Change the first action owner from **Alex Chen** to **Taylor Kim**.
+**Action:** Open **Actions · 2** and change the first action owner from **Alex Chen** to
+**Taylor Kim**.
 
 **Expected state:**
 
@@ -133,7 +143,8 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 ### Step 7 — Exclude the Redis question
 
-**Click:** Clear **Include in reviewed record** for the Redis open question.
+**Click:** Open **Questions · 1**, then clear **Include in reviewed record** for the Redis open
+question.
 
 **Expected state:**
 
@@ -146,8 +157,15 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 **Expected state:**
 
-- The UI confirms validation and output generation without claiming formal SI approval.
-- **Stage 3 — Generated Outputs** appears.
+- A short processing panel validates the human-reviewed record, generates minutes, and prepares
+  two mock ADO payloads.
+- The UI confirms output generation without claiming formal SI approval.
+- The browser navigates to `/generated-outputs`.
+- The progress indicator advances to step 3.
+- **Stage 3 — Generated Outputs** replaces the edit form.
+- A **Governance package ready** completion panel clearly marks the workflow as complete.
+- Summary cards show completion, outcome, one minutes artifact, and the mock work-item count.
+- **Start New Review** provides a deliberate reset for the next rehearsal.
 - The reviewed record excludes the Redis question.
 - Two mock action work items remain because no action was excluded.
 - Nothing is sent to an external service.
@@ -175,12 +193,13 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 ### Step 11 — Close on accountability and scope
 
-**Action:** Position the page so the generated-record notice and mock-integration notice are
-visible.
+**Action:** Return to the completion panel and point to **Start New Review** without clicking it.
 
 **Expected state:**
 
 - The complete human-controlled one-round workflow is clear.
+- The completion state and optional restart action are unambiguous.
+- Each workflow stage has a dedicated view with Back and Reset navigation.
 - Synthetic data, deterministic mode, and mock integrations remain visible.
 - Formal governance responsibility remains with the Domain Architect.
 - There is no review history, second round, SI diff, or automatic finding resolution.
@@ -224,6 +243,7 @@ or every output field.
 - Mapping findings to SI sections where supported.
 - Showing findings, decisions, risks, actions, questions, and missing information.
 - Editing and removing proposed review items in the session.
+- Guided one-stage-at-a-time navigation with visible progress.
 - Explicit human confirmation before output generation.
 - Generating deterministic structured output and minutes from the reviewed record.
 - Generating local JSON-ready mock ADO action work items.

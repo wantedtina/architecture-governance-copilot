@@ -1,4 +1,4 @@
-"""Pure support functions for the single-page Streamlit proof of concept."""
+"""Pure support functions for the routed Streamlit proof of concept."""
 
 from __future__ import annotations
 
@@ -21,9 +21,12 @@ REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
 
 SOLUTION_INTENT_KEY = f"{STATE_PREFIX}solution_intent"
 TRANSCRIPT_KEY = f"{STATE_PREFIX}review_transcript"
+SOLUTION_INTENT_WIDGET_KEY = f"{STATE_PREFIX}input_solution_intent"
+TRANSCRIPT_WIDGET_KEY = f"{STATE_PREFIX}input_review_transcript"
 CONTEXT_KEY = f"{STATE_PREFIX}review_context"
 ANALYZED_RESULT_KEY = f"{STATE_PREFIX}analyzed_result"
 REVIEW_DRAFT_KEY = f"{STATE_PREFIX}review_draft"
+REVIEW_WIDGET_VALUES_KEY = f"{STATE_PREFIX}review_widget_values"
 REVIEWED_RESULT_KEY = f"{STATE_PREFIX}reviewed_result"
 OUTPUTS_KEY = f"{STATE_PREFIX}generated_outputs"
 ANALYZED_FINGERPRINT_KEY = f"{STATE_PREFIX}analyzed_fingerprint"
@@ -31,6 +34,12 @@ ERROR_KEY = f"{STATE_PREFIX}error"
 LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
+ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
+
+INPUT_STAGE = "inputs"
+REVIEW_STAGE = "review"
+OUTPUT_STAGE = "outputs"
+VALID_STAGES = frozenset({INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +110,7 @@ def initial_state_values() -> dict[str, object]:
         CONTEXT_KEY: None,
         ANALYZED_RESULT_KEY: None,
         REVIEW_DRAFT_KEY: None,
+        REVIEW_WIDGET_VALUES_KEY: {},
         REVIEWED_RESULT_KEY: None,
         OUTPUTS_KEY: None,
         ANALYZED_FINGERPRINT_KEY: None,
@@ -108,6 +118,7 @@ def initial_state_values() -> dict[str, object]:
         LOADED_KEY: False,
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
+        ACTIVE_STAGE_KEY: INPUT_STAGE,
     }
 
 
@@ -122,6 +133,27 @@ def clear_review_widget_state(state: MutableMapping[str, Any]) -> None:
     for key in tuple(state):
         if key.startswith(REVIEW_WIDGET_PREFIX):
             del state[key]
+    state[REVIEW_WIDGET_VALUES_KEY] = {}
+
+
+def preserve_review_widget_state(state: MutableMapping[str, Any]) -> None:
+    """Copy human-review widget values into page-independent durable state."""
+    stored = state.get(REVIEW_WIDGET_VALUES_KEY)
+    values = dict(stored) if isinstance(stored, Mapping) else {}
+    for key in tuple(state):
+        if key.startswith(REVIEW_WIDGET_PREFIX):
+            values[key] = state[key]
+    state[REVIEW_WIDGET_VALUES_KEY] = values
+
+
+def restore_review_widget_state(state: MutableMapping[str, Any]) -> None:
+    """Restore durable human-review values before routed widgets are created."""
+    stored = state.get(REVIEW_WIDGET_VALUES_KEY)
+    if not isinstance(stored, Mapping):
+        return
+    for key, value in stored.items():
+        if isinstance(key, str) and key.startswith(REVIEW_WIDGET_PREFIX):
+            state.setdefault(key, value)
 
 
 def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
@@ -135,6 +167,7 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
 
 
 def load_sample_into_state(
@@ -145,6 +178,8 @@ def load_sample_into_state(
     clear_analysis_state(state)
     state[SOLUTION_INTENT_KEY] = sample.solution_intent
     state[TRANSCRIPT_KEY] = sample.transcript
+    state[SOLUTION_INTENT_WIDGET_KEY] = sample.solution_intent
+    state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
     state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
     state[LOADED_KEY] = True
 
@@ -164,6 +199,7 @@ def store_analysis(
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = True
     state[OUTPUT_SUCCESS_KEY] = False
+    state[ACTIVE_STAGE_KEY] = REVIEW_STAGE
 
 
 def store_outputs(
@@ -176,6 +212,7 @@ def store_outputs(
     state[OUTPUTS_KEY] = outputs
     state[ERROR_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = True
+    state[ACTIVE_STAGE_KEY] = OUTPUT_STAGE
 
 
 def clear_outputs(state: MutableMapping[str, Any]) -> None:
@@ -191,6 +228,21 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
         if key.startswith(STATE_PREFIX):
             del state[key]
     initialize_session_state(state)
+    state[SOLUTION_INTENT_WIDGET_KEY] = ""
+    state[TRANSCRIPT_WIDGET_KEY] = ""
+
+
+def active_stage(state: Mapping[str, Any]) -> str:
+    """Return the current valid route stage, defaulting safely to inputs."""
+    value = state.get(ACTIVE_STAGE_KEY)
+    return value if isinstance(value, str) and value in VALID_STAGES else INPUT_STAGE
+
+
+def set_active_stage(state: MutableMapping[str, Any], stage: str) -> None:
+    """Record a validated routed workflow stage."""
+    if stage not in VALID_STAGES:
+        raise ValueError(f"Unknown application stage: {stage}")
+    state[ACTIVE_STAGE_KEY] = stage
 
 
 def input_fingerprint(

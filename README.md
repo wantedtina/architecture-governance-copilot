@@ -33,6 +33,13 @@ The implemented deterministic Solution Intent Review Copilot can:
 7. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
+The UI presents this as three routed Streamlit pages. Analysis navigates from the root Review
+Inputs page to `/human-review`, and confirmation navigates to `/generated-outputs`. Browser
+history and Back actions therefore behave like page navigation while shared session state
+preserves the review. A persistent workspace sidebar, stage stepper, summary cards, and counted
+review tabs give the demo a credible internal governance-tool feel while keeping its
+deterministic and mocked boundaries visible.
+
 The MVP demonstrates one review round only. It does not compare SI versions, persist review
 history, resolve findings automatically, or implement a multi-round workflow.
 
@@ -69,7 +76,8 @@ of arbitrary text. Pure deterministic generators now transform a validated resul
 review minutes and typed mock ADO action work items. `GovernanceReviewService` intentionally
 keeps analysis separate from output generation so the Streamlit UI can place human review and
 editing between them. Explicit session state holds only the current one-round inputs, analysis,
-reviewed record, generated outputs, and stale-input fingerprint; there is no database.
+reviewed record, generated outputs, stale-input fingerprint, and active route stage; there is no
+database.
 
 Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
 does not connect to them.
@@ -82,6 +90,10 @@ the planned recording flow.
 ```text
 architecture-governance-copilot/
 ├── app.py
+├── pages/
+│   ├── review_inputs.py
+│   ├── human_review.py
+│   └── generated_outputs.py
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
@@ -136,6 +148,16 @@ Run the Streamlit application:
 uv run streamlit run app.py
 ```
 
+The local demo uses a 0.4-second pause for each visible processing phase, producing an
+approximately 1.2-second transition after Analyze and Confirm. To rehearse with a different
+per-phase delay:
+
+```bash
+AGC_DEMO_STEP_DELAY_SECONDS=0.6 uv run streamlit run app.py
+```
+
+Use `AGC_DEMO_STEP_DELAY_SECONDS=0` to disable transition pauses.
+
 Run tests:
 
 ```bash
@@ -154,13 +176,14 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The one-page demo flow is: **Load Sample Review → Analyze Review → edit or exclude items →
-Confirm Reviewed Record & Generate Outputs**. The application is fixture-backed and supports
-only the bundled synthetic sample.
+The guided routed demo flow is: **Load Sample Review → Analyze Review → edit or exclude items →
+Confirm Reviewed Record & Generate Outputs**. Analyze and Confirm change the browser route, with
+Back and Reset controls for a reliable rehearsal loop. The application is fixture-backed and
+supports only the bundled synthetic sample.
 
 ## Current implementation status
 
-**The deterministic one-page PoC workflow is implemented and ready for demo hardening.**
+**The deterministic routed PoC workflow is implemented and ready for demo hardening.**
 
 Implemented:
 
@@ -180,9 +203,12 @@ Implemented:
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
-- a single-page Streamlit interface with explicit session state and stale-analysis protection;
+- three routed Streamlit views with guarded navigation, durable review state, and stale-analysis
+  protection;
 - editable human review with item exclusion and read-only evidence;
 - rendered/raw Markdown output and mock ADO work-item cards; and
+- an explicit completed-workflow panel with artifact counts and a safe **Start New Review**
+  reset; and
 - pure UI-support tests plus Streamlit `AppTest` workflow coverage.
 
 Not yet implemented:

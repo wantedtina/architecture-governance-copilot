@@ -10,12 +10,17 @@ __pycache__/
 # Build and packaging output
 build/
 dist/
+output/
 *.egg-info/
 
 # Local configuration and secrets
 .env
 .env.*
 !.env.example
+
+# Local development-tool state
+.agents/
+.playwright-cli/
 
 # IDE and operating-system files
 .DS_Store
