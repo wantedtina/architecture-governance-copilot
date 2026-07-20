@@ -10,8 +10,12 @@ __pycache__/
 # Build and packaging output
 build/
 dist/
-output/
+/output/
 *.egg-info/
+
+# Generated video working audio
+video/audio/provisional_offline_tts.wav
+video/audio/provisional_tts_segments/
 
 # Local configuration and secrets
 .env

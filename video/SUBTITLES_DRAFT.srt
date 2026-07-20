@@ -1,0 +1,217 @@
+1
+00:00:00,400 --> 00:00:06,100
+Architecture Governance Copilot is our Accelerate 3.0
+proof of concept from Two Tokens One Brain.
+
+2
+00:00:06,200 --> 00:00:11,700
+It turns architecture review discussion into
+an accountable, evidence-backed record.
+
+3
+00:00:12,200 --> 00:00:17,300
+Product Owners and development teams prepare
+the Solution Intent using the required template.
+
+4
+00:00:17,400 --> 00:00:22,400
+The official SI remains in Confluence,
+with an ADO governance ticket for review tracking.
+
+5
+00:00:22,500 --> 00:00:28,000
+A Domain Architect reviews it through Teams meetings
+and revision rounds until formal approval.
+
+6
+00:00:28,100 --> 00:00:33,000
+Here, synthetic Confluence content
+is normalized into Markdown,
+
+7
+00:00:33,100 --> 00:00:37,800
+while synthetic text represents a Teams review transcript
+produced only when transcription is enabled.
+
+8
+00:00:38,200 --> 00:00:41,800
+That process creates repeated administration.
+
+9
+00:00:41,900 --> 00:00:47,300
+Decisions, findings, risks, and actions can be spread
+across the SI, meeting discussion, notes, and ADO.
+
+10
+00:00:47,400 --> 00:00:52,900
+Teams manually rebuild the governance record
+and tracked work,
+
+11
+00:00:53,000 --> 00:00:57,800
+increasing the risk that evidence, ownership,
+or requested changes are missed or inconsistent.
+
+12
+00:00:58,200 --> 00:01:02,300
+The Copilot structures both normalized inputs,
+preserves evidence,
+
+13
+00:01:02,400 --> 00:01:06,700
+and pauses for human review before producing
+a standardized record and mock ADO actions.
+
+14
+00:01:06,800 --> 00:01:09,700
+It never approves automatically.
+
+15
+00:01:10,200 --> 00:01:14,800
+The application begins with clear synthetic-data
+and human-accountability notices.
+
+16
+00:01:14,900 --> 00:01:20,800
+I load the bundled review package: version 1.2
+of a fictional Digital Payment Notification Service SI,
+
+17
+00:01:20,900 --> 00:01:24,500
+review metadata, and a timestamped transcript.
+
+18
+00:01:24,600 --> 00:01:30,000
+Analyze Review validates both sources
+and opens a separate Human Review page.
+
+19
+00:01:30,100 --> 00:01:33,700
+The outcome is Changes Requested.
+
+20
+00:01:33,800 --> 00:01:40,300
+The summary shows one decision, three findings,
+one risk, two actions, one open question,
+
+21
+00:01:40,400 --> 00:01:43,600
+and two missing-information items.
+
+22
+00:01:43,700 --> 00:01:48,200
+The decision accepts managed PostgreSQL
+as the system of record.
+
+23
+00:01:48,300 --> 00:01:54,600
+Findings identify missing traffic-failover behaviour,
+missing RTO and RPO values,
+
+24
+00:01:54,700 --> 00:01:59,100
+and undefined production support ownership.
+
+25
+00:01:59,200 --> 00:02:02,500
+Database sizing is a release risk.
+
+26
+00:02:02,600 --> 00:02:07,600
+Every item retains a source quote
+from the SI, the transcript, or both.
+
+27
+00:02:07,700 --> 00:02:11,200
+This is a proposal, not an approval.
+
+28
+00:02:11,300 --> 00:02:16,800
+The reviewer can inspect evidence, edit fields,
+and include or exclude items.
+
+29
+00:02:16,900 --> 00:02:22,500
+I change the first action owner
+to the clearly synthetic value Taylor Kim,
+
+30
+00:02:22,600 --> 00:02:27,300
+then exclude the unresolved Redis question.
+Evidence stays read-only.
+
+31
+00:02:27,400 --> 00:02:32,400
+Only now do I confirm the reviewed record
+and generate outputs.
+
+32
+00:02:32,500 --> 00:02:38,000
+The application preserves those choices:
+Taylor Kim appears in the review record
+
+33
+00:02:38,100 --> 00:02:43,200
+and first mock work item,
+while the Redis question is absent.
+
+34
+00:02:43,300 --> 00:02:48,800
+Two mock Azure DevOps actions are prepared,
+
+35
+00:02:48,900 --> 00:03:04,700
+and the screen confirms that
+no real work item was created.
+
+36
+00:03:05,200 --> 00:03:09,700
+This workflow reduces manual review administration
+and supports more consistent records.
+
+37
+00:03:09,800 --> 00:03:14,500
+It helps reduce the risk of missed findings and actions,
+and improves evidence traceability.
+
+38
+00:03:14,600 --> 00:03:18,500
+Structured outputs can support future integration,
+
+39
+00:03:18,600 --> 00:03:22,200
+but every record is reviewed before generation,
+
+40
+00:03:22,300 --> 00:03:26,800
+and formal decision authority remains
+with the Domain Architect.
+
+41
+00:03:27,200 --> 00:03:32,100
+The extractor interface uses a deterministic
+demo implementation for reliable offline use.
+
+42
+00:03:32,200 --> 00:03:35,800
+It does not analyze arbitrary documents
+or use a production enterprise LLM.
+
+43
+00:03:35,900 --> 00:03:39,500
+A future approved provider could connect
+Confluence, Teams, and Azure DevOps;
+
+44
+00:03:39,600 --> 00:03:42,800
+none exists today.
+
+45
+00:03:43,200 --> 00:03:47,000
+Architecture Governance Copilot shows one practical,
+human-controlled path from architecture discussion
+
+46
+00:03:47,100 --> 00:03:49,700
+to accountable action.
+Two Tokens One Brain.
