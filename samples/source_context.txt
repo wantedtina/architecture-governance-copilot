@@ -1,0 +1,24 @@
+SYNTHETIC SOURCE-CODE CONTEXT
+Project: Digital Payment Notification Service
+
+Repository summary:
+- src/api/notification_routes.py exposes create-notification and notification-status operations.
+- src/application/notification_service.py validates requests and coordinates persistence and delivery.
+- src/domain/notification.py models notification ID, channel, recipient reference, status, and timestamps.
+- src/infrastructure/postgresql_notification_repository.py persists notification state in managed PostgreSQL.
+- src/infrastructure/provider_adapters.py defines email and SMS provider adapter interfaces.
+- deploy/helm/ contains Kubernetes deployment and service definitions for two application replicas.
+
+Observed implementation details:
+- API requests include an idempotency key.
+- Notification status is stored in PostgreSQL.
+- Provider calls use bounded retries and timeouts.
+- Health and readiness endpoints are exposed.
+- Structured application logs and request correlation IDs are implemented.
+
+Not evidenced in the selected source excerpts:
+- traffic failover behaviour across failure domains;
+- finalized production database sizing;
+- confirmed RTO and RPO values;
+- production support ownership and escalation path;
+- a decision on whether Redis should be introduced.

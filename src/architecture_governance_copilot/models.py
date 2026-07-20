@@ -75,10 +75,37 @@ class ActionPriority(StrEnum):
     HIGH = "high"
 
 
+class DraftInputType(StrEnum):
+    """Context types used to prepare a Solution Intent draft."""
+
+    TEMPLATE = "template"
+    SOURCE_CODE = "source_code"
+    SUPPORTING_DOCUMENTS = "supporting_documents"
+
+
 class _GovernanceModel(BaseModel):
     """Common strict configuration for governance models."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class SolutionIntentDraftRequest(_GovernanceModel):
+    """Synthetic context supplied to one Solution Intent drafting operation."""
+
+    project_name: NonEmptyString
+    template: NonEmptyString
+    source_code_context: NonEmptyString
+    supporting_documents: NonEmptyString | None = None
+
+
+class SolutionIntentDraft(_GovernanceModel):
+    """A provider-generated Solution Intent draft awaiting human confirmation."""
+
+    project_name: NonEmptyString
+    content: NonEmptyString
+    provider_name: NonEmptyString
+    input_types: list[DraftInputType] = Field(min_length=2)
+    assumptions: list[NonEmptyString] = Field(default_factory=list)
 
 
 class SourceEvidence(_GovernanceModel):

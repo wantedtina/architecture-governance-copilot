@@ -2,9 +2,10 @@
 
 ## Document purpose
 
-This document defines a hackathon proof of concept (PoC) for reviewing a Solution Intent (SI).
-The final deliverable is a video shorter than four minutes, due on 22 July 2026. The PoC proves
-one reliable, human-controlled SI review round; it is not a production platform.
+This document defines a hackathon proof of concept (PoC) for drafting and reviewing a Solution
+Intent (SI). The final deliverable is a video shorter than four minutes, due on 22 July 2026.
+The PoC proves one reliable, human-controlled drafting handoff and SI review round; it is not a
+production platform.
 
 ## Domain context
 
@@ -45,8 +46,10 @@ Formal approval remains the responsibility of the human Domain Architect.
 
 ## Product goal
 
-Given synthetic SI content, a synthetic Teams-style review transcript, and basic review
-metadata, produce a structured proposal containing:
+Given a synthetic SI template, selected synthetic source-code context, and supporting notes,
+produce an editable SI draft for human confirmation. Given that confirmed SI, a synthetic
+Teams-style review transcript, and basic review metadata, produce a structured proposal
+containing:
 
 - the current review-round outcome;
 - review findings mapped to SI sections where possible;
@@ -68,28 +71,50 @@ mean that the PoC can govern arbitrary projects or replace Domain Architect judg
 
 ## Core end-to-end user journey
 
-1. Load the bundled synthetic SI, review transcript, and review metadata.
-2. Analyze the review using the SI, transcript, and review metadata.
-3. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
+1. Start in the first-class Draft Solution Intent stage.
+2. Load the bundled synthetic SI template, selected source-code context, and supporting notes.
+3. Generate a deterministic SI draft behind the drafting-provider interface.
+4. Let a project-team reviewer edit and confirm the draft.
+5. Hand the confirmed SI directly to Review Inputs.
+6. Alternatively, explicitly choose **Use Existing Solution Intent** and skip drafting.
+7. Load the synthetic review transcript and metadata without replacing a confirmed SI, or load
+   the complete bundled SI, transcript, and metadata review package.
+8. Analyze the review using the SI, transcript, and review metadata.
+9. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
    information.
-4. Show supporting SI or transcript evidence for each extracted claim.
-5. Allow human review, editing, and removal of proposed items.
-6. Let the Domain Architect explicitly confirm the reviewed record for output generation.
-7. Generate the structured review record, review minutes, and mock ADO outputs from the
+10. Show supporting SI or transcript evidence for each extracted claim.
+11. Allow human review, editing, and removal of proposed items.
+12. Let the Domain Architect explicitly confirm the reviewed record for output generation.
+13. Generate the structured review record, review minutes, and mock ADO outputs from the
    human-confirmed state.
 
-The implemented UI shows this journey as three routed Streamlit views: Review Inputs at the app
-root, Human Review at `/human-review`, and Generated Outputs at `/generated-outputs`. Route guards
-return incomplete deep links to Review Inputs. Back navigation preserves valid state, and Reset
-Demo restores the initial route and state. A persistent workspace sidebar, three-step status
-indicator, compact review-context and summary cards, and counted human-review tabs provide a
-polished internal-tool presentation without implying that the mocked integrations are real.
+The implemented UI uses four peer-level routed stages: Draft Solution Intent, Review Inputs,
+Human Review, and Generated Outputs. Drafting is the default start. The progress header marks
+drafting **Complete** after confirmation or **Skipped** when the user chooses the existing-SI
+path.
 
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
 record for future tracking, but the application will not compare versions, persist history, or
 automatically carry findings between rounds.
 
 ## Functional requirements
+
+### Pre-review SI drafting
+
+- Present Draft Solution Intent as Stage 1, at the same navigation level as Review Inputs.
+- Provide **Use Existing Solution Intent** as an explicit drafting bypass.
+- Accept project name, SI template, selected source-code context, and optional supporting notes.
+- Treat source code as pasted or pre-normalized text; do not clone, scan, or execute repositories.
+- Hide draft generation behind a `SolutionIntentDrafter` provider interface.
+- Use a deterministic offline provider for the bundled synthetic scenario.
+- Produce a validated `SolutionIntentDraft` with explicit assumptions.
+- Allow a human to edit the draft before confirmation.
+- Require **Confirm SI Draft & Continue to Review** before handoff.
+- Populate the existing Solution Intent review input with the confirmed content.
+- Allow transcript and review metadata to load without replacing that SI.
+- Preserve human edits during handoff, while clearly stating that the deterministic review
+  extractor accepts only the unchanged bundled SI.
+- Do not publish to Confluence or claim architecture approval.
 
 ### Inputs
 
@@ -206,6 +231,11 @@ automatically carry findings between rounds.
 
 ## Explicit MVP exclusions
 
+- Arbitrary-project SI generation.
+- Repository cloning, recursive source-code scanning, build execution, or static analysis.
+- Binary document parsing, OCR, or unrestricted file ingestion.
+- Real Confluence template retrieval or SI publication.
+- Production enterprise LLM drafting.
 - More than one active review round.
 - SI version comparison or document diffing.
 - Automatic resolution, reopening, or carry-forward of findings.
@@ -235,6 +265,12 @@ These extensions must not appear in the required demo path.
 
 The PoC is done when:
 
+- The bundled drafting template, source context, and supporting notes load together.
+- SI draft generation works deterministically without network access or credentials.
+- The draft is editable and requires explicit human confirmation.
+- The four-stage progress header truthfully distinguishes completed and skipped drafting.
+- The confirmed SI appears in existing Review Inputs.
+- Loading transcript and metadata preserves the confirmed SI.
 - `uv sync` creates a working Python 3.12 environment.
 - `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass.
 - The sample SI, matching review transcript, and metadata load together.
@@ -250,7 +286,8 @@ The PoC is done when:
 - Analysis and confirmation change the browser route rather than appending the next stage below
   the previous one.
 - Generated outputs reflect the edited, confirmed record.
-- The structured record, minutes, and mock ADO outputs are clearly labeled.
+- The structured record and minutes are clearly labeled, and ADO output is presented as
+  preview-only with an explicit no-submission disclosure.
 - Reanalysis or input edits invalidate stale generated outputs.
 - No live Confluence, Teams, or ADO operation occurs.
 - Tests cover the model, deterministic provider, generators, and core orchestration.
@@ -262,6 +299,23 @@ The PoC is done when:
 ```text
 Streamlit UI
     |
+    |-- synthetic drafting template
+    |-- selected source-code context
+    |-- synthetic supporting notes
+    v
+SolutionIntentDraftingService
+    |
+    +--> SolutionIntentDrafter
+    |       +--> DeterministicDemoDrafter (required)
+    |       \--> Optional enterprise LLM drafter (future)
+    |
+    +--> SolutionIntentDraftRequest / SolutionIntentDraft
+    |
+    \--> Human confirmation
+             |
+             v
+        Review Inputs
+             |
     |-- synthetic SI content
     |-- synthetic review transcript
     |-- SolutionIntentReviewContext
@@ -281,13 +335,14 @@ Governance service
 
 ### Module responsibilities
 
-- `app.py`: common application shell, route configuration, input loading, review widgets,
-  read-only evidence, explicit reviewed-record confirmation, output rendering, and state
+- `app.py`: common application shell, route configuration, SI-drafting controls, input loading,
+  review widgets, read-only evidence, explicit confirmations, output rendering, and state
   transitions.
-- `pages/`: thin file-backed route entry points for Review Inputs, Human Review, and Generated
-  Outputs.
+- `pages/`: thin file-backed route entry points for SI Drafting, Review Inputs, Human Review,
+  and Generated Outputs.
 - `ui_support.py`: pure sample, state, fingerprint, optional-field, and reviewed-result helpers.
 - `models.py`: strict Pydantic enums and models for one SI review round.
+- `si_drafting.py`: drafting-provider protocol, deterministic provider, and drafting service.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
 - `governance_service.py`: separately coordinates extractor analysis and output generation from
   a caller-supplied reviewed result; it does not approve records.
@@ -296,10 +351,10 @@ Governance service
 - `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
 - `tests/`: validation and transformation tests independent of external services.
 
-Streamlit session state is the only runtime state. It holds the three inputs, latest analysis,
-independent review draft, validated reviewed record, generated outputs, errors, analyzed-input
-fingerprint, durable in-progress review fields, and active route stage. It does not hold or
-simulate review history.
+Streamlit session state is the only runtime state. It holds drafting context and draft,
+human-confirmed SI content, the review inputs, latest analysis, independent review draft,
+validated reviewed record, generated outputs, errors, analyzed-input fingerprint, durable
+in-progress review fields, and active route stage. It does not hold or simulate review history.
 
 ## Model design
 
@@ -307,6 +362,17 @@ All models inherit one small strict base configuration with `extra="forbid"` and
 normalization. Required strings reject blank values after trimming. Dates use `datetime.date`.
 Collection defaults use independent factories. All models serialize with
 `model_dump(mode="json")`.
+
+### SI-drafting models
+
+- `SolutionIntentDraftRequest` contains required `project_name`, required template text,
+  required selected source-code context, and optional supporting-document context.
+- `SolutionIntentDraft` contains the project name, generated Markdown content, provider name,
+  input-type provenance, and explicit assumptions.
+- `DraftInputType` distinguishes template, source-code, and supporting-document context.
+- Both models reject unknown fields and blank required strings. The draft requires at least two
+  context types. Provider output is always human-editable and never represents publication or
+  approval.
 
 ### Enums
 
@@ -412,7 +478,20 @@ This is a preview model only. Action-to-ADO conversion and API submission are fu
 
 ## Provider abstraction
 
-The implemented provider boundary is:
+The implemented SI-drafting provider boundary is:
+
+```text
+SolutionIntentDrafter.draft(
+    request: SolutionIntentDraftRequest,
+) -> SolutionIntentDraft
+```
+
+`SolutionIntentDraftingService` receives the provider explicitly. The current
+`DeterministicDemoDrafter` accepts only the bundled synthetic template, source context, and
+supporting notes. It returns the known synthetic SI plus explicit assumptions. It does not scan
+repositories, execute source, call an LLM, publish to Confluence, or approve architecture.
+
+The implemented governance-review provider boundary is:
 
 ```text
 GovernanceExtractor.extract(
@@ -440,7 +519,14 @@ approval flag, UI state, or governance authority.
 
 ## Deterministic demo-provider design
 
-The implemented deterministic provider:
+The deterministic drafter:
+
+1. loads the bundled synthetic template, source context, supporting notes, and expected SI;
+2. checks normalized inputs against those fixtures;
+3. returns a validated independent `SolutionIntentDraft`; and
+4. requires human confirmation before review handoff.
+
+The deterministic review extractor:
 
 1. loads the bundled synthetic SI, transcript, metadata, and expected result;
 2. normalizes only line endings and outer whitespace;
@@ -456,13 +542,16 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 
 | Risk | Mitigation |
 | --- | --- |
+| Draft generation overstates what source code proves | Use selected synthetic excerpts, preserve explicit gaps, show assumptions, and require human review. |
+| Sensitive repositories or documents are uploaded | Do not clone, scan, or execute repositories in the PoC; use synthetic pasted context only. |
+| A generated SI appears published or approved | Label it as a draft and require separate human confirmation before governance review. |
 | Findings are not traceable to the SI | Require typed evidence and map findings to SI sections where supported. |
 | Transcript is treated as the reviewed object | Keep SI content visually primary and require both documents as analysis inputs. |
 | The tool appears to approve architecture autonomously | Label the action as reviewed-record confirmation and state that formal decisions remain with the Domain Architect. |
 | Fixture and model drift | Validate the complete expected result in automated tests. |
 | Streamlit reruns lose reviewed state | Define explicit state transitions and invalidate stale outputs. |
 | Generated outputs ignore human edits | Generate only from the validated reviewed model and test edited values. |
-| ADO previews look like live updates | Label them as mock and perform no external request. |
+| ADO previews look like live updates | Label them preview-only, show a no-submission disclosure, and perform no external request. |
 | Multi-round capability expands the MVP | Store only `review_round`; exclude history, comparison, and resolution logic. |
 | Video exceeds four minutes | Use one round, one key finding, one decision, one risk, two actions, and one open item. |
 | Network or LLM failure | Record in deterministic offline mode. |
@@ -472,13 +561,14 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 
 | Phase | Files | Expected outcome | Verification | Depends on |
 | --- | --- | --- | --- | --- |
+| 0. Optional deterministic SI drafting (complete) | `si_drafting.py`, drafting models, synthetic context, drafting route, tests | Generate, edit, confirm, and hand a known synthetic SI to existing Review Inputs. | Provider mismatch tests, state-handoff tests, Streamlit end-to-end test. | Existing review PoC. |
 | 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
 | 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
 | 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
-| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Load the synthetic review, navigate three guarded routes, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
+| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Navigate four peer-level stages, support a completed or skipped drafting path, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
 | 8. Editable human review (complete) | `app.py`, `ui_support.py`, focused tests | Edit/exclude items, validate a reconstructed result, and prevent stale generation. | Edit, exclusion, validation, mutation, reset, and stale-input tests. | Phase 7. |
 | 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
 | 10. Final hardening | Tests and docs | Clean setup, stable demo, aligned documentation, timed recording. | Full `uv` checks and two successful rehearsals. | Phases 1–8. |

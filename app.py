@@ -29,16 +29,35 @@ from architecture_governance_copilot.models import (
     GovernanceResult,
     ReviewOutcome,
     RiskSeverity,
+    SolutionIntentDraft,
+    SolutionIntentDraftRequest,
     SolutionIntentReviewContext,
     SourceEvidence,
+)
+from architecture_governance_copilot.si_drafting import (
+    DeterministicDemoDrafter,
+    DeterministicDraftingFixtureError,
+    SolutionIntentDraftingService,
 )
 from architecture_governance_copilot.ui_support import (
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
+    DRAFT_CONFIRMED_KEY,
+    DRAFT_CONTENT_WIDGET_KEY,
+    DRAFT_FINGERPRINT_KEY,
+    DRAFT_PROJECT_KEY,
+    DRAFT_PROJECT_WIDGET_KEY,
+    DRAFT_RESULT_KEY,
+    DRAFT_SOURCE_CODE_KEY,
+    DRAFT_SOURCE_CODE_WIDGET_KEY,
+    DRAFT_STAGE,
+    DRAFT_SUPPORTING_DOCS_KEY,
+    DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+    DRAFT_TEMPLATE_KEY,
+    DRAFT_TEMPLATE_WIDGET_KEY,
     ERROR_KEY,
     INPUT_STAGE,
-    LOADED_KEY,
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
@@ -53,20 +72,29 @@ from architecture_governance_copilot.ui_support import (
     build_reviewed_result,
     clear_analysis_state,
     clear_outputs,
+    clear_stale_si_draft,
+    confirm_si_draft_for_review,
+    drafting_input_fingerprint,
+    drafting_result_is_stale,
     humanize,
     initialize_session_state,
     input_fingerprint,
+    load_drafting_context_into_state,
+    load_sample_drafting_context,
     load_sample_into_state,
     load_sample_review,
+    load_sample_review_companions_into_state,
     preserve_review_widget_state,
     reset_application_state,
     restore_review_widget_state,
     set_active_stage,
     store_analysis,
     store_outputs,
+    store_si_draft,
 )
 
 _ROUTE_FILES = {
+    DRAFT_STAGE: "pages/solution_intent_drafting.py",
     INPUT_STAGE: "pages/review_inputs.py",
     REVIEW_STAGE: "pages/human_review.py",
     OUTPUT_STAGE: "pages/generated_outputs.py",
@@ -86,11 +114,18 @@ def main() -> None:
     _apply_visual_theme()
     initialize_session_state(st.session_state)
 
+    drafting_page = st.Page(
+        _ROUTE_FILES[DRAFT_STAGE],
+        title="Draft Solution Intent",
+        icon=":material/edit_document:",
+        url_path="draft-solution-intent",
+        default=True,
+        visibility="hidden",
+    )
     input_page = st.Page(
         _ROUTE_FILES[INPUT_STAGE],
         title="Review Inputs",
         icon=":material/description:",
-        default=True,
         visibility="hidden",
     )
     review_page = st.Page(
@@ -108,10 +143,16 @@ def main() -> None:
         visibility="hidden",
     )
     selected_page = st.navigation(
-        [input_page, review_page, output_page],
+        [drafting_page, input_page, review_page, output_page],
         position="hidden",
     )
     selected_page.run()
+
+
+def _render_drafting_page() -> None:
+    _render_page_shell(DRAFT_STAGE)
+    _render_drafting_stage()
+    _render_error()
 
 
 def _render_input_page() -> None:
@@ -146,7 +187,7 @@ def _render_review_page() -> None:
             "generating outputs."
         )
 
-    st.header("Stage 2 — Human Review")
+    st.header("Stage 3 — Human Review")
     _render_review_navigation(stale=stale)
     _render_analyzed_input_summary(analyzed_result)
     form_data, submitted = _render_human_review_stage(analyzed_result, stale=stale)
@@ -184,7 +225,7 @@ def _render_output_page() -> None:
         )
 
     _render_page_shell(OUTPUT_STAGE)
-    st.header("Stage 3 — Generated Outputs")
+    st.header("Stage 4 — Generated Outputs")
     _render_output_navigation()
     _render_output_stage(outputs)
 
@@ -221,22 +262,21 @@ def _render_header() -> None:
             '<div class="agc-product-copy">'
             "<span>ARCHITECTURE &amp; ENGINEERING</span>"
             "<strong>Architecture Governance Copilot</strong>"
-            "<small>Human-controlled Solution Intent review</small>"
+            "<small>Human-controlled Solution Intent drafting and review</small>"
             "</div>"
             '<div class="agc-brand-actions">'
             '<div class="agc-classification">'
             '<span class="agc-classification-dot"></span>INTERNAL · HACKATHON PoC'
             "</div>"
-            '<div class="agc-service-status">● Deterministic demo ready</div>'
+            '<div class="agc-service-status">● Offline demo ready</div>'
             "</div>"
             "</div>"
         ),
         unsafe_allow_html=True,
     )
     st.info(
-        "This PoC uses synthetic data and a deterministic demo extractor. "
-        "Formal decisions remain with the Domain Architect; no external systems "
-        "are connected."
+        "Demo Mode · Synthetic Data · No External Connections. "
+        "Formal decisions remain with the Domain Architect."
     )
 
 
@@ -511,7 +551,7 @@ def _apply_visual_theme() -> None:
         }
         .agc-stepper {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 0.6rem;
             margin: 0.35rem 0 0.75rem;
         }
@@ -562,6 +602,11 @@ def _apply_visual_theme() -> None:
         .agc-step--complete .agc-step-number {
             color: white;
             background: var(--agc-green-dark);
+        }
+        .agc-step--skipped {
+            border-style: dashed;
+            background: #f3f4f5;
+            color: var(--agc-muted);
         }
         .agc-section-label {
             margin-bottom: -0.2rem;
@@ -793,6 +838,7 @@ def _apply_visual_theme() -> None:
 
 def _render_sidebar(stage: str) -> None:
     stage_labels = {
+        DRAFT_STAGE: "Draft Solution Intent",
         INPUT_STAGE: "Review Inputs",
         REVIEW_STAGE: "Human Review",
         OUTPUT_STAGE: "Generated Outputs",
@@ -804,27 +850,37 @@ def _render_sidebar(stage: str) -> None:
         st.divider()
 
         context = _current_context()
-        st.markdown("**Review context**")
-        if context is None:
-            st.caption("Load the sample to initialize the review.")
+        if stage == DRAFT_STAGE:
+            st.markdown("**Drafting context**")
+            project_name = st.session_state[DRAFT_PROJECT_KEY]
+            if isinstance(project_name, str) and project_name:
+                st.write(project_name)
+                st.caption("SI template · source excerpts · supporting notes")
+            else:
+                st.caption("Load the sample drafting context to begin.")
         else:
-            st.write(context.project_name)
-            st.caption(
-                f"SI {context.si_version} · Round {context.review_round} · "
-                f"{context.ado_ticket_id or 'No governance ticket'}"
-            )
+            st.markdown("**Review context**")
+            if context is None:
+                st.caption("Load or prepare a review package to initialize the review.")
+            else:
+                st.write(context.project_name)
+                st.caption(
+                    f"SI {context.si_version} · Round {context.review_round} · "
+                    f"{context.ado_ticket_id or 'No governance ticket'}"
+                )
 
         st.divider()
         st.markdown("**System status**")
-        st.success("Deterministic extractor ready")
+        st.success("Offline demo services ready")
         st.caption("● Synthetic data")
-        st.caption("● Offline execution")
-        st.caption("● Mock Azure DevOps output")
+        st.caption("● Local processing")
+        st.caption("● Azure DevOps payload previews")
         st.caption("○ No external connections")
 
 
 def _render_step_progress(stage: str) -> None:
     stages = [
+        (DRAFT_STAGE, "Draft Solution Intent"),
         (INPUT_STAGE, "Review Inputs"),
         (REVIEW_STAGE, "Human Review"),
         (OUTPUT_STAGE, "Generated Outputs"),
@@ -835,7 +891,18 @@ def _render_step_progress(stage: str) -> None:
     workflow_complete = stage == OUTPUT_STAGE and st.session_state[OUTPUT_SUCCESS_KEY] is True
     step_cards: list[str] = []
     for index, (_, label) in enumerate(stages):
-        if index < current_index or (workflow_complete and index == current_index):
+        draft_skipped = (
+            index == 0 and current_index > 0 and st.session_state[DRAFT_CONFIRMED_KEY] is not True
+        )
+        draft_complete = index == 0 and st.session_state[DRAFT_CONFIRMED_KEY] is True
+        if draft_skipped:
+            status_class = "agc-step--skipped"
+            status = "Skipped"
+        elif (
+            draft_complete
+            or index < current_index
+            or (workflow_complete and index == current_index)
+        ):
             status_class = "agc-step--complete"
             status = "Complete"
         elif index == current_index:
@@ -856,27 +923,366 @@ def _render_step_progress(stage: str) -> None:
     )
 
 
+def _render_drafting_stage() -> None:
+    st.header("Stage 1 — Draft Solution Intent")
+    st.caption(
+        "Create an SI draft from a template, selected source-code context, and supporting "
+        "notes. Demo mode supports the bundled review package."
+    )
+    drafting_context_ready = all(
+        isinstance(value, str) and value.strip()
+        for value in (
+            st.session_state.get(
+                DRAFT_PROJECT_WIDGET_KEY,
+                st.session_state[DRAFT_PROJECT_KEY],
+            ),
+            st.session_state.get(
+                DRAFT_TEMPLATE_WIDGET_KEY,
+                st.session_state[DRAFT_TEMPLATE_KEY],
+            ),
+            st.session_state.get(
+                DRAFT_SOURCE_CODE_WIDGET_KEY,
+                st.session_state[DRAFT_SOURCE_CODE_KEY],
+            ),
+        )
+    )
+
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">DRAFTING ACTIONS</p>',
+            unsafe_allow_html=True,
+        )
+        load_column, generate_column, existing_column, reset_column = st.columns(
+            [1.35, 1.2, 1.25, 1],
+        )
+        load_clicked = load_column.button(
+            "Load Sample Drafting Context",
+            key="agc_load_drafting_context",
+            use_container_width=True,
+        )
+        generate_clicked = generate_column.button(
+            "Generate SI Draft",
+            key="agc_generate_si_draft",
+            type="primary",
+            disabled=not drafting_context_ready,
+            help=(
+                "Provide a project name, SI template, and source-code context before "
+                "generating a draft."
+            ),
+            use_container_width=True,
+        )
+        use_existing_clicked = existing_column.button(
+            "Use Existing Solution Intent",
+            key="agc_use_existing_si",
+            use_container_width=True,
+        )
+        reset_clicked = reset_column.button(
+            "Reset Workspace",
+            key="agc_reset_drafting",
+            use_container_width=True,
+        )
+
+    if use_existing_clicked:
+        _switch_stage(INPUT_STAGE)
+    if reset_clicked:
+        reset_application_state(st.session_state)
+        _switch_stage(DRAFT_STAGE)
+    if load_clicked:
+        try:
+            load_drafting_context_into_state(
+                st.session_state,
+                load_sample_drafting_context(),
+            )
+        except (OSError, UnicodeError, ValueError) as exc:
+            st.session_state[ERROR_KEY] = f"Unable to load drafting context: {exc}"
+        else:
+            st.rerun()
+
+    st.session_state.setdefault(
+        DRAFT_PROJECT_WIDGET_KEY,
+        st.session_state[DRAFT_PROJECT_KEY],
+    )
+    st.session_state.setdefault(
+        DRAFT_TEMPLATE_WIDGET_KEY,
+        st.session_state[DRAFT_TEMPLATE_KEY],
+    )
+    st.session_state.setdefault(
+        DRAFT_SOURCE_CODE_WIDGET_KEY,
+        st.session_state[DRAFT_SOURCE_CODE_KEY],
+    )
+    st.session_state.setdefault(
+        DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+        st.session_state[DRAFT_SUPPORTING_DOCS_KEY],
+    )
+
+    project_name = st.text_input(
+        "Project name",
+        key=DRAFT_PROJECT_WIDGET_KEY,
+        placeholder="Load the bundled demo context to begin.",
+    )
+    template_tab, source_tab, documents_tab = st.tabs(
+        ["SI Template", "Source Code Context", "Supporting Documents"]
+    )
+    with template_tab:
+        template = st.text_area(
+            "SI template",
+            key=DRAFT_TEMPLATE_WIDGET_KEY,
+            height=280,
+            placeholder="Paste the approved SI template structure.",
+        )
+    with source_tab:
+        source_code_context = st.text_area(
+            "Selected source-code context",
+            key=DRAFT_SOURCE_CODE_WIDGET_KEY,
+            height=280,
+            placeholder=(
+                "Paste a repository summary or selected source excerpts. "
+                "The PoC does not scan or execute a repository."
+            ),
+        )
+    with documents_tab:
+        supporting_documents = st.text_area(
+            "Supporting-document context",
+            key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+            height=280,
+            placeholder="Paste relevant requirements, constraints, and architecture notes.",
+        )
+
+    st.session_state[DRAFT_PROJECT_KEY] = project_name
+    st.session_state[DRAFT_TEMPLATE_KEY] = template
+    st.session_state[DRAFT_SOURCE_CODE_KEY] = source_code_context
+    st.session_state[DRAFT_SUPPORTING_DOCS_KEY] = supporting_documents
+
+    if isinstance(st.session_state[DRAFT_RESULT_KEY], SolutionIntentDraft):
+        try:
+            current_request = SolutionIntentDraftRequest(
+                project_name=project_name,
+                template=template,
+                source_code_context=source_code_context,
+                supporting_documents=supporting_documents or None,
+            )
+            stale_draft = drafting_result_is_stale(
+                current_request,
+                st.session_state[DRAFT_FINGERPRINT_KEY],
+            )
+        except ValidationError:
+            stale_draft = True
+        if stale_draft:
+            clear_stale_si_draft(st.session_state)
+            st.warning(
+                "Drafting context changed after generation. Generate a new SI draft before "
+                "human confirmation."
+            )
+
+    if generate_clicked and _generate_si_draft():
+        st.rerun()
+
+    draft = st.session_state[DRAFT_RESULT_KEY]
+    if not isinstance(draft, SolutionIntentDraft):
+        st.info(
+            "No SI draft has been generated. Load the bundled demonstration context, inspect all "
+            "three inputs, then select Generate SI Draft."
+        )
+        return
+
+    st.success(
+        "Solution Intent draft generated. Review and edit it before handing it to governance."
+    )
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">HUMAN REVIEW</p>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("### Proposed Solution Intent")
+        st.caption(
+            f"Provider: {draft.provider_name}. Generation is a drafting aid, not architecture "
+            "approval or publication."
+        )
+        with st.form("agc_si_draft_review_form", clear_on_submit=False):
+            submitted = st.form_submit_button(
+                "Confirm SI Draft & Continue to Review",
+                key="agc_confirm_si_draft",
+                type="primary",
+                use_container_width=True,
+            )
+            st.warning(
+                "You may edit this draft and the handoff will preserve your changes. For this "
+                "demo, keep the generated content unchanged: the offline review analyzer "
+                "supports the bundled SI only."
+            )
+            reviewed_content = st.text_area(
+                "Human-reviewed SI draft",
+                key=DRAFT_CONTENT_WIDGET_KEY,
+                height=500,
+            )
+            with st.expander("Draft assumptions and safeguards"):
+                for assumption in draft.assumptions:
+                    st.write(f"- {assumption}")
+        if submitted and _confirm_si_draft(reviewed_content):
+            _switch_stage(INPUT_STAGE)
+
+
+def _confirm_si_draft(reviewed_content: str) -> bool:
+    processing_overlay = st.empty()
+    try:
+        processing_overlay.markdown(
+            _processing_overlay_markup(
+                "CONFIRM SOLUTION INTENT",
+                "Validating reviewed draft",
+                "Checking the human-reviewed Solution Intent before handoff.",
+                step=1,
+                total_steps=2,
+            ),
+            unsafe_allow_html=True,
+        )
+        with st.status("Confirming Solution Intent...", expanded=True) as status:
+            st.write("Human-reviewed draft ready for validation")
+            _demo_pause()
+            processing_overlay.markdown(
+                _processing_overlay_markup(
+                    "CONFIRM SOLUTION INTENT",
+                    "Preparing governance review",
+                    "Preserving the confirmed SI and initializing Review Inputs.",
+                    step=2,
+                    total_steps=2,
+                ),
+                unsafe_allow_html=True,
+            )
+            confirm_si_draft_for_review(st.session_state, reviewed_content)
+            st.write("Confirmed SI preserved for the governance review")
+            status.update(
+                label="SI confirmed — opening Review Inputs",
+                state="complete",
+                expanded=True,
+            )
+            _demo_pause()
+    except ValueError as exc:
+        st.session_state[ERROR_KEY] = f"Unable to confirm SI draft: {exc}"
+        return False
+    finally:
+        processing_overlay.empty()
+    return True
+
+
+def _generate_si_draft() -> bool:
+    processing_overlay = st.empty()
+    try:
+        request = SolutionIntentDraftRequest(
+            project_name=st.session_state[DRAFT_PROJECT_KEY],
+            template=st.session_state[DRAFT_TEMPLATE_KEY],
+            source_code_context=st.session_state[DRAFT_SOURCE_CODE_KEY],
+            supporting_documents=st.session_state[DRAFT_SUPPORTING_DOCS_KEY] or None,
+        )
+        processing_overlay.markdown(
+            _processing_overlay_markup(
+                "DRAFT SOLUTION INTENT",
+                "Validating drafting context",
+                "Checking the template, selected code context, and supporting notes.",
+                step=1,
+                total_steps=3,
+            ),
+            unsafe_allow_html=True,
+        )
+        with st.status("Preparing Solution Intent draft...", expanded=True) as status:
+            st.write("Drafting inputs validated")
+            _demo_pause()
+            processing_overlay.markdown(
+                _processing_overlay_markup(
+                    "DRAFT SOLUTION INTENT",
+                    "Structuring architecture content",
+                    "Mapping known design context into the required SI sections.",
+                    step=2,
+                    total_steps=3,
+                ),
+                unsafe_allow_html=True,
+            )
+            service = SolutionIntentDraftingService(DeterministicDemoDrafter())
+            draft = service.generate_draft(request)
+            st.write("Known context and explicit gaps mapped into the SI structure")
+            _demo_pause()
+            processing_overlay.markdown(
+                _processing_overlay_markup(
+                    "DRAFT SOLUTION INTENT",
+                    "Preparing human review",
+                    "Creating an editable draft without publishing it.",
+                    step=3,
+                    total_steps=3,
+                ),
+                unsafe_allow_html=True,
+            )
+            store_si_draft(
+                st.session_state,
+                draft,
+                drafting_input_fingerprint(request),
+            )
+            st.write("Editable SI draft prepared")
+            status.update(
+                label="Draft ready — human confirmation required",
+                state="complete",
+                expanded=True,
+            )
+            _demo_pause()
+    except (
+        DeterministicDraftingFixtureError,
+        ValidationError,
+        ValueError,
+    ) as exc:
+        st.session_state[ERROR_KEY] = f"Draft generation failed: {exc}"
+        return False
+    finally:
+        processing_overlay.empty()
+    return True
+
+
 def _render_input_stage() -> None:
-    st.header("Stage 1 — Review Inputs")
+    st.header("Stage 2 — Review Inputs")
+    context = _current_context()
+    current_solution_intent = st.session_state.get(
+        SOLUTION_INTENT_WIDGET_KEY,
+        st.session_state[SOLUTION_INTENT_KEY],
+    )
+    current_transcript = st.session_state.get(
+        TRANSCRIPT_WIDGET_KEY,
+        st.session_state[TRANSCRIPT_KEY],
+    )
+    review_inputs_ready = (
+        isinstance(current_solution_intent, str)
+        and bool(current_solution_intent.strip())
+        and isinstance(current_transcript, str)
+        and bool(current_transcript.strip())
+        and isinstance(context, SolutionIntentReviewContext)
+    )
 
     with st.container(border=True):
         st.markdown(
             '<p class="agc-section-label">REVIEW ACTIONS</p>',
             unsafe_allow_html=True,
         )
-        load_column, analyze_column, reset_column, status_column = st.columns(
-            [1.2, 1.2, 1, 2],
-            vertical_alignment="center",
+        load_column, companion_column = st.columns(
+            [1.3, 1.7],
         )
         load_clicked = load_column.button(
             "Load Sample Review",
             key="agc_load_sample",
             use_container_width=True,
         )
+        companions_clicked = companion_column.button(
+            "Load Sample Transcript & Metadata",
+            key="agc_load_review_companions",
+            use_container_width=True,
+        )
+        analyze_column, reset_column, status_column = st.columns(
+            [1.2, 1, 2],
+            vertical_alignment="center",
+        )
         analyze_clicked = analyze_column.button(
             "Analyze Review",
             key="agc_analyze",
             type="primary",
+            disabled=not review_inputs_ready,
+            help=(
+                "Provide a Solution Intent, review transcript, and review metadata before analysis."
+            ),
             use_container_width=True,
         )
         reset_clicked = reset_column.button(
@@ -885,8 +1291,14 @@ def _render_input_stage() -> None:
             use_container_width=True,
         )
 
-        if st.session_state[LOADED_KEY]:
-            status_column.success("Synthetic sample loaded · Inputs are editable")
+        if review_inputs_ready and st.session_state[DRAFT_CONFIRMED_KEY]:
+            status_column.success("Confirmed SI + review companions ready")
+        elif review_inputs_ready:
+            status_column.success("Review package loaded · Inputs are editable")
+        elif st.session_state[DRAFT_CONFIRMED_KEY]:
+            status_column.info("Confirmed SI ready · Add transcript and metadata")
+        elif context is not None:
+            status_column.info("Review package incomplete · Add SI and transcript")
         else:
             status_column.info("Waiting for a review package")
 
@@ -894,7 +1306,7 @@ def _render_input_stage() -> None:
 
     if reset_clicked:
         reset_application_state(st.session_state)
-        _switch_stage(INPUT_STAGE)
+        _switch_stage(DRAFT_STAGE)
 
     if load_clicked:
         try:
@@ -904,7 +1316,17 @@ def _render_input_stage() -> None:
         else:
             st.rerun()
 
-    context = _current_context()
+    if companions_clicked:
+        try:
+            load_sample_review_companions_into_state(
+                st.session_state,
+                load_sample_review(),
+            )
+        except (OSError, UnicodeError, ValueError) as exc:
+            st.session_state[ERROR_KEY] = f"Unable to load review companions: {exc}"
+        else:
+            st.rerun()
+
     context_column, sources_column = st.columns(
         [1, 2.35],
         gap="medium",
@@ -933,17 +1355,17 @@ def _render_input_stage() -> None:
         )
         with si_tab:
             solution_intent = st.text_area(
-                "Synthetic Solution Intent",
+                "Solution Intent",
                 key=SOLUTION_INTENT_WIDGET_KEY,
                 height=315,
-                placeholder="Load the bundled synthetic review to begin.",
+                placeholder="Load the bundled review package to begin.",
             )
         with transcript_tab:
             transcript = st.text_area(
-                "Synthetic Teams-style Review Transcript",
+                "Teams-style Review Transcript",
                 key=TRANSCRIPT_WIDGET_KEY,
                 height=315,
-                placeholder="Load the bundled synthetic review to begin.",
+                placeholder="Load the bundled review package to begin.",
             )
     st.session_state[SOLUTION_INTENT_KEY] = solution_intent
     st.session_state[TRANSCRIPT_KEY] = transcript
@@ -1033,7 +1455,7 @@ def _render_review_navigation(*, stale: bool) -> None:
         use_container_width=True,
     ):
         reset_application_state(st.session_state)
-        _switch_stage(INPUT_STAGE)
+        _switch_stage(DRAFT_STAGE)
 
 
 def _render_output_navigation() -> None:
@@ -1051,11 +1473,11 @@ def _render_output_navigation() -> None:
         use_container_width=True,
     ):
         reset_application_state(st.session_state)
-        _switch_stage(INPUT_STAGE)
+        _switch_stage(DRAFT_STAGE)
 
 
 def _render_analyzed_input_summary(result: GovernanceResult) -> None:
-    st.success("Deterministic analysis completed. No outputs were generated automatically.")
+    st.success("Review analysis completed. No outputs were generated automatically.")
     with st.container(border=True):
         st.markdown("#### Analyzed Review Inputs")
         columns = st.columns(4)
@@ -1695,13 +2117,13 @@ def _generate_reviewed_outputs(
                 _processing_overlay_markup(
                     "GENERATE OUTPUTS",
                     "Preparing delivery package",
-                    "Formatting mock Azure DevOps payloads and final downloadable outputs.",
+                    "Formatting Azure DevOps work-item previews and downloadable outputs.",
                     step=3,
                     total_steps=3,
                 ),
                 unsafe_allow_html=True,
             )
-            st.write(f"Prepared {len(outputs.ado_work_items)} mock Azure DevOps work-item payloads")
+            st.write(f"Prepared {len(outputs.ado_work_items)} Azure DevOps work-item previews")
             store_outputs(st.session_state, reviewed_result, outputs)
             processing_status.update(
                 label="Artifacts ready — opening Generated Outputs",
@@ -1737,7 +2159,7 @@ def _render_output_stage(outputs: GovernanceOutputs) -> None:
             use_container_width=True,
         ):
             reset_application_state(st.session_state)
-            _switch_stage(INPUT_STAGE)
+            _switch_stage(DRAFT_STAGE)
 
         if st.session_state[OUTPUT_SUCCESS_KEY]:
             st.caption(
@@ -1753,7 +2175,7 @@ def _render_output_stage(outputs: GovernanceOutputs) -> None:
             )
             summary_columns[2].metric("Meeting Minutes", "1")
             summary_columns[3].metric(
-                "Mock Work Items",
+                "Work Item Previews",
                 len(outputs.ado_work_items),
             )
 
@@ -1782,13 +2204,13 @@ def _render_minutes_output(review_minutes: str) -> None:
 
 
 def _render_ado_outputs(outputs: GovernanceOutputs) -> None:
-    st.subheader("Mock Azure DevOps Work Items")
-    st.warning("No real Azure DevOps work item has been created.")
+    st.subheader("Azure DevOps Work Item Previews")
+    st.warning("Preview only · No work items were submitted to Azure DevOps.")
     if not outputs.ado_work_items:
         st.caption("No action items were included in the reviewed record.")
     for index, item in enumerate(outputs.ado_work_items, start=1):
         with st.container(border=True):
-            st.markdown(f"#### Mock Work Item {index}: {item.title}")
+            st.markdown(f"#### Work Item Preview {index}: {item.title}")
             first_row = st.columns(4)
             first_row[0].markdown("**Assigned to**")
             first_row[0].write(item.assigned_to or "Unassigned")
@@ -1822,9 +2244,9 @@ def _render_ado_outputs(outputs: GovernanceOutputs) -> None:
             indent=2,
         )
         st.download_button(
-            "Download Mock Work Items JSON",
+            "Download Work Item Preview JSON",
             data=work_items_json,
-            file_name="mock-ado-work-items.json",
+            file_name="ado-work-item-previews.json",
             mime="application/json",
             key="agc_download_ado",
         )

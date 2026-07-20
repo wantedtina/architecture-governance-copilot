@@ -1,8 +1,10 @@
 # Architecture Governance Copilot
 
-Architecture Governance Copilot is a hackathon proof of concept for reviewing a Solution Intent
-(SI). It combines synthetic SI content, a synthetic Domain Architecture review transcript, and
-basic review metadata to propose a structured, source-backed record for one review round.
+Architecture Governance Copilot is a hackathon proof of concept for drafting and reviewing a
+Solution Intent (SI). Its first workflow stage turns a synthetic SI template, selected
+source-code context, and supporting notes into an editable SI draft. The confirmed draft then
+enters the review workflow with a synthetic Domain Architecture review transcript and basic
+review metadata. Users who already have an SI can explicitly skip drafting.
 
 A human Domain Architect remains responsible for reviewing, editing, and making the formal
 governance decision. Only a validated, human-confirmed reviewed record generates standardized
@@ -21,24 +23,27 @@ is slow, and findings can lose their SI-section context or supporting evidence.
 
 ## Proposed solution
 
-The implemented deterministic Solution Intent Review Copilot can:
+The implemented deterministic Solution Intent Copilot can:
 
-1. load one bundled synthetic SI, matching Teams-style transcript, and review metadata;
-2. analyze both sources with the deterministic fixture-backed extractor;
-3. display the outcome, findings, decisions, risks, actions, open questions, and missing
+1. load synthetic drafting context and generate a known SI draft behind a provider interface;
+2. let a human edit and confirm that draft before it enters governance review;
+3. load review transcript and metadata without replacing the confirmed SI;
+4. alternatively load one complete bundled synthetic review package;
+5. analyze both review sources with the deterministic fixture-backed extractor;
+6. display the outcome, findings, decisions, risks, actions, open questions, and missing
    information;
-4. identify supporting evidence as either SI or transcript evidence;
-5. map findings to SI sections where supported;
-6. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
-7. validate the human-reviewed record before generating Markdown minutes and mock ADO action
+7. identify supporting evidence as either SI or transcript evidence;
+8. map findings to SI sections where supported;
+9. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
+10. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
-The UI presents this as three routed Streamlit pages. Analysis navigates from the root Review
-Inputs page to `/human-review`, and confirmation navigates to `/generated-outputs`. Browser
-history and Back actions therefore behave like page navigation while shared session state
-preserves the review. A persistent workspace sidebar, stage stepper, summary cards, and counted
-review tabs give the demo a credible internal governance-tool feel while keeping its
-deterministic and mocked boundaries visible.
+The UI presents one consistent four-stage route hierarchy: **Draft Solution Intent → Review
+Inputs → Human Review → Generated Outputs**. Drafting is the default starting page. **Use
+Existing Solution Intent** moves directly to Review Inputs and marks drafting as skipped.
+Analysis navigates to `/human-review`, and review confirmation navigates to
+`/generated-outputs`. Browser history and Back actions therefore behave like page navigation
+while shared session state preserves the current draft and review.
 
 The MVP demonstrates one review round only. It does not compare SI versions, persist review
 history, resolve findings automatically, or implement a multi-round workflow.
@@ -46,7 +51,16 @@ history, resolve findings automatically, or implement a multi-round workflow.
 ## Architecture
 
 ```text
-Synthetic SI + synthetic transcript + review metadata
+Synthetic template + source context + supporting notes
+                         |
+                         v
+             SI drafting provider/service
+                         |
+                         v
+              Editable SI draft → Human confirm
+                         |
+                         v
+Confirmed SI + synthetic transcript + review metadata
                          |
                          v
                     Streamlit UI
@@ -91,6 +105,7 @@ the planned recording flow.
 architecture-governance-copilot/
 ├── app.py
 ├── pages/
+│   ├── solution_intent_drafting.py
 │   ├── review_inputs.py
 │   ├── human_review.py
 │   └── generated_outputs.py
@@ -106,10 +121,14 @@ architecture-governance-copilot/
 │       ├── models.py
 │       ├── extractors.py
 │       ├── governance_service.py
+│       ├── si_drafting.py
 │       ├── ui_support.py
 │       ├── minutes_generator.py
 │       └── ado_generator.py
 ├── samples/
+│   ├── si_template.md
+│   ├── source_context.txt
+│   ├── supporting_context.md
 │   ├── solution_intent.md
 │   ├── review_metadata.json
 │   ├── review_transcript.txt
@@ -119,6 +138,7 @@ architecture-governance-copilot/
     ├── test_sample_data.py
     ├── test_extractors.py
     ├── test_governance_service.py
+    ├── test_si_drafting.py
     ├── test_ui_support.py
     ├── test_app.py
     ├── test_minutes_generator.py
@@ -149,8 +169,8 @@ uv run streamlit run app.py
 ```
 
 The local demo uses a 0.4-second pause for each visible processing phase, producing an
-approximately 1.2-second transition after Analyze and Confirm. To rehearse with a different
-per-phase delay:
+approximately 0.8-second transition after SI confirmation and 1.2-second transitions after
+Analyze and reviewed-record confirmation. To rehearse with a different per-phase delay:
 
 ```bash
 AGC_DEMO_STEP_DELAY_SECONDS=0.6 uv run streamlit run app.py
@@ -176,10 +196,16 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The guided routed demo flow is: **Load Sample Review → Analyze Review → edit or exclude items →
-Confirm Reviewed Record & Generate Outputs**. Analyze and Confirm change the browser route, with
-Back and Reset controls for a reliable rehearsal loop. The application is fixture-backed and
-supports only the bundled synthetic sample.
+The primary guided flow is: **Load Sample Drafting Context → Generate SI Draft → human
+edit/confirm → Load Sample Transcript & Metadata → Analyze Review → edit or exclude items →
+Confirm Reviewed Record & Generate Outputs**.
+
+The existing-SI shortcut is: **Use Existing Solution Intent → Load Sample Review → Analyze
+Review**.
+The application is fixture-backed and supports only the bundled synthetic drafting and review
+scenario. Human edits are preserved into Stage 1, but the current deterministic review extractor
+can analyze only the unchanged bundled SI; arbitrary edited SI analysis requires a future
+approved provider.
 
 ## Current implementation status
 
@@ -187,6 +213,12 @@ supports only the bundled synthetic sample.
 
 Implemented:
 
+- strict SI-drafting request/result models and a `SolutionIntentDrafter` provider protocol;
+- a deterministic offline drafter for the bundled template, source excerpts, and supporting
+  notes;
+- a first-class routed drafting stage with editable human confirmation;
+- direct handoff of the confirmed SI to Review Inputs;
+- transcript-and-metadata loading that preserves the confirmed SI;
 - strict Pydantic models for one SI review round;
 - SI lifecycle and review outcome enums;
 - typed SI/transcript evidence;
@@ -203,26 +235,31 @@ Implemented:
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
-- three routed Streamlit views with guarded navigation, durable review state, and stale-analysis
-  protection;
+- one consistent four-stage route hierarchy, durable state, and
+  stale-analysis protection;
 - editable human review with item exclusion and read-only evidence;
-- rendered/raw Markdown output and mock ADO work-item cards; and
+- rendered/raw Markdown output and Azure DevOps work-item preview cards; and
 - an explicit completed-workflow panel with artifact counts and a safe **Start New Review**
   reset; and
 - pure UI-support tests plus Streamlit `AppTest` workflow coverage.
 
 Not yet implemented:
 
+- general-purpose drafting from arbitrary repositories or documents;
+- source repository cloning, scanning, or code execution;
+- real Confluence template retrieval or SI publication;
+- a production enterprise LLM drafting provider;
 - real LLM extraction;
 - parent ADO governance-ticket update generation;
 - external integrations; or
 - any multi-round workflow behavior.
 
-The deterministic provider supports only the bundled synthetic sample; it does not claim to
-analyze arbitrary documents. Mock ADO work items are local preview models and are never submitted
-to Azure DevOps. The UI confirms a reviewed record for output generation; it does not formally
-approve the Solution Intent or replace the Domain Architect. A real LLM provider remains an
-optional, unimplemented later phase.
+The deterministic drafting and review providers support only the bundled synthetic scenario;
+they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Mock ADO
+work items are local preview models and are never submitted to Azure DevOps. The UI confirms a
+draft for review handoff and later confirms a reviewed record for output generation; neither
+action formally approves the Solution Intent or replaces the Domain Architect. Real enterprise
+LLM providers remain optional, unimplemented later phases.
 
 ## PoC and data statement
 

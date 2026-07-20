@@ -27,11 +27,17 @@ SOLUTION_INTENT_PATH = SAMPLES_DIR / "solution_intent.md"
 METADATA_PATH = SAMPLES_DIR / "review_metadata.json"
 TRANSCRIPT_PATH = SAMPLES_DIR / "review_transcript.txt"
 EXPECTED_RESULT_PATH = SAMPLES_DIR / "expected_result.json"
+DRAFT_TEMPLATE_PATH = SAMPLES_DIR / "si_template.md"
+SOURCE_CONTEXT_PATH = SAMPLES_DIR / "source_context.txt"
+SUPPORTING_CONTEXT_PATH = SAMPLES_DIR / "supporting_context.md"
 SAMPLE_PATHS = (
     SOLUTION_INTENT_PATH,
     METADATA_PATH,
     TRANSCRIPT_PATH,
     EXPECTED_RESULT_PATH,
+    DRAFT_TEMPLATE_PATH,
+    SOURCE_CONTEXT_PATH,
+    SUPPORTING_CONTEXT_PATH,
 )
 
 
@@ -85,7 +91,16 @@ def test_sample_json_is_parseable(path: Path) -> None:
     assert load_json(path)
 
 
-@pytest.mark.parametrize("path", [SOLUTION_INTENT_PATH, TRANSCRIPT_PATH])
+@pytest.mark.parametrize(
+    "path",
+    [
+        SOLUTION_INTENT_PATH,
+        TRANSCRIPT_PATH,
+        DRAFT_TEMPLATE_PATH,
+        SOURCE_CONTEXT_PATH,
+        SUPPORTING_CONTEXT_PATH,
+    ],
+)
 def test_sample_text_file_is_non_empty(path: Path) -> None:
     assert path.read_text(encoding="utf-8").strip()
 
@@ -96,6 +111,22 @@ def test_sample_documents_fit_demo_size_bounds() -> None:
 
     assert 700 <= len(solution_intent_words) <= 1_200
     assert 25 <= len(transcript_lines) <= 40
+
+
+def test_drafting_template_covers_generated_si_sections() -> None:
+    template_headings = solution_intent_headings(DRAFT_TEMPLATE_PATH.read_text(encoding="utf-8"))
+    generated_headings = solution_intent_headings(SOLUTION_INTENT_PATH.read_text(encoding="utf-8"))
+
+    assert template_headings == generated_headings
+
+
+def test_drafting_context_is_explicitly_synthetic() -> None:
+    combined = "\n".join(
+        path.read_text(encoding="utf-8") for path in (SOURCE_CONTEXT_PATH, SUPPORTING_CONTEXT_PATH)
+    )
+
+    assert "synthetic" in combined.lower()
+    assert "not evidenced" in combined.lower()
 
 
 def test_review_metadata_validates() -> None:

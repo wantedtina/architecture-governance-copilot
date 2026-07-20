@@ -12,6 +12,8 @@ from typing import Any
 from architecture_governance_copilot.governance_service import GovernanceOutputs
 from architecture_governance_copilot.models import (
     GovernanceResult,
+    SolutionIntentDraft,
+    SolutionIntentDraftRequest,
     SolutionIntentReviewContext,
     SourceEvidence,
 )
@@ -19,6 +21,18 @@ from architecture_governance_copilot.models import (
 STATE_PREFIX = "agc_"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
 
+DRAFT_PROJECT_KEY = f"{STATE_PREFIX}draft_project"
+DRAFT_TEMPLATE_KEY = f"{STATE_PREFIX}draft_template"
+DRAFT_SOURCE_CODE_KEY = f"{STATE_PREFIX}draft_source_code"
+DRAFT_SUPPORTING_DOCS_KEY = f"{STATE_PREFIX}draft_supporting_docs"
+DRAFT_RESULT_KEY = f"{STATE_PREFIX}draft_result"
+DRAFT_FINGERPRINT_KEY = f"{STATE_PREFIX}draft_fingerprint"
+DRAFT_CONFIRMED_KEY = f"{STATE_PREFIX}draft_confirmed"
+DRAFT_PROJECT_WIDGET_KEY = f"{STATE_PREFIX}draft_project_widget"
+DRAFT_TEMPLATE_WIDGET_KEY = f"{STATE_PREFIX}draft_template_widget"
+DRAFT_SOURCE_CODE_WIDGET_KEY = f"{STATE_PREFIX}draft_source_code_widget"
+DRAFT_SUPPORTING_DOCS_WIDGET_KEY = f"{STATE_PREFIX}draft_supporting_docs_widget"
+DRAFT_CONTENT_WIDGET_KEY = f"{STATE_PREFIX}draft_content_widget"
 SOLUTION_INTENT_KEY = f"{STATE_PREFIX}solution_intent"
 TRANSCRIPT_KEY = f"{STATE_PREFIX}review_transcript"
 SOLUTION_INTENT_WIDGET_KEY = f"{STATE_PREFIX}input_solution_intent"
@@ -36,10 +50,30 @@ ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
 ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
 
+DRAFT_STAGE = "drafting"
 INPUT_STAGE = "inputs"
 REVIEW_STAGE = "review"
 OUTPUT_STAGE = "outputs"
-VALID_STAGES = frozenset({INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
+VALID_STAGES = frozenset({DRAFT_STAGE, INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
+
+
+@dataclass(frozen=True, slots=True)
+class DraftingSamplePaths:
+    """Absolute paths for bundled deterministic SI-drafting inputs."""
+
+    template: Path
+    source_code_context: Path
+    supporting_documents: Path
+
+
+@dataclass(frozen=True, slots=True)
+class DraftingSampleContext:
+    """Loaded bundled synthetic context for SI drafting."""
+
+    project_name: str
+    template: str
+    source_code_context: str
+    supporting_documents: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +105,37 @@ class ReviewFormData:
     action_items: tuple[Mapping[str, object], ...]
     open_questions: tuple[Mapping[str, object], ...]
     missing_evidence: tuple[Mapping[str, object], ...]
+
+
+def drafting_sample_paths() -> DraftingSamplePaths:
+    """Resolve bundled SI-drafting paths independently of the working directory."""
+    samples_dir = Path(__file__).resolve().parents[2] / "samples"
+    return DraftingSamplePaths(
+        template=samples_dir / "si_template.md",
+        source_code_context=samples_dir / "source_context.txt",
+        supporting_documents=samples_dir / "supporting_context.md",
+    )
+
+
+def load_sample_drafting_context() -> DraftingSampleContext:
+    """Load and validate the bundled synthetic SI-drafting context."""
+    paths = drafting_sample_paths()
+    template = paths.template.read_text(encoding="utf-8")
+    source_code_context = paths.source_code_context.read_text(encoding="utf-8")
+    supporting_documents = paths.supporting_documents.read_text(encoding="utf-8")
+    for label, value in (
+        ("SI template", template),
+        ("source-code context", source_code_context),
+        ("supporting-document context", supporting_documents),
+    ):
+        if not value.strip():
+            raise ValueError(f"Bundled {label} is empty.")
+    return DraftingSampleContext(
+        project_name="Digital Payment Notification Service",
+        template=template,
+        source_code_context=source_code_context,
+        supporting_documents=supporting_documents,
+    )
 
 
 def sample_paths() -> SamplePaths:
@@ -105,6 +170,13 @@ def load_sample_review() -> SampleReview:
 def initial_state_values() -> dict[str, object]:
     """Return independent initial values for application-owned session state."""
     return {
+        DRAFT_PROJECT_KEY: "",
+        DRAFT_TEMPLATE_KEY: "",
+        DRAFT_SOURCE_CODE_KEY: "",
+        DRAFT_SUPPORTING_DOCS_KEY: "",
+        DRAFT_RESULT_KEY: None,
+        DRAFT_FINGERPRINT_KEY: None,
+        DRAFT_CONFIRMED_KEY: False,
         SOLUTION_INTENT_KEY: "",
         TRANSCRIPT_KEY: "",
         CONTEXT_KEY: None,
@@ -118,7 +190,7 @@ def initial_state_values() -> dict[str, object]:
         LOADED_KEY: False,
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
-        ACTIVE_STAGE_KEY: INPUT_STAGE,
+        ACTIVE_STAGE_KEY: DRAFT_STAGE,
     }
 
 
@@ -182,6 +254,102 @@ def load_sample_into_state(
     state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
     state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
     state[LOADED_KEY] = True
+    state[DRAFT_CONFIRMED_KEY] = False
+
+
+def load_drafting_context_into_state(
+    state: MutableMapping[str, Any],
+    sample: DraftingSampleContext,
+) -> None:
+    """Populate synthetic drafting context and clear a previous draft result."""
+    state[DRAFT_PROJECT_KEY] = sample.project_name
+    state[DRAFT_TEMPLATE_KEY] = sample.template
+    state[DRAFT_SOURCE_CODE_KEY] = sample.source_code_context
+    state[DRAFT_SUPPORTING_DOCS_KEY] = sample.supporting_documents
+    state[DRAFT_PROJECT_WIDGET_KEY] = sample.project_name
+    state[DRAFT_TEMPLATE_WIDGET_KEY] = sample.template
+    state[DRAFT_SOURCE_CODE_WIDGET_KEY] = sample.source_code_context
+    state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY] = sample.supporting_documents
+    state[DRAFT_CONTENT_WIDGET_KEY] = ""
+    state[DRAFT_RESULT_KEY] = None
+    state[DRAFT_FINGERPRINT_KEY] = None
+    state[DRAFT_CONFIRMED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = DRAFT_STAGE
+
+
+def store_si_draft(
+    state: MutableMapping[str, Any],
+    draft: SolutionIntentDraft,
+    fingerprint: str,
+) -> None:
+    """Store a provider-generated draft as an independent human-editable value."""
+    independent_draft = draft.model_copy(deep=True)
+    state[DRAFT_RESULT_KEY] = independent_draft
+    state[DRAFT_FINGERPRINT_KEY] = fingerprint
+    state[DRAFT_CONTENT_WIDGET_KEY] = independent_draft.content
+    state[DRAFT_CONFIRMED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = DRAFT_STAGE
+
+
+def drafting_input_fingerprint(request: SolutionIntentDraftRequest) -> str:
+    """Create a stable fingerprint for SI-drafting inputs."""
+    return hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+
+
+def drafting_result_is_stale(
+    request: SolutionIntentDraftRequest,
+    generated_fingerprint: str | None,
+) -> bool:
+    """Return whether drafting context changed after generation."""
+    if generated_fingerprint is None:
+        return False
+    return drafting_input_fingerprint(request) != generated_fingerprint
+
+
+def clear_stale_si_draft(state: MutableMapping[str, Any]) -> None:
+    """Discard a generated draft after its source context changes."""
+    state[DRAFT_RESULT_KEY] = None
+    state[DRAFT_FINGERPRINT_KEY] = None
+    state[DRAFT_CONTENT_WIDGET_KEY] = ""
+    state[DRAFT_CONFIRMED_KEY] = False
+
+
+def confirm_si_draft_for_review(
+    state: MutableMapping[str, Any],
+    confirmed_content: str,
+) -> None:
+    """Hand a non-empty human-confirmed SI draft to existing Review Inputs."""
+    normalized = confirmed_content.strip()
+    if not normalized:
+        raise ValueError("Confirmed Solution Intent must not be blank.")
+    clear_analysis_state(state)
+    state[SOLUTION_INTENT_KEY] = normalized
+    state[SOLUTION_INTENT_WIDGET_KEY] = normalized
+    state[TRANSCRIPT_KEY] = ""
+    state[TRANSCRIPT_WIDGET_KEY] = ""
+    state[CONTEXT_KEY] = None
+    state[LOADED_KEY] = False
+    state[DRAFT_CONFIRMED_KEY] = True
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
+
+
+def load_sample_review_companions_into_state(
+    state: MutableMapping[str, Any],
+    sample: SampleReview,
+) -> None:
+    """Load transcript and metadata while preserving the current confirmed SI."""
+    solution_intent = str(state.get(SOLUTION_INTENT_KEY, "")).strip()
+    if not solution_intent:
+        raise ValueError("Confirm or enter a Solution Intent before loading review companions.")
+    clear_analysis_state(state)
+    state[SOLUTION_INTENT_KEY] = solution_intent
+    state[SOLUTION_INTENT_WIDGET_KEY] = solution_intent
+    state[TRANSCRIPT_KEY] = sample.transcript
+    state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
+    state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
+    state[LOADED_KEY] = True
 
 
 def store_analysis(
@@ -228,14 +396,19 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
         if key.startswith(STATE_PREFIX):
             del state[key]
     initialize_session_state(state)
+    state[DRAFT_PROJECT_WIDGET_KEY] = ""
+    state[DRAFT_TEMPLATE_WIDGET_KEY] = ""
+    state[DRAFT_SOURCE_CODE_WIDGET_KEY] = ""
+    state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY] = ""
+    state[DRAFT_CONTENT_WIDGET_KEY] = ""
     state[SOLUTION_INTENT_WIDGET_KEY] = ""
     state[TRANSCRIPT_WIDGET_KEY] = ""
 
 
 def active_stage(state: Mapping[str, Any]) -> str:
-    """Return the current valid route stage, defaulting safely to inputs."""
+    """Return the current valid route stage, defaulting safely to SI drafting."""
     value = state.get(ACTIVE_STAGE_KEY)
-    return value if isinstance(value, str) and value in VALID_STAGES else INPUT_STAGE
+    return value if isinstance(value, str) and value in VALID_STAGES else DRAFT_STAGE
 
 
 def set_active_stage(state: MutableMapping[str, Any], stage: str) -> None:

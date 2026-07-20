@@ -17,6 +17,7 @@ from architecture_governance_copilot.ui_support import (
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
+    DRAFT_STAGE,
     ERROR_KEY,
     INPUT_STAGE,
     LOADED_KEY,
@@ -212,7 +213,7 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
 
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[OUTPUTS_KEY] is None
-    assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
+    assert state[ACTIVE_STAGE_KEY] == DRAFT_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
     assert state["unrelated"] == "preserved"
 
@@ -221,14 +222,14 @@ def test_active_stage_navigation_accepts_only_known_route_stages() -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
 
-    assert active_stage(state) == INPUT_STAGE
+    assert active_stage(state) == DRAFT_STAGE
     set_active_stage(state, REVIEW_STAGE)
     assert active_stage(state) == REVIEW_STAGE
     set_active_stage(state, OUTPUT_STAGE)
     assert active_stage(state) == OUTPUT_STAGE
 
     state[ACTIVE_STAGE_KEY] = "corrupt"
-    assert active_stage(state) == INPUT_STAGE
+    assert active_stage(state) == DRAFT_STAGE
     with pytest.raises(ValueError, match="Unknown application stage"):
         set_active_stage(state, "later_phase")
 

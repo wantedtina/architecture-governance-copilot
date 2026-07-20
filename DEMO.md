@@ -2,13 +2,18 @@
 
 ## Demo objective
 
-In less than four minutes, demonstrate one reliable Solution Intent review round: load a
-synthetic SI and its review transcript, produce a source-backed review proposal, let a human
-reviewer edit and confirm the record, and generate review minutes plus mock Azure DevOps outputs.
-Formal governance decisions remain with the Domain Architect.
+In less than four minutes, demonstrate one reliable end-to-end journey: generate a draft
+Solution Intent from synthetic context, confirm it, add a synthetic review transcript, produce a
+source-backed governance proposal, let a human reviewer edit and confirm the record, and generate
+review minutes plus Azure DevOps work-item previews. Formal governance decisions remain with the
+Domain Architect.
 
 The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
 not show a second review round.
+
+The four-stage header remains visible throughout: **Draft Solution Intent → Review Inputs →
+Human Review → Generated Outputs**. The recording follows the drafting path. **Use Existing
+Solution Intent** is mentioned only as an alternative and is not clicked.
 
 ## Synthetic scenario
 
@@ -70,36 +75,35 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 **Expected state:**
 
 - **Architecture Governance Copilot** and the Solution Intent review subtitle are visible.
-- The page states that the PoC uses synthetic data.
-- Deterministic demo mode is clearly identified.
-- SI and transcript areas are empty.
+- A single global disclosure states **Demo Mode · Synthetic Data · No External Connections**.
+- **Stage 1 — Draft Solution Intent** is active.
+- The drafting context areas are empty.
 - No analysis or outputs are displayed.
 
-### Step 2 — Load the complete sample
+### Step 2 — Load and generate the SI draft
 
-**Click:** **Load Sample Review**.
-
-**Expected state:**
-
-- The SI area contains the Digital Payment Notification Service SI with visible section headings.
-- The transcript area contains the matching synthetic review meeting.
-- Review metadata identifies SI version 1.2, status `under_review`, round 2, and governance ticket
-  `ARCH-POC-1024`.
-- The review context is presented as a compact metadata card.
-- A visible message confirms that the synthetic sample is loaded and editable.
-- The workspace sidebar remains explicit that the extractor is deterministic, the data is
-  synthetic, and no external systems are connected.
-- No result is displayed yet.
-
-### Step 3 — Inspect the inputs
-
-**Action:** Briefly switch between the **Solution Intent** and **Review Transcript** tabs.
+**Click:** **Load Sample Drafting Context**, briefly identify the three context tabs, then click
+**Generate SI Draft**.
 
 **Expected state:**
 
-- The SI headings and synthetic disclaimer are visible.
-- The transcript preserves speaker names, timestamps, and line breaks.
-- The metadata remains visible without exposing local file paths.
+- The template, selected code context, and supporting notes are visibly synthetic.
+- A short deterministic processing overlay ends on an editable SI draft.
+- **Confirm SI Draft & Continue to Review** remains fixed at the bottom of the viewport.
+- The draft is clearly labeled as a drafting aid, not approval or Confluence publication.
+
+### Step 3 — Confirm the SI and prepare review inputs
+
+**Click:** **Confirm SI Draft & Continue to Review**, then **Load Sample Transcript & Metadata**.
+
+**Expected state:**
+
+- A short two-phase transition validates the reviewed draft and prepares the governance handoff.
+- The browser navigates to **Stage 2 — Review Inputs**.
+- Draft Solution Intent is marked **Complete** in the four-stage header.
+- The confirmed SI is preserved and the matching transcript and review metadata are loaded.
+- Review metadata identifies SI version 1.2, round 2, and ticket `ARCH-POC-1024`.
+- **Analyze Review** becomes enabled.
 
 ### Step 4 — Analyze the review
 
@@ -111,8 +115,8 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
   the human-review workspace.
 - Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
 - The browser navigates to `/human-review`.
-- The progress indicator advances to step 2.
-- **Stage 2 — Human Review** replaces the full input view.
+- The progress indicator advances to step 3.
+- **Stage 3 — Human Review** replaces the full input view.
 - A compact analyzed-input summary and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
 - Metrics show one decision, three findings, one risk, two actions, one open question, and two
@@ -158,16 +162,16 @@ question.
 **Expected state:**
 
 - A short processing panel validates the human-reviewed record, generates minutes, and prepares
-  two mock ADO payloads.
+  two Azure DevOps work-item previews.
 - The UI confirms output generation without claiming formal SI approval.
 - The browser navigates to `/generated-outputs`.
-- The progress indicator advances to step 3.
-- **Stage 3 — Generated Outputs** replaces the edit form.
+- The progress indicator advances to step 4.
+- **Stage 4 — Generated Outputs** replaces the edit form.
 - A **Governance package ready** completion panel clearly marks the workflow as complete.
-- Summary cards show completion, outcome, one minutes artifact, and the mock work-item count.
+- Summary cards show completion, outcome, one minutes artifact, and the work-item preview count.
 - **Start New Review** provides a deliberate reset for the next rehearsal.
 - The reviewed record excludes the Redis question.
-- Two mock action work items remain because no action was excluded.
+- Two action work-item previews remain because no action was excluded.
 - Nothing is sent to an external service.
 
 ### Step 9 — Show the generated minutes
@@ -180,13 +184,13 @@ question.
 - Redis is absent.
 - The accountability notice says the record must be reviewed before publication.
 
-### Step 10 — Show the mock ADO work items
+### Step 10 — Show the Azure DevOps work-item previews
 
-**Action:** Scroll to **Mock Azure DevOps Work Items**.
+**Action:** Scroll to **Azure DevOps Work Item Previews**.
 
 **Expected state:**
 
-- Exactly two mock work-item cards are visible.
+- Exactly two work-item preview cards are visible.
 - The first item is assigned to **Taylor Kim**.
 - Parent ID, due dates, priorities, tags, descriptions, and source indices are visible.
 - The page states: **No real Azure DevOps work item has been created.**
@@ -200,22 +204,24 @@ question.
 - The complete human-controlled one-round workflow is clear.
 - The completion state and optional restart action are unambiguous.
 - Each workflow stage has a dedicated view with Back and Reset navigation.
-- Synthetic data, deterministic mode, and mock integrations remain visible.
+- Demo mode, synthetic data, and the preview-only integration disclosure remain visible.
 - Formal governance responsibility remains with the Domain Architect.
 - There is no review history, second round, SI diff, or automatic finding resolution.
 
 ## Preliminary narration
 
-1. “A Solution Intent is the project's detailed architecture design. Domain Architects review it
-   over one or more rounds, but this PoC deliberately proves one round.”
-2. “One click loads the synthetic SI, matching transcript, and review metadata.”
-3. “Deterministic offline analysis combines both sources into a structured review proposal.”
+1. “A Solution Intent is the project's detailed architecture design. This PoC starts by drafting
+   one from a synthetic template, selected code context, and supporting notes.”
+2. “A human confirms the draft before it moves into governance review; nothing is published.”
+3. “We then add the synthetic transcript and metadata, and deterministic offline analysis
+   combines both review sources into a structured proposal.”
 4. “This finding maps back to the SI's Availability and Resilience section, and its evidence
    includes both the document and the meeting.”
 5. “The machine proposes the record; the Domain Architect remains responsible for review and
    formal approval.”
 6. “I’ll change one action owner and exclude the unresolved Redis question.”
-7. “Only the validated, human-reviewed state generates minutes and mock ADO work items.”
+7. “Only the validated, human-reviewed state generates minutes and Azure DevOps work-item
+   previews.”
 8. “There is no live Confluence, Teams, or Azure DevOps integration and no multi-round workflow
    in this MVP.”
 
@@ -224,11 +230,12 @@ question.
 | Time | Segment | Focus |
 | --- | --- | --- |
 | 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
-| 0:20–0:45 | Load inputs | Load the complete sample and inspect both tabs. |
-| 0:45–1:25 | Analyze | Show Changes Requested, counts, and read-only evidence. |
-| 1:25–2:05 | Human review | Edit one owner, exclude Redis, and emphasize human control. |
-| 2:05–3:10 | Confirm and generate | Show rendered/raw minutes and two mock ADO items. |
-| 3:10–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
+| 0:20–0:55 | Draft SI | Load context, generate, and confirm the synthetic SI draft. |
+| 0:55–1:10 | Review inputs | Load transcript and metadata; show the four-stage progression. |
+| 1:10–1:40 | Analyze | Show Changes Requested, counts, and read-only evidence. |
+| 1:40–2:15 | Human review | Edit one owner, exclude Redis, and emphasize human control. |
+| 2:15–3:15 | Confirm and generate | Show rendered/raw minutes and two ADO work-item previews. |
+| 3:15–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
 
 Hard stop at 3:35. Do not show environment setup, code, a second review round, optional LLM mode,
 or every output field.
@@ -238,6 +245,7 @@ or every output field.
 ### Real in the PoC
 
 - Loading local synthetic SI and transcript content.
+- Generating a fixture-backed SI draft from local synthetic context.
 - Validating one-round review metadata and results with Pydantic.
 - Distinguishing SI evidence from transcript evidence.
 - Mapping findings to SI sections where supported.
@@ -291,7 +299,9 @@ or every output field.
 
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
 - [ ] Only one review round—round 2—is shown.
-- [ ] **Load Sample Review** populates both source tabs and metadata.
+- [ ] The four-stage header begins at **Draft Solution Intent**.
+- [ ] SI draft generation and explicit human confirmation are shown.
+- [ ] **Load Sample Transcript & Metadata** preserves the confirmed SI.
 - [ ] Changes Requested is shown.
 - [ ] At least one finding maps to an SI section.
 - [ ] One confirmed decision is visible.
@@ -302,7 +312,7 @@ or every output field.
 - [ ] The human edit persists.
 - [ ] Outputs remain hidden until reviewed-record confirmation.
 - [ ] Generated outputs reflect the edit.
-- [ ] ADO content is clearly labeled mock.
+- [ ] ADO content is clearly labeled preview-only and not submitted.
 
 ### Technical rehearsal
 
@@ -322,7 +332,7 @@ or every output field.
 - [ ] Text is legible at the recording resolution.
 - [ ] Cursor movement and scrolling are easy to follow.
 - [ ] Audio is clear.
-- [ ] Narration states synthetic data, deterministic analysis, human control, and mock outputs.
+- [ ] Narration states synthetic data, offline analysis, human control, and preview-only outputs.
 - [ ] Final video is shorter than four minutes.
 - [ ] Exported video is played through once before submission.
 - [ ] Submission requirements and 22 July 2026 deadline are confirmed.
