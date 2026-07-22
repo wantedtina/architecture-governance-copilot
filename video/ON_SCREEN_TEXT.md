@@ -30,7 +30,7 @@ Teams transcript → normalized review transcript
 ## Frame 3 — Proposed solution
 
 ```text
-SI Template + Source Context
+Project Context Package
 +
 Review Transcript + Metadata
 ↓
@@ -53,12 +53,15 @@ Domain Architect
 
 Adapters connect:
 ├── Confluence API
+├── Approved Source Repository API
 ├── Teams API
-├── AIF LLM Endpoints
-├── ADO API
+├── AI Factory (AIF): approved enterprise LLM endpoints
+└── Azure DevOps API
+
+SKE governed state:
 └── Database
 
-Enterprise Controls: identity · secrets · audit · monitoring
+Enterprise Controls: identity · secrets · audit · monitoring · data policy
 Proposed deployment and integration view · Current PoC uses local deterministic providers.
 ```
 

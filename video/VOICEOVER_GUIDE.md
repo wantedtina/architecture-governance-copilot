@@ -37,7 +37,8 @@ approved narration and is designed to be replaced without changing the edit.
 
 - SI: “ess-eye”
 - ADO: “A-D-O”
-- RTO / RPO: pronounce each letter
+- AIF: “A-I-F”; expand once as “AI Factory”
+- SKE: “S-K-E”
 - PostgreSQL: “post-gres-Q-L”
 - Confluence: stress the first syllable
 - Azure: use the narrator's natural professional pronunciation consistently

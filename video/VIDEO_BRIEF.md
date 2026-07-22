@@ -28,11 +28,18 @@ records.
 
 ## Proposed solution
 
-The PoC drafts an SI from a template, selected source-code context, and supporting notes. After
-human confirmation, it combines the SI with a review transcript, proposes a structured
-governance review with source evidence, allows a human to edit or exclude items, and generates a
-standardized review record plus ADO work-item previews. Formal approval remains with the Domain
-Architect.
+The PoC first presents a synthetic Project Context package containing a template, selected
+source-code context, supporting evidence, and governance metadata. After explicit context
+confirmation, AI-assisted drafting proposes an SI for human review. AI-assisted analysis then
+combines the confirmed SI with a review transcript and proposes a structured governance review
+with source evidence. A human can edit or exclude items before generating a standardized review
+record plus ADO work-item previews. Formal approval remains with the Domain Architect.
+
+The target production design uses controlled enterprise APIs to retrieve an approved Confluence
+template and documents, Azure DevOps metadata and attachments, the user-selected repository branch
+and code context, permitted Teams transcripts, and other approved project documents. The user
+confirms this scoped package before it is sent to AI Factory (AIF), the bank's approved enterprise
+LLM endpoint layer. These integrations are target-state architecture, not implemented PoC claims.
 
 ## Input origins
 
@@ -92,12 +99,13 @@ draft and must be replaceable with approved human narration.
 The opening and closing use the approved Standard Chartered lock-up for this internal video.
 The technical frame shows a target deployment and integration architecture rather than a
 business workflow. It places the AGC Front End in Service Bench and the AGC Backend API in SKE,
-with adapters for Confluence, Teams, AIF LLM endpoints, a database, ADO, and enterprise controls.
+with adapters for Confluence, an approved source repository, Teams, AI Factory (AIF) LLM
+endpoints, a database, Azure DevOps, and enterprise controls.
 The frame explicitly distinguishes this target state from the locally running deterministic PoC.
 
 ## Target duration
 
-`03:42` total, with an absolute ceiling of `03:55`.
+`03:58` total, with an absolute ceiling of `03:59`.
 
 ## Prohibited claims
 

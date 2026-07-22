@@ -2,7 +2,7 @@
 
 ## Identity and timing
 
-- [ ] Duration is below four minutes and no longer than 03:55
+- [ ] Duration is below four minutes and no longer than 03:59
 - [ ] Opening shows `Architecture Governance Copilot`
 - [ ] Opening and closing show `Two Tokens One Brain`
 - [ ] Opening shows `Accelerate 3.0 Hackathon`
@@ -17,6 +17,9 @@
 - [ ] Microsoft 365 Copilot is not described as always creating transcripts
 - [ ] Synthetic-data disclosure is visible
 - [ ] Deterministic fixture-backed extraction is disclosed once
+- [ ] AI-assisted SI drafting and governance analysis are explained clearly
+- [ ] AI Factory is expanded once as `AI Factory (AIF)`
+- [ ] Target production retrieval is described as controlled, approved, and user-confirmed
 - [ ] No arbitrary-document or production enterprise LLM claim
 - [ ] No real Confluence, Teams, or Azure DevOps integration claim
 - [ ] Azure DevOps outputs are clearly identified as preview-only
@@ -27,12 +30,16 @@
 ## Demo
 
 - [ ] Real app UI is readable
-- [ ] `Load Sample Drafting Context` populates all three drafting inputs
+- [ ] Project Context displays and confirms the template, repository, evidence, and governance metadata
+- [ ] Each Project Context source preview is opened and deliberately scrolled
+- [ ] Recorded interactions use a visible click cue
+- [ ] Generated SI is immediately visible before the collapsed drafting sources
 - [ ] SI draft confirmation carries the draft into Review Inputs
 - [ ] `Load Sample Transcript & Metadata` populates the review context
 - [ ] `Analyze Review` routes to Human Review
 - [ ] Outcome, decisions, findings, risks, actions, questions, and missing information are shown
 - [ ] Supporting source evidence is shown
+- [ ] Missing resilience objectives are shown only as one synthetic missing-evidence example
 - [ ] First action owner becomes `Taylor Kim`
 - [ ] Redis question is excluded
 - [ ] `Confirm Reviewed Record & Generate Outputs` routes to Generated Outputs

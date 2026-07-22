@@ -3,7 +3,7 @@
 ## Source preparation
 
 1. Use the five 1920 × 1080 PNG frames and the updated editable PowerPoint source:
-   `presentation/Architecture_Governance_Copilot_Video_Deck_Revised.pptx`.
+   `presentation/Architecture_Governance_Copilot_Video_Deck_Connected_Architecture.pptx`.
 2. Record the real local app at 1920 × 1080 and 30 fps.
 3. Record final human narration as 48 kHz WAV or AIFF. The supplied offline TTS is provisional
    and replaceable.
@@ -37,7 +37,7 @@ document the source, and keep it well below narration. Normalize narration to ap
 - Resolution: 1920 × 1080
 - Frame rate: 30 fps
 - Audio: AAC, 48 kHz, stereo
-- Duration: target 03:42; hard maximum 03:55
+- Duration: target 03:58; hard maximum 03:59
 - Use a bitrate that preserves UI text; approximately 8–12 Mbps is suitable for the final review
   export.
 

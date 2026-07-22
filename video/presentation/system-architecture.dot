@@ -112,12 +112,18 @@ digraph AGC {
     penwidth=1.6;
     margin=18;
 
-    { rank=same; confluence; teams; aif; ado; }
+    { rank=same; confluence; repo; teams; aif; ado; }
 
     confluence [
       label=<
         <B>Confluence API</B><BR/>
         <FONT POINT-SIZE="12">SI templates and pages</FONT>
+      >
+    ];
+    repo [
+      label=<
+        <B>Approved Source Repository API</B><BR/>
+        <FONT POINT-SIZE="12">Selected branch and code context</FONT>
       >
     ];
     teams [
@@ -128,8 +134,8 @@ digraph AGC {
     ];
     aif [
       label=<
-        <B>AIF LLM Endpoints</B><BR/>
-        <FONT POINT-SIZE="12">Drafting and extraction</FONT>
+        <B>AI Factory (AIF)</B><BR/>
+        <FONT POINT-SIZE="12">Approved enterprise LLM endpoints</FONT>
       >,
       color="#38D200"
     ];
@@ -164,8 +170,9 @@ digraph AGC {
   users -> frontend [label="HTTPS"];
   frontend -> backend [label="REST / JSON", color="#0473EA", fontcolor="#7FC3FF"];
   adapters -> confluence [label="read / update SI"];
+  adapters -> repo [label="selected code context"];
   adapters -> teams [label="retrieve transcript"];
-  adapters -> aif [label="prompt / structured result", color="#38D200", fontcolor="#9BE880"];
+  adapters -> aif [label="scoped context / structured result", color="#38D200", fontcolor="#9BE880"];
   adapters -> ado [label="ticket / work item"];
   backend -> db [label="read / write state", color="#00A1E0", fontcolor="#80D8F5"];
   controls -> frontend [style=dashed, arrowhead=none, constraint=false];

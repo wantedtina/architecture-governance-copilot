@@ -1,89 +1,91 @@
 # Architecture Governance Copilot — Narration Script
 
-Target: `03:42`. The script is aligned to the updated four-stage application flow.
+Target: `03:58`. The script emphasizes the AI-assisted workflow, its human controls, and the
+distinction between the deterministic proof of concept and proposed production integrations.
 
 ## Timed script
 
-### 00:00–00:12 — Opening
+### 00:00–00:11 — Opening
 
 Architecture Governance Copilot is our Accelerate 3.0 proof of concept from Two Tokens One Brain.
-It turns architecture work into an accountable, evidence-backed governance record.
+It turns architecture work into an accountable, AI-assisted governance record.
 
-### 00:12–00:36 — Current process
+### 00:11–00:30 — Current process
 
-Product Owners and development teams prepare the Solution Intent using a required template. The
-official document remains in Confluence, an Azure DevOps governance ticket tracks the review,
-and a Domain Architect reviews it through Teams meetings and revision rounds. This proof of
-concept uses synthetic local content representing those sources.
+Product Owners and development teams prepare the Solution Intent in Confluence. An Azure DevOps
+governance ticket tracks the review, and a Domain Architect reviews through Teams meetings and
+revision rounds. This proof of concept uses synthetic local content representing those sources.
 
-### 00:36–00:44 — Pain points
+### 00:30–00:38 — Pain points
 
-Those handoffs scatter decisions, risks, actions, and evidence. Teams then rebuild the
-governance record manually.
+Those handoffs scatter decisions, risks, actions, and evidence. Teams then rebuild the governance
+record manually.
 
-### 00:44–00:52 — Proposed solution
+### 00:38–00:52 — Proposed solution
 
-The Copilot drafts the Solution Intent, structures its governance review, preserves evidence,
-and keeps every confirmation under human control.
+AI accelerates two high-effort steps: synthesizing confirmed project context into a draft Solution
+Intent, then interpreting the SI and review transcript into structured, evidence-linked governance
+proposals. Humans retain control.
 
-### 00:52–01:04 — Target system architecture
+### 00:52–01:14 — Target system architecture
 
-Target architecture deploys the front end in Service Bench and backend API in SKE. Controlled
-adapters connect Confluence, Teams, AIF LLM, database, and Azure DevOps.
+The front end runs in Service Bench; the backend and governed state run in SKE. Permission-aware
+Confluence, Teams, and Azure DevOps connectors retrieve only user-selected sources. Azure Repos
+supplies the branch, while Azure Boards supplies governance metadata. The backend builds a
+human-confirmed context package, and only that approved scope reaches AI Factory, or AIF.
 
-### 01:04–03:19 — Working proof of concept
+### 01:14–03:30 — Working proof of concept
 
-The application opens at Draft Solution Intent, the first of four visible stages. Demo mode uses
-synthetic data, local processing, and no external connections.
+The application opens at Project Context, the first of five visible stages. The fictional workspace
+shows its ADO governance reference, SI template, repository branch, supporting documents, and
+source-selection controls. In production, the permission-aware connectors retrieve only
+user-confirmed sources. Here, deterministic synthetic fixtures keep the demonstration reliable and
+offline.
 
-I load the SI template, selected source-code context, and supporting notes for a fictional
-Digital Payment Notification Service. Generate SI Draft validates that context and creates an
-editable draft. The screen makes clear that this is a drafting aid, not publication or approval.
-I explicitly confirm the draft before it moves to Review Inputs.
+I inspect each selected preview, refresh the context, and explicitly confirm the package before any
+AI-assisted drafting. Generate SI Draft validates that confirmed context and creates an editable
+proposal. The proposed SI appears first, while source details remain available beneath it. This is
+a drafting aid, not publication or approval, so I confirm it before continuing.
 
-The confirmed SI is preserved. I add the matching Teams-style transcript and review metadata,
-then select Analyze Review. A separate Human Review page opens with a Changes Requested outcome.
-The summary shows one decision, three findings, one risk, two actions, one open question, and two
-missing-information items.
+The confirmed SI is preserved. I add the matching Teams-style transcript and review metadata, then
+select Analyze Review. AI-assisted analysis proposes a structured governance record, and a separate
+Human Review page opens with a Changes Requested outcome.
 
-The decision accepts managed PostgreSQL as the system of record. Findings identify missing
-traffic-failover behaviour, missing RTO and RPO values, and undefined production support
-ownership. Database sizing is a release risk. Each item retains a source quote from the Solution
-Intent, the transcript, or both.
+The summary covers a decision, findings, a risk, actions, an open question, and missing information.
+It accepts managed PostgreSQL as the system of record while identifying unresolved failover,
+resilience, support-ownership, and capacity evidence. Every proposal retains a source quote from the
+Solution Intent, the transcript, or both.
 
-This remains a proposal, not an approval. The reviewer can inspect evidence, edit fields, and
-include or exclude items. I change the first action owner to the clearly synthetic value Taylor
-Kim, then exclude the unresolved Redis question. Evidence stays read-only.
+The reviewer can inspect evidence, edit fields, and include or exclude items. I change the first
+action owner to the clearly synthetic value Taylor Kim, then exclude the unresolved Redis question.
+Evidence stays read-only.
 
-Only after that human review do I confirm the record and generate outputs. The completed package
-preserves those choices: Taylor Kim appears in the review record and first Azure DevOps
-work-item preview, while the Redis question is absent. The output is explicitly preview-only;
-nothing was submitted to Azure DevOps.
+That human checkpoint is essential: AI proposes structure and evidence links, but it does not decide
+the review outcome, approve architecture, or publish records. The Domain Architect remains
+accountable for the decision, while the project team remains accountable for completing actions and
+evidence. The system makes those boundaries visible throughout the workflow.
 
-### 03:19–03:35 — Business value and controls
+Only after human review do I confirm the record and generate outputs. The completed package
+preserves those choices in the review record and Azure DevOps work-item previews. Nothing was
+submitted to Azure DevOps.
 
-This workflow reduces manual review administration, supports more consistent records, and
-improves evidence traceability. Structured outputs can support future integration, but every
-record remains human-reviewed and formal decision authority stays with the Domain Architect.
+### 03:30–03:48 — Business value and controls
 
-### 03:35–03:42 — Closing
+AI reduces first-pass drafting and review administration, while evidence grounding makes every
+proposal easier to verify. Structured outputs support future integration, but every record remains
+human-reviewed and formal decision authority stays with the Domain Architect.
 
-Architecture Governance Copilot demonstrates a practical, human-controlled path from
-architecture context to accountable action. Two Tokens One Brain.
+### 03:48–03:58 — Closing
 
-## Script statistics
-
-- Spoken word count: **446**
-- Video duration: **03:42**
-- Average pace: approximately **121 words per minute**
-- Narrator: one consistent English voice
+Architecture Governance Copilot demonstrates a practical, human-controlled path from governed
+context, through AI assistance, to accountable action. Two Tokens One Brain.
 
 ## Pronunciation notes
 
 - `SI`: say “ess-eye”.
 - `ADO`: say “A-D-O”.
-- `RTO`: say “R-T-O”.
-- `RPO`: say “R-P-O”.
+- `AIF`: say “A-I-F”; it stands for “AI Factory”.
+- `SKE`: say “S-K-E”.
 - `PostgreSQL`: say “post-gres-Q-L”.
 - `Confluence`: stress the first syllable.
 - `Taylor Kim`: synthetic reviewer-approved owner used only in the demo.

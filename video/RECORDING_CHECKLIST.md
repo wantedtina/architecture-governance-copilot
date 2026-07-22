@@ -17,13 +17,14 @@
 - [ ] `uv run ruff check .` passes
 - [ ] `uv run ruff format --check .` passes
 - [ ] Local Streamlit app is healthy
-- [ ] `Reset Demo` returns to clean Stage 1
-- [ ] `Load Sample Drafting Context` fills all drafting tabs
-- [ ] SI generation opens editable draft review
-- [ ] SI confirmation routes to Stage 2
-- [ ] Deterministic analysis routes to Stage 3
-- [ ] Governance confirmation routes to Stage 4
-- [ ] Stage 4 stepper shows all stages complete
+- [ ] Reset returns to clean Stage 1 Project Context
+- [ ] `Open Demonstration Project` shows governance reference, template, repository, and source controls
+- [ ] Context confirmation routes to Stage 2
+- [ ] SI generation shows the editable proposed SI before the collapsed source details
+- [ ] SI confirmation routes to Stage 3
+- [ ] Deterministic analysis routes to Stage 4
+- [ ] Governance confirmation routes to Stage 5
+- [ ] Stage 5 stepper shows all stages complete
 
 ## Capture setup
 
@@ -31,7 +32,8 @@
 - [ ] Browser zoom 100%
 - [ ] Streamlit sidebar and main content readable
 - [ ] Cursor movement deliberate and unhurried
-- [ ] No unnecessary scrolling
+- [ ] Only deliberate scrolling is used; all four Stage 1 source previews are visibly inspected
+- [ ] A visible click cue identifies every recorded button, tab, checkbox, and field interaction
 - [ ] Fixed confirmation button visible
 - [ ] Source recording uses only the local app
 
@@ -41,7 +43,7 @@
 - [ ] Solution Intent and transcript shown
 - [ ] `Changes Requested` and all counts shown
 - [ ] PostgreSQL decision shown
-- [ ] Failover and RTO/RPO findings shown
+- [ ] Failover and missing resilience evidence are shown without over-emphasizing RTO/RPO
 - [ ] Database-sizing risk shown
 - [ ] Both actions shown
 - [ ] Evidence quote shown

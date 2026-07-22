@@ -19,9 +19,12 @@ video/audio/provisional_offline_tts_revised.wav
 video/audio/provisional_tts_segments/
 video/output/playwright/
 video/presentation/Architecture_Governance_Copilot_Video_Deck_Enterprise_SI.pptx
+video/presentation/Architecture_Governance_Copilot_Video_Deck_AI_Factory.pptx
 video/presentation/Architecture_Governance_Copilot_Video_Deck_Final.pptx
+video/presentation/Architecture_Governance_Copilot_Video_Deck_Project_Context.pptx
 video/presentation/Architecture_Governance_Copilot_Video_Deck_System_Architecture.pptx
 video/presentation/Architecture_Governance_Copilot_Video_Deck_Updated.pptx
+video/presentation/*.pptx.inspect.ndjson
 
 # Local configuration and secrets
 .env
