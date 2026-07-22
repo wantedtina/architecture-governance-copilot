@@ -18,6 +18,11 @@ video/audio/provisional_offline_tts.wav
 video/audio/provisional_offline_tts_revised.wav
 video/audio/provisional_tts_segments/
 video/output/playwright/
+video/human_voice/
+video/audio/human_voice_narration.wav
+video/audio/human_voice_segments/
+video/output/architecture_governance_copilot_human_voice.mp4
+video/output/architecture_governance_copilot_human_voice.srt
 video/presentation/Architecture_Governance_Copilot_Video_Deck_Enterprise_SI.pptx
 video/presentation/Architecture_Governance_Copilot_Video_Deck_AI_Factory.pptx
 video/presentation/Architecture_Governance_Copilot_Video_Deck_Final.pptx
