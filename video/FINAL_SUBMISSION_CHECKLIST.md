@@ -19,7 +19,7 @@
 - [ ] Deterministic fixture-backed extraction is disclosed once
 - [ ] No arbitrary-document or production enterprise LLM claim
 - [ ] No real Confluence, Teams, or Azure DevOps integration claim
-- [ ] Mock ADO disclosure is visible
+- [ ] Azure DevOps outputs are clearly identified as preview-only
 - [ ] No automatic approval claim
 - [ ] Domain Architect authority is explicit
 - [ ] No unsupported metrics
@@ -27,7 +27,9 @@
 ## Demo
 
 - [ ] Real app UI is readable
-- [ ] `Load Sample Review` populates both inputs
+- [ ] `Load Sample Drafting Context` populates all three drafting inputs
+- [ ] SI draft confirmation carries the draft into Review Inputs
+- [ ] `Load Sample Transcript & Metadata` populates the review context
 - [ ] `Analyze Review` routes to Human Review
 - [ ] Outcome, decisions, findings, risks, actions, questions, and missing information are shown
 - [ ] Supporting source evidence is shown
@@ -35,7 +37,7 @@
 - [ ] Redis question is excluded
 - [ ] `Confirm Reviewed Record & Generate Outputs` routes to Generated Outputs
 - [ ] Human edits are preserved
-- [ ] Review record and two mock work items are shown
+- [ ] Review record and two Azure DevOps work-item previews are shown
 - [ ] No real ADO item is created
 
 ## Visual, audio, and data safety

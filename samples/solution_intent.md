@@ -5,6 +5,8 @@
 
 ## 1. Document Information
 
+### Document control
+
 | Field | Value |
 | --- | --- |
 | Project | Digital Payment Notification Service |
@@ -18,6 +20,27 @@ This Solution Intent is jointly prepared by the fictional Product Owner and deve
 It records the design proposed for Domain Architecture review and will be revised after review
 feedback.
 
+### Approval workflow
+
+| Control point | Required role | Current state |
+| --- | --- | --- |
+| Design baseline prepared | Product Owner and development team | Complete |
+| Architecture review | Domain Architect | In progress |
+| Resilience review | Resilience Architect | Evidence pending |
+| Production readiness | Service owner | Not started |
+
+No row represents automatic approval. Review outcomes and supporting evidence must be recorded
+before the document can progress to the next control point.
+
+### Chapter review status
+
+| Chapter group | Status | Evidence position |
+| --- | --- | --- |
+| Scope and logical design | Ready for review | Narrative and component view supplied |
+| Data and resilience | Changes required | Sizing and recovery objectives outstanding |
+| Security and observability | Draft complete | Threat model scheduled |
+| Operations | Incomplete | Support owner not assigned |
+
 ## 2. Executive Summary
 
 The Digital Payment Notification Service provides timely customer notifications after a payment
@@ -29,6 +52,15 @@ The proposed design uses stateless application components, asynchronous processi
 managed relational database. The initial release is planned for August 2026. This document
 describes the current design baseline and calls out open items that require governance or product
 input before production readiness can be confirmed.
+
+### Expected outcomes
+
+- Customers receive traceable transactional notifications without coupling delivery to payment
+  processing.
+- Operations can identify notification state, retries, and terminal failures using correlation
+  identifiers.
+- Architecture reviewers can trace significant design claims to implementation context,
+  diagrams, controls, or explicitly recorded open evidence.
 
 ## 3. Scope
 
@@ -53,6 +85,12 @@ worker, and SMS worker. The application services are stateless and will run with
 A durable message broker separates event intake from channel delivery so that a temporary
 provider delay does not block upstream payment processing.
 
+### Architecture evidence
+
+The review package is expected to contain a logical component view, a deployment view, and a
+sequence describing event intake through delivery-status recording. Interfaces must identify
+direction, protocol, authentication boundary, failure handling, and data classification.
+
 ## 5. Detailed Application Design
 
 The notification application validates required event fields, applies idempotency checks, and
@@ -65,6 +103,13 @@ The two replicas use the same container image and configuration contract. No use
 in-memory workflow state is required between requests. Redis may be introduced as a cache, but
 the team has not recorded a decision to use it. The current design therefore does not rely on
 Redis for correctness, idempotency, or retry behavior.
+
+### Integration and interface design
+
+The synthetic upstream platform publishes versioned payment events. Provider adapters expose a
+common submit operation and normalize asynchronous delivery status. Interface contracts require
+timeouts, idempotency keys, correlation identifiers, structured errors, and authenticated
+transport; schemas are maintained with the source repository.
 
 ## 6. Data Design
 
@@ -80,6 +125,19 @@ subject to final product confirmation. Production database sizing remains pendin
 final transaction-volume forecast is available. Schema migration will be performed as a
 controlled deployment step before new application pods accept traffic.
 
+### Conceptual data model
+
+The principal entities are Payment Event, Notification Request, Delivery Attempt, Channel
+Provider, and Delivery Status. A payment event may create one or more notification requests; a
+request may have multiple delivery attempts but only one current terminal status.
+
+### Data flow and retention
+
+Tokenized recipient references enter with the event and are resolved only for provider
+submission. Operational state is stored in PostgreSQL, telemetry is sent to the approved
+monitoring platform, and retained notification records are deleted after the agreed 90-day
+period. Raw contact details and message bodies are excluded from application logs.
+
 ## 7. Availability and Resilience
 
 Message durability and bounded retries protect against short interruptions to a notification
@@ -92,6 +150,12 @@ behaviour when one replica becomes unavailable is not described. Recovery time o
 and recovery point objective (RPO) values are not yet defined. Regional disaster recovery and
 the evidence needed to demonstrate recovery remain subject to the agreed business objectives.
 
+### Recovery objectives and evidence
+
+Readiness evidence must include replica-failure behaviour, replay controls, database recovery,
+and an exercised recovery procedure. RTO and RPO values remain explicit governance gaps rather
+than inferred properties of the platform.
+
 ## 8. Security
 
 Service identities will be used for calls between the application, message broker, and managed
@@ -103,6 +167,12 @@ The service will minimize customer data in logs and database records. Access to 
 will be restricted to the support role after ownership is confirmed. Threat modeling is planned
 before release, with particular attention to event spoofing, duplicate notifications, template
 tampering, and inappropriate access to contact information.
+
+### Security controls and evidence
+
+Required evidence includes service-identity configuration, secret-store integration, dependency
+and container scanning, data-classification review, threat-model actions, and confirmation that
+sensitive fields are excluded from logs.
 
 ## 9. Observability
 
@@ -128,6 +198,13 @@ the Kubernetes service and does not add a failure-path annotation or an operator
 Environment-specific resource limits will be finalized after performance testing and the volume
 forecast.
 
+### Deployment evidence
+
+The release package should include the deployment topology, workload configuration, database
+migration sequence, rollback procedure, health checks, and pipeline control results. Environment
+values and credentials are referenced through approved configuration services rather than
+embedded in this document.
+
 ## 11. Operational Support
 
 Runbook topics will include provider outages, dead-letter replay, duplicate-event investigation,
@@ -137,6 +214,12 @@ available before production readiness review.
 Production support ownership has not yet been assigned. Until an owning team and escalation path
 are confirmed, alert routing, after-hours coverage, and approval to replay failed notifications
 remain open governance information.
+
+### Support model and evidence
+
+Before production readiness, the team must supply a named service owner, escalation route,
+support hours, dashboard ownership, incident and replay runbooks, and evidence that alert routing
+has been tested.
 
 ## 12. Assumptions and Open Items
 

@@ -18,10 +18,12 @@
 - [ ] `uv run ruff format --check .` passes
 - [ ] Local Streamlit app is healthy
 - [ ] `Reset Demo` returns to clean Stage 1
-- [ ] `Load Sample Review` fills both input tabs
-- [ ] Deterministic analysis routes to Stage 2
-- [ ] Confirmation routes to Stage 3
-- [ ] Stage 3 stepper shows all stages complete
+- [ ] `Load Sample Drafting Context` fills all drafting tabs
+- [ ] SI generation opens editable draft review
+- [ ] SI confirmation routes to Stage 2
+- [ ] Deterministic analysis routes to Stage 3
+- [ ] Governance confirmation routes to Stage 4
+- [ ] Stage 4 stepper shows all stages complete
 
 ## Capture setup
 
@@ -46,8 +48,8 @@
 - [ ] Owner changed to `Taylor Kim`
 - [ ] Redis question excluded
 - [ ] Generated record reflects Taylor Kim and omits Redis
-- [ ] Two mock work items shown
-- [ ] `No real Azure DevOps work item has been created.` visible
+- [ ] Two Azure DevOps work-item previews shown
+- [ ] Preview-only and not-submitted disclosure is visible
 
 ## Audio and rehearsal
 

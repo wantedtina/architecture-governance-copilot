@@ -30,29 +30,36 @@ Teams transcript → normalized review transcript
 ## Frame 3 — Proposed solution
 
 ```text
-Normalized SI Content
+SI Template + Source Context
 +
-Normalized Review Transcript
+Review Transcript + Metadata
 ↓
-Structured Governance Review
+Draft + Governance Review
 ↓
 Human Review and Confirmation
 ↓
-Review Record + Mock ADO Actions
+Review Record + ADO Item Previews
 
 Evidence Traceability · Structured Findings and Actions · Human Accountability
 No Automatic Approval
 ```
 
-## Frame 4 — Architecture and future integration
+## Frame 4 — Target system architecture
 
 ```text
-GovernanceExtractor
-├── DeterministicDemoExtractor — implemented now
-└── EnterpriseLlmExtractor — future
+Domain Architect
+→ Service Bench: AGC Front End
+→ SKE: AGC Backend API → Provider & Integration Adapters
 
-Future approved integrations — not implemented:
-Confluence · Microsoft Teams · Azure DevOps
+Adapters connect:
+├── Confluence API
+├── Teams API
+├── AIF LLM Endpoints
+├── ADO API
+└── Database
+
+Enterprise Controls: identity · secrets · audit · monitoring
+Proposed deployment and integration view · Current PoC uses local deterministic providers.
 ```
 
 ## Frame 5 — Closing
@@ -63,7 +70,7 @@ Two Tokens One Brain
 Zhang1, Yang — Team Lead
 Wang, Ted — Team Member
 
-Evidence-backed review. Human accountability.
+Traceable evidence. Human-controlled decisions.
 ```
 
 ## Application callouts
@@ -73,13 +80,13 @@ Evidence-backed review. Human accountability.
 - `Evidence Traceability`
 - `Human Review`
 - `Generated Review Record`
-- `Mock ADO Actions`
+- `Azure DevOps Work Item Previews`
 - `No Automatic Approval`
 
 ## Disclosures
 
 - `Synthetic data · Deterministic demo extractor · No external connections`
-- `No real Azure DevOps work item has been created.`
+- `Preview only · Nothing submitted to Azure DevOps`
 - `Formal decision authority remains with the Domain Architect.`
 
 ## Subtitle treatment

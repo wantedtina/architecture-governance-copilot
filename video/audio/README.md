@@ -1,8 +1,10 @@
 # Audio Assets
 
 - `provisional_offline_tts.wav` is a **draft-only**, fully offline macOS TTS narration using the
-  `Daniel` English voice. It is aligned to the 03:50 storyboard and contains no external service
+  `Daniel` English voice. It is aligned to the original 03:50 storyboard and contains no external service
   output.
+- `provisional_offline_tts_revised.wav` removes the obsolete SI-context narration interval and is
+  aligned to the revised 03:42 storyboard.
 - `provisional_tts_segments/` contains replaceable segment-level AIFF sources and aligned WAV
   files.
 - Both paths are local, Git-ignored working files because they are large and reproducible. The

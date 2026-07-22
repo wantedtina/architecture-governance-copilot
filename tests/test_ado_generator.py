@@ -131,7 +131,7 @@ def test_sample_descriptions_contain_context_and_action_evidence(
     items = generate_mock_ado_work_items(sample_result)
 
     for action, item in zip(sample_result.action_items, items, strict=True):
-        assert "Mock Architecture Governance action" in item.description
+        assert "Architecture Governance action" in item.description
         assert "Project: Digital Payment Notification Service" in item.description
         assert (
             "Solution Intent: Solution Intent - Digital Payment Notification Service"

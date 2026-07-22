@@ -1,82 +1,81 @@
 # Architecture Governance Copilot — Narration Script
 
-Target: `03:50` video, approximately 125–135 spoken words per minute during narration. The word
-count below covers the spoken script once; the clean version repeats the same text for recording.
+Target: `03:42`. The script is aligned to the updated four-stage application flow.
 
 ## Timed script
 
 ### 00:00–00:12 — Opening
 
 Architecture Governance Copilot is our Accelerate 3.0 proof of concept from Two Tokens One Brain.
-It turns architecture review discussion into an accountable, evidence-backed record.
+It turns architecture work into an accountable, evidence-backed governance record.
 
-### 00:12–00:38 — Governance process and input origins
+### 00:12–00:36 — Current process
 
-Product Owners and development teams prepare the Solution Intent using the required template. The
-official SI remains in Confluence, with an ADO governance ticket for review tracking. A Domain
-Architect reviews it through Teams meetings and revision rounds until formal approval. Here,
-synthetic Confluence content is normalized into Markdown, while synthetic text represents a Teams
-review transcript produced only when transcription is enabled.
+Product Owners and development teams prepare the Solution Intent using a required template. The
+official document remains in Confluence, an Azure DevOps governance ticket tracks the review,
+and a Domain Architect reviews it through Teams meetings and revision rounds. This proof of
+concept uses synthetic local content representing those sources.
 
-### 00:38–00:58 — Pain points
+### 00:36–00:44 — Pain points
 
-That process creates repeated administration. Decisions, findings, risks, and actions can be
-spread across the SI, meeting discussion, notes, and ADO. Teams manually rebuild the governance
-record and tracked work, increasing the risk that evidence, ownership, or requested changes are
-missed or recorded inconsistently.
+Those handoffs scatter decisions, risks, actions, and evidence. Teams then rebuild the
+governance record manually.
 
-### 00:58–01:10 — Proposed solution
+### 00:44–00:52 — Proposed solution
 
-The Copilot structures both normalized inputs, preserves evidence, and pauses for human review
-before producing a standardized record and mock ADO actions. It never approves automatically.
+The Copilot drafts the Solution Intent, structures its governance review, preserves evidence,
+and keeps every confirmation under human control.
 
-### 01:10–03:05 — Working PoC
+### 00:52–01:04 — Target system architecture
 
-The application begins with clear synthetic-data and human-accountability notices. I load the
-bundled review package: version 1.2 of a fictional Digital Payment Notification Service SI,
-review metadata, and a timestamped transcript.
+Target architecture deploys the front end in Service Bench and backend API in SKE. Controlled
+adapters connect Confluence, Teams, AIF LLM, database, and Azure DevOps.
 
-Analyze Review validates both sources and opens a separate Human Review page. The outcome is
-Changes Requested. The summary shows one decision, three findings, one risk, two actions, one
-open question, and two missing-information items.
+### 01:04–03:19 — Working proof of concept
+
+The application opens at Draft Solution Intent, the first of four visible stages. Demo mode uses
+synthetic data, local processing, and no external connections.
+
+I load the SI template, selected source-code context, and supporting notes for a fictional
+Digital Payment Notification Service. Generate SI Draft validates that context and creates an
+editable draft. The screen makes clear that this is a drafting aid, not publication or approval.
+I explicitly confirm the draft before it moves to Review Inputs.
+
+The confirmed SI is preserved. I add the matching Teams-style transcript and review metadata,
+then select Analyze Review. A separate Human Review page opens with a Changes Requested outcome.
+The summary shows one decision, three findings, one risk, two actions, one open question, and two
+missing-information items.
 
 The decision accepts managed PostgreSQL as the system of record. Findings identify missing
 traffic-failover behaviour, missing RTO and RPO values, and undefined production support
-ownership. Database sizing is a release risk. Every item retains a source quote from the SI, the
-transcript, or both.
+ownership. Database sizing is a release risk. Each item retains a source quote from the Solution
+Intent, the transcript, or both.
 
-This is a proposal, not an approval. The reviewer can inspect evidence, edit fields, and include
-or exclude items. I change the first action owner to the clearly synthetic value Taylor Kim,
-then exclude the unresolved Redis question. Evidence stays read-only.
+This remains a proposal, not an approval. The reviewer can inspect evidence, edit fields, and
+include or exclude items. I change the first action owner to the clearly synthetic value Taylor
+Kim, then exclude the unresolved Redis question. Evidence stays read-only.
 
-Only now do I confirm the reviewed record and generate outputs. The application preserves those
-choices: Taylor Kim appears in the review record and first mock work item, while the Redis
-question is absent. Two mock Azure DevOps actions are prepared, and the screen confirms that no
-real work item was created.
+Only after that human review do I confirm the record and generate outputs. The completed package
+preserves those choices: Taylor Kim appears in the review record and first Azure DevOps
+work-item preview, while the Redis question is absent. The output is explicitly preview-only;
+nothing was submitted to Azure DevOps.
 
-### 03:05–03:27 — Business value and controls
+### 03:19–03:35 — Business value and controls
 
-This workflow reduces manual review administration, supports more consistent records, helps
-reduce the risk of missed findings and actions, and improves evidence traceability. Structured
-outputs can support future integration, but every record is reviewed before generation, and
-formal decision authority remains with the Domain Architect.
+This workflow reduces manual review administration, supports more consistent records, and
+improves evidence traceability. Structured outputs can support future integration, but every
+record remains human-reviewed and formal decision authority stays with the Domain Architect.
 
-### 03:27–03:43 — Architecture and future direction
+### 03:35–03:42 — Closing
 
-The extractor interface uses a deterministic demo implementation for reliable offline use. It
-does not analyze arbitrary documents or use a production enterprise LLM. A future approved
-provider could connect Confluence, Teams, and Azure DevOps; none exists today.
-
-### 03:43–03:50 — Closing
-
-Architecture Governance Copilot shows one practical, human-controlled path from architecture
-discussion to accountable action. Two Tokens One Brain.
+Architecture Governance Copilot demonstrates a practical, human-controlled path from
+architecture context to accountable action. Two Tokens One Brain.
 
 ## Script statistics
 
-- Spoken word count: **462**
-- Video duration: **03:50**
-- Narrated pace: approximately **130 words per narrated minute**, allowing short visual pauses
+- Spoken word count: **446**
+- Video duration: **03:42**
+- Average pace: approximately **121 words per minute**
 - Narrator: one consistent English voice
 
 ## Pronunciation notes
@@ -87,57 +86,8 @@ discussion to accountable action. Two Tokens One Brain.
 - `RPO`: say “R-P-O”.
 - `PostgreSQL`: say “post-gres-Q-L”.
 - `Confluence`: stress the first syllable.
-- `Taylor Kim`: clearly synthetic reviewer-approved owner used only in the demo.
+- `Taylor Kim`: synthetic reviewer-approved owner used only in the demo.
 
 ## Clean TTS-ready version
 
-Architecture Governance Copilot is our Accelerate 3.0 proof of concept from Two Tokens One Brain.
-It turns architecture review discussion into an accountable, evidence-backed record.
-
-Product Owners and development teams prepare the Solution Intent using the required template. The
-official SI remains in Confluence, with an ADO governance ticket for review tracking. A Domain
-Architect reviews it through Teams meetings and revision rounds until formal approval. Here,
-synthetic Confluence content is normalized into Markdown, while synthetic text represents a Teams
-review transcript produced only when transcription is enabled.
-
-That process creates repeated administration. Decisions, findings, risks, and actions can be
-spread across the SI, meeting discussion, notes, and ADO. Teams manually rebuild the governance
-record and tracked work, increasing the risk that evidence, ownership, or requested changes are
-missed or recorded inconsistently.
-
-The Copilot structures both normalized inputs, preserves evidence, and pauses for human review
-before producing a standardized record and mock ADO actions. It never approves automatically.
-
-The application begins with clear synthetic-data and human-accountability notices. I load the
-bundled review package: version 1.2 of a fictional Digital Payment Notification Service SI,
-review metadata, and a timestamped transcript.
-
-Analyze Review validates both sources and opens a separate Human Review page. The outcome is
-Changes Requested. The summary shows one decision, three findings, one risk, two actions, one
-open question, and two missing-information items.
-
-The decision accepts managed PostgreSQL as the system of record. Findings identify missing
-traffic-failover behaviour, missing RTO and RPO values, and undefined production support
-ownership. Database sizing is a release risk. Every item retains a source quote from the SI, the
-transcript, or both.
-
-This is a proposal, not an approval. The reviewer can inspect evidence, edit fields, and include
-or exclude items. I change the first action owner to the clearly synthetic value Taylor Kim,
-then exclude the unresolved Redis question. Evidence stays read-only.
-
-Only now do I confirm the reviewed record and generate outputs. The application preserves those
-choices: Taylor Kim appears in the review record and first mock work item, while the Redis
-question is absent. Two mock Azure DevOps actions are prepared, and the screen confirms that no
-real work item was created.
-
-This workflow reduces manual review administration, supports more consistent records, helps
-reduce the risk of missed findings and actions, and improves evidence traceability. Structured
-outputs can support future integration, but every record is reviewed before generation, and
-formal decision authority remains with the Domain Architect.
-
-The extractor interface uses a deterministic demo implementation for reliable offline use. It
-does not analyze arbitrary documents or use a production enterprise LLM. A future approved
-provider could connect Confluence, Teams, and Azure DevOps; none exists today.
-
-Architecture Governance Copilot shows one practical, human-controlled path from architecture
-discussion to accountable action. Two Tokens One Brain.
+Use the eight timed sections above in order, without reading their headings.

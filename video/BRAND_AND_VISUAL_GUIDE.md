@@ -1,7 +1,7 @@
 # Brand and Visual Guide
 
-This is a neutral, Standard Chartered-inspired visual direction for an internal hackathon PoC.
-It is not an official Standard Chartered publication or proprietary template.
+This is a Standard Chartered-aligned visual direction for an internal hackathon PoC. It is not
+an official product release or proprietary presentation template.
 
 ## Official public references reviewed
 
@@ -21,8 +21,8 @@ The public materials use crisp sans-serif typography, generous whitespace, stron
 hierarchy, dark navy or white foundations, and restrained blue-to-green accents. Public pages
 combine clear headings with limited decorative elements and high-contrast calls to action.
 
-These observations inform general direction only. No template, logo, photograph, or media-library
-asset is copied.
+These observations inform the general direction. The official public full-colour Standard
+Chartered lock-up is used with the user's approval for this internal video.
 
 ## Palette direction
 
@@ -63,12 +63,13 @@ Never use the gradient behind body copy.
 - Use simple process lines, restrained rounded rectangles, and clear arrows.
 - Put future components on a dashed branch labelled `Future — not implemented`.
 - Do not use charts or unsupported numerical comparisons.
-- Keep the five frames visually related but vary composition.
+- Keep the six frames visually related but vary composition.
 
 ## Title and closing cards
 
 The project name is the primary element. Team and hackathon details are secondary but fully
-readable. Both names and exact roles appear on opening and closing cards. Use no official logo.
+readable. Both names and exact roles appear on opening and closing cards. Use the official
+lock-up without altering its proportions or colours.
 
 ## Subtitle and callout style
 
@@ -82,14 +83,11 @@ readable. Both names and exact roles appear on opening and closing cards. Use no
 Use direct cuts, 6–10 frame fades, simple dissolves, and at most a subtle 103–108% crop move.
 Avoid wipes, spins, dramatic motion graphics, or constant zoom.
 
-## Logo and media restrictions
+## Logo and media use
 
-The official logo is deliberately not used. The official media-library terms restrict use of its
-images and logos; no permission was confirmed for this hackathon package. Do not download or
-include official logo files, photographs, campaign imagery, or proprietary templates.
-
-If the team receives an approved internal company or event template, logo, or media asset, record
-that approval and replace the neutral placeholder before final submission.
+The official full-colour lock-up is sourced from the Standard Chartered media asset library and
+used only for the user-confirmed internal hackathon video. Do not distort, recolour, recreate, or
+substitute it. No photographs, campaign imagery, or proprietary templates are included.
 
 ## Accessibility
 

@@ -1,0 +1,173 @@
+digraph AGC {
+  graph [
+    bgcolor="transparent",
+    rankdir=LR,
+    splines=ortho,
+    nodesep=0.28,
+    ranksep=0.62,
+    size="16,5.4!",
+    ratio=fill,
+    pad=0.15,
+    margin=0,
+    fontname="Arial",
+    fontsize=16,
+    fontcolor="#D8E2EC"
+  ];
+
+  node [
+    shape=rect,
+    style="rounded,filled",
+    fontname="Arial",
+    fontsize=17,
+    margin="0.18,0.12",
+    penwidth=1.8,
+    color="#4D7594",
+    fillcolor="#123A59",
+    fontcolor="#FFFFFF"
+  ];
+
+  edge [
+    fontname="Arial",
+    fontsize=12,
+    color="#7FA7C4",
+    fontcolor="#C7D8E5",
+    penwidth=1.7,
+    arrowsize=0.7
+  ];
+
+  users [
+    label=<
+      <B>Domain Architect</B><BR/>
+      <FONT POINT-SIZE="13">Project team · Human reviewers</FONT>
+    >,
+    fillcolor="#FFFFFF",
+    color="#D8E2EC",
+    fontcolor="#061D33"
+  ];
+
+  subgraph cluster_service_bench {
+    label="SERVICE BENCH";
+    labelloc="t";
+    labeljust="l";
+    style="rounded,dashed";
+    color="#0473EA";
+    fontcolor="#7FC3FF";
+    penwidth=2;
+    margin=18;
+
+    frontend [
+      label=<
+        <B>AGC Front End</B><BR/>
+        <FONT POINT-SIZE="13">Streamlit UI · Four routed stages</FONT><BR/>
+        <FONT POINT-SIZE="12">Human review and confirmation</FONT>
+      >,
+      fillcolor="#0B66C3",
+      color="#58A8F4"
+    ];
+  }
+
+  subgraph cluster_ske {
+    label="SKE";
+    labelloc="t";
+    labeljust="l";
+    style="rounded,dashed";
+    color="#38D200";
+    fontcolor="#70E545";
+    penwidth=2;
+    margin=18;
+
+    backend [
+      label=<
+        <B>AGC Backend API</B><BR/>
+        <FONT POINT-SIZE="13">Drafting and governance services</FONT><BR/>
+        <FONT POINT-SIZE="12">Validation · orchestration · output generation</FONT>
+      >,
+      fillcolor="#12456A",
+      color="#38D200"
+    ];
+
+    adapters [
+      label=<
+        <B>Provider &amp; Integration Adapters</B><BR/>
+        <FONT POINT-SIZE="12">Enterprise API and LLM boundaries</FONT>
+      >,
+      fillcolor="#0E304B",
+      color="#4D7594"
+    ];
+
+    backend -> adapters [
+      label="internal service calls",
+      color="#38D200",
+      fontcolor="#9BE880"
+    ];
+  }
+
+  subgraph cluster_enterprise {
+    label="ENTERPRISE SERVICES";
+    labelloc="t";
+    labeljust="l";
+    style="rounded,dashed";
+    color="#4D7594";
+    fontcolor="#AFC8DA";
+    penwidth=1.6;
+    margin=18;
+
+    { rank=same; confluence; teams; aif; ado; }
+
+    confluence [
+      label=<
+        <B>Confluence API</B><BR/>
+        <FONT POINT-SIZE="12">SI templates and pages</FONT>
+      >
+    ];
+    teams [
+      label=<
+        <B>Teams API</B><BR/>
+        <FONT POINT-SIZE="12">Meeting transcripts</FONT>
+      >
+    ];
+    aif [
+      label=<
+        <B>AIF LLM Endpoints</B><BR/>
+        <FONT POINT-SIZE="12">Drafting and extraction</FONT>
+      >,
+      color="#38D200"
+    ];
+    ado [
+      label=<
+        <B>ADO API</B><BR/>
+        <FONT POINT-SIZE="12">Azure DevOps work items</FONT>
+      >
+    ];
+  }
+
+  db [
+    shape=cylinder,
+    label=<
+      <B>Database</B><BR/>
+      <FONT POINT-SIZE="12">Governance state and audit history</FONT>
+    >,
+    fillcolor="#173F59",
+    color="#00A1E0"
+  ];
+
+  controls [
+    label=<
+      <B>Enterprise Controls</B><BR/>
+      <FONT POINT-SIZE="12">Identity · secrets · audit · monitoring</FONT>
+    >,
+    fillcolor="#0A263B",
+    color="#7FA7C4",
+    style="rounded,dashed,filled"
+  ];
+
+  users -> frontend [label="HTTPS"];
+  frontend -> backend [label="REST / JSON", color="#0473EA", fontcolor="#7FC3FF"];
+  adapters -> confluence [label="read / update SI"];
+  adapters -> teams [label="retrieve transcript"];
+  adapters -> aif [label="prompt / structured result", color="#38D200", fontcolor="#9BE880"];
+  adapters -> ado [label="ticket / work item"];
+  backend -> db [label="read / write state", color="#00A1E0", fontcolor="#80D8F5"];
+  controls -> frontend [style=dashed, arrowhead=none, constraint=false];
+  controls -> backend [style=dashed, arrowhead=none, constraint=false];
+}

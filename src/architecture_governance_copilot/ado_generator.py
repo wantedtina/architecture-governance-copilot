@@ -43,7 +43,7 @@ def generate_mock_ado_work_items(
 def _build_description(result: GovernanceResult, action: ActionItem) -> str:
     context = result.context
     lines = [
-        "Mock Architecture Governance action generated from a Solution Intent review.",
+        "Architecture Governance action generated from a Solution Intent review.",
         "",
         f"Project: {context.project_name}",
         f"Solution Intent: {context.si_title}",

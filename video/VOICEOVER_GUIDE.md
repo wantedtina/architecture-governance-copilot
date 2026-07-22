@@ -27,10 +27,10 @@ approved narration and is designed to be replaced without changing the edit.
 
 - Target 125–135 spoken words per minute.
 - Use short pauses at the segment boundaries in `STORYBOARD.md`.
-- Pause immediately before `Load Sample Review`, `Analyze Review`, and
+- Pause immediately before `Generate SI Draft`, `Analyze Review`, and
   `Confirm Reviewed Record & Generate Outputs`.
 - Leave visual breathing room while the processing overlays and generated outputs appear.
-- Emphasize `Changes Requested`, `evidence`, `human review`, `Taylor Kim`, `mock`, and
+- Emphasize `Changes Requested`, `evidence`, `human review`, `Taylor Kim`, `preview-only`, and
   `Domain Architect`.
 
 ## Pronunciation

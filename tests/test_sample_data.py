@@ -109,7 +109,7 @@ def test_sample_documents_fit_demo_size_bounds() -> None:
     solution_intent_words = SOLUTION_INTENT_PATH.read_text(encoding="utf-8").split()
     transcript_lines = TRANSCRIPT_PATH.read_text(encoding="utf-8").splitlines()
 
-    assert 700 <= len(solution_intent_words) <= 1_200
+    assert 1_000 <= len(solution_intent_words) <= 1_800
     assert 25 <= len(transcript_lines) <= 40
 
 

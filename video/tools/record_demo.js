@@ -3,16 +3,58 @@ async (page) => {
 
   await page.goto("http://localhost:8501/");
   await page.waitForLoadState("domcontentloaded");
-  await page.getByRole("heading", { name: "Stage 1 — Review Inputs" }).waitFor();
+  await page
+    .getByRole("heading", { name: "Stage 1 — Draft Solution Intent" })
+    .waitFor();
+  await pause(3500);
+
+  await page
+    .getByRole("button", { name: "Load Sample Drafting Context" })
+    .click();
+  await page
+    .getByRole("textbox", { name: "Project name" })
+    .waitFor();
+  await pause(3500);
+
+  await page.getByRole("tab", { name: "Selected Repository Context" }).click();
+  await page
+    .getByRole("textbox", { name: "Selected source-code context" })
+    .waitFor();
   await pause(3000);
 
-  await page.getByRole("button", { name: "Load Sample Review" }).click();
-  await page.getByText("Synthetic sample loaded · Inputs are editable").waitFor();
+  await page.getByRole("tab", { name: "Supporting Evidence" }).click();
+  await pause(3000);
+
+  await page.getByRole("tab", { name: "SI Template Snapshot" }).click();
+  await pause(2500);
+
+  await page.getByRole("button", { name: "Generate SI Draft" }).click();
+  await page
+    .getByRole("textbox", { name: "Human-reviewed SI draft" })
+    .waitFor();
+  await pause(5500);
+
+  await page
+    .getByRole("button", {
+      name: "Confirm SI Draft & Continue to Review",
+    })
+    .click();
+  await page
+    .getByRole("heading", { name: "Stage 2 — Review Inputs" })
+    .waitFor();
+  await pause(3500);
+
+  await page
+    .getByRole("button", { name: "Load Sample Transcript & Metadata" })
+    .click();
+  await page
+    .getByText("Confirmed SI + review companions ready")
+    .waitFor();
   await pause(4000);
 
   await page.getByRole("tab", { name: "Review Transcript" }).click();
   await page
-    .getByRole("textbox", { name: "Synthetic Teams-style Review Transcript" })
+    .getByRole("textbox", { name: "Teams-style Review Transcript" })
     .waitFor();
   await pause(3500);
 
@@ -21,7 +63,7 @@ async (page) => {
 
   await page.getByRole("button", { name: "Analyze Review" }).click();
   await page.waitForURL(/human-review/);
-  await page.getByRole("heading", { name: "Stage 2 — Human Review" }).waitFor();
+  await page.getByRole("heading", { name: "Stage 3 — Human Review" }).waitFor();
   await pause(5000);
 
   await page.getByRole("tab", { name: /Decisions · 1/ }).click();
@@ -74,7 +116,7 @@ async (page) => {
     .click();
   await page.waitForURL(/generated-outputs/);
   await page
-    .getByRole("heading", { name: "Stage 3 — Generated Outputs" })
+    .getByRole("heading", { name: "Stage 4 — Generated Outputs" })
     .waitFor();
   await pause(6500);
 
@@ -86,12 +128,12 @@ async (page) => {
   await pause(5000);
 
   const adoHeading = page.getByRole("heading", {
-    name: "Mock Azure DevOps Work Items",
+    name: "Azure DevOps Work Item Previews",
     exact: true,
   });
   await adoHeading.scrollIntoViewIfNeeded();
   await page
-    .getByText("No real Azure DevOps work item has been created.", {
+    .getByText("Preview only · No work items were submitted to Azure DevOps.", {
       exact: true,
     })
     .first()

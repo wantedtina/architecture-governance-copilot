@@ -16,21 +16,25 @@ mkdir -p "$ROOT/video/output"
 
 "$FFMPEG" -y \
   -loop 1 -framerate 30 -t 12 -i "$ROOT/video/assets/opening-title.png" \
-  -loop 1 -framerate 30 -t 26 -i "$ROOT/video/assets/current-process.png" \
-  -loop 1 -framerate 30 -t 20 -i "$ROOT/video/assets/current-process.png" \
-  -loop 1 -framerate 30 -t 12 -i "$ROOT/video/assets/proposed-solution.png" \
+  -loop 1 -framerate 30 -t 24 -i "$ROOT/video/assets/current-process.png" \
+  -loop 1 -framerate 30 -t 8 -i "$ROOT/video/assets/current-process.png" \
+  -loop 1 -framerate 30 -t 8 -i "$ROOT/video/assets/proposed-solution.png" \
+  -loop 1 -framerate 30 -t 12 -i "$ROOT/video/assets/architecture-future.png" \
   -i "$ROOT/video/recordings/architecture_governance_copilot_demo_source.webm" \
-  -loop 1 -framerate 30 -t 22 -i "$ROOT/video/assets/proposed-solution.png" \
-  -loop 1 -framerate 30 -t 16 -i "$ROOT/video/assets/architecture-future.png" \
+  -loop 1 -framerate 30 -t 16 -i "$ROOT/video/assets/proposed-solution.png" \
   -loop 1 -framerate 30 -t 7 -i "$ROOT/video/assets/closing-card.png" \
-  -i "$ROOT/video/audio/provisional_offline_tts.wav" \
+  -i "$ROOT/video/audio/provisional_offline_tts_revised.wav" \
   -filter_complex "\
     [0:v]scale=1920:1080,format=yuv420p,trim=duration=12,setpts=PTS-STARTPTS[v0];\
-    [1:v]scale=1920:1080,format=yuv420p,trim=duration=26,setpts=PTS-STARTPTS[v1];\
-    [2:v]scale=1920:1080,format=yuv420p,trim=duration=20,setpts=PTS-STARTPTS[v2];\
-    [3:v]scale=1920:1080,format=yuv420p,trim=duration=12,setpts=PTS-STARTPTS[v3];\
-    [4:v]scale=1920:1080,format=yuv420p,setpts=1.110896*(PTS-STARTPTS),fps=30,trim=duration=115[v4];\
-    [5:v]scale=1920:1080,format=yuv420p,trim=duration=22,setpts=PTS-STARTPTS[v5];\
+    [1:v]scale=1920:1080,format=yuv420p,trim=duration=24,setpts=PTS-STARTPTS[v1];\
+    [2:v]scale=1920:1080,format=yuv420p,trim=duration=8,setpts=PTS-STARTPTS[v2];\
+    [3:v]scale=1920:1080,format=yuv420p,trim=duration=8,setpts=PTS-STARTPTS[v3];\
+    [4:v]scale=1920:1080,format=yuv420p,trim=duration=12,setpts=PTS-STARTPTS[v4];\
+    [5:v]scale=1920:1080,format=yuv420p,split=3[v5pre_src][v5hold_src][v5post_src];\
+    [v5pre_src]trim=end=2.24,setpts=PTS-STARTPTS[v5pre];\
+    [v5hold_src]trim=start=2.20:end=2.24,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=0.12[v5hold];\
+    [v5post_src]trim=start=2.40,setpts=PTS-STARTPTS[v5post];\
+    [v5pre][v5hold][v5post]concat=n=3:v=1:a=0,setpts=1.06433*(PTS-STARTPTS),fps=30,trim=duration=135[v5];\
     [6:v]scale=1920:1080,format=yuv420p,trim=duration=16,setpts=PTS-STARTPTS[v6];\
     [7:v]scale=1920:1080,format=yuv420p,trim=duration=7,setpts=PTS-STARTPTS[v7];\
     [v0][v1][v2][v3][v4][v5][v6][v7]concat=n=8:v=1:a=0[base];\
@@ -47,7 +51,7 @@ mkdir -p "$ROOT/video/output"
   -b:a 192k \
   -ar 48000 \
   -movflags +faststart \
-  -t 230 \
+  -t 222 \
   "$OUTPUT"
 
 cp "$ROOT/video/SUBTITLES_DRAFT.srt" "$SUBTITLE_OUTPUT"

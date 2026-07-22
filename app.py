@@ -5,10 +5,12 @@ from __future__ import annotations
 import json
 import os
 import time
+from base64 import b64encode
 from collections.abc import Sequence
 from datetime import date
 from enum import StrEnum
 from html import escape
+from pathlib import Path
 
 import streamlit as st
 from pydantic import ValidationError
@@ -92,6 +94,10 @@ from architecture_governance_copilot.ui_support import (
     store_outputs,
     store_si_draft,
 )
+
+_BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
+    (Path(__file__).parent / "assets" / "standard_chartered_logo.png").read_bytes()
+).decode("ascii")
 
 _ROUTE_FILES = {
     DRAFT_STAGE: "pages/solution_intent_drafting.py",
@@ -250,28 +256,27 @@ def _switch_stage(stage: str, *, error: str | None = None) -> None:
 
 def _render_header() -> None:
     st.markdown(
-        (
-            '<div class="agc-brandbar">'
-            '<div class="agc-brand-lockup">'
-            '<div class="agc-brand-mark" aria-hidden="true">SC</div>'
-            '<div class="agc-brand-copy">'
-            "<strong>Standard Chartered</strong>"
-            "<span>Technology &amp; Operations</span>"
-            "</div>"
-            "</div>"
-            '<div class="agc-product-copy">'
-            "<span>ARCHITECTURE &amp; ENGINEERING</span>"
-            "<strong>Architecture Governance Copilot</strong>"
-            "<small>Human-controlled Solution Intent drafting and review</small>"
-            "</div>"
-            '<div class="agc-brand-actions">'
-            '<div class="agc-classification">'
-            '<span class="agc-classification-dot"></span>INTERNAL · HACKATHON PoC'
-            "</div>"
-            '<div class="agc-service-status">● Offline demo ready</div>'
-            "</div>"
-            "</div>"
-        ),
+        f"""
+            <div class="agc-brandbar">
+                <div class="agc-brand-lockup">
+                    <img class="agc-brand-logo" src="{_BRAND_LOGO_DATA_URI}"
+                         alt="Standard Chartered">
+                    <span class="agc-brand-context">Technology &amp; Operations</span>
+                </div>
+                <div class="agc-product-copy">
+                    <span>ARCHITECTURE &amp; ENGINEERING</span>
+                    <strong>Architecture Governance Copilot</strong>
+                    <small>Human-controlled Solution Intent drafting and review</small>
+                </div>
+                <div class="agc-brand-actions">
+                    <div class="agc-classification">
+                        <span class="agc-classification-dot"></span>
+                        INTERNAL · HACKATHON PoC
+                    </div>
+                    <div class="agc-service-status">● Offline demo ready</div>
+                </div>
+            </div>
+        """,
         unsafe_allow_html=True,
     )
     st.info(
@@ -457,37 +462,20 @@ def _apply_visual_theme() -> None:
         }
         .agc-brand-lockup {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .agc-brand-mark {
-            display: grid;
-            place-items: center;
-            width: 2.25rem;
-            height: 2.25rem;
-            border-radius: 50% 42% 50% 42%;
-            color: #ffffff;
-            background: linear-gradient(145deg, var(--agc-blue) 8%, #008acb 48%, var(--agc-green));
-            box-shadow: 0 4px 12px rgba(4, 115, 234, 0.22);
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            transform: rotate(-5deg);
-        }
-        .agc-brand-copy {
-            display: flex;
+            align-items: flex-start;
             flex-direction: column;
-            line-height: 1.15;
+            gap: 0.05rem;
         }
-        .agc-brand-copy strong {
-            color: var(--agc-indigo);
-            font-size: 1.05rem;
-            font-weight: 600;
+        .agc-brand-logo {
+            display: block;
+            width: 9.4rem;
+            height: 2.65rem;
+            object-fit: contain;
         }
-        .agc-brand-copy span {
-            margin-top: 0.25rem;
+        .agc-brand-context {
+            padding-left: 0.2rem;
             color: var(--agc-muted);
-            font-size: 0.72rem;
+            font-size: 0.62rem;
             letter-spacing: 0.04em;
         }
         .agc-product-copy {
@@ -650,6 +638,35 @@ def _apply_visual_theme() -> None:
             font-weight: 500;
             line-height: 1.25;
             text-overflow: ellipsis;
+        }
+        .agc-intake-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.65rem;
+            margin: 0.35rem 0 0.15rem;
+        }
+        .agc-intake-card {
+            min-width: 0;
+            padding: 0.7rem 0.8rem;
+            border: 1px solid var(--agc-border);
+            border-radius: 10px;
+            background: linear-gradient(180deg, #ffffff, #f7fbff);
+        }
+        .agc-intake-card span {
+            display: block;
+            margin-bottom: 0.18rem;
+            color: var(--agc-muted);
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .agc-intake-card strong {
+            display: block;
+            color: var(--agc-navy);
+            font-size: 0.78rem;
+            font-weight: 600;
+            line-height: 1.25;
         }
         [data-testid="stFormSubmitButton"] {
             position: fixed;
@@ -828,6 +845,9 @@ def _apply_visual_theme() -> None:
             }
             .agc-context-grid {
                 grid-template-columns: 1fr;
+            }
+            .agc-intake-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
         </style>
@@ -1020,8 +1040,14 @@ def _render_drafting_stage() -> None:
         key=DRAFT_PROJECT_WIDGET_KEY,
         placeholder="Load the bundled demo context to begin.",
     )
+    if drafting_context_ready:
+        _render_drafting_context_snapshot(
+            template=st.session_state[DRAFT_TEMPLATE_WIDGET_KEY],
+            source_code_context=st.session_state[DRAFT_SOURCE_CODE_WIDGET_KEY],
+            supporting_documents=st.session_state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY],
+        )
     template_tab, source_tab, documents_tab = st.tabs(
-        ["SI Template", "Source Code Context", "Supporting Documents"]
+        ["SI Template Snapshot", "Selected Repository Context", "Supporting Evidence"]
     )
     with template_tab:
         template = st.text_area(
@@ -1120,6 +1146,51 @@ def _render_drafting_stage() -> None:
                     st.write(f"- {assumption}")
         if submitted and _confirm_si_draft(reviewed_content):
             _switch_stage(INPUT_STAGE)
+
+
+def _render_drafting_context_snapshot(
+    *,
+    template: str,
+    source_code_context: str,
+    supporting_documents: str,
+) -> None:
+    """Render a concise, synthetic inventory of the loaded drafting context."""
+    chapter_count = sum(line.startswith("## ") for line in template.splitlines())
+    artifact_count = sum(
+        line.startswith("- src/") or line.startswith("- deploy/")
+        for line in source_code_context.splitlines()
+    )
+    evidence_domain_count = sum(
+        line.startswith("## ") for line in supporting_documents.splitlines()
+    )
+    values = (
+        ("Workspace", "Enterprise SI template snapshot"),
+        ("Template coverage", f"{chapter_count} governed chapters detected"),
+        ("Engineering context", f"{artifact_count} selected repository artefacts"),
+        ("Supporting evidence", f"{evidence_domain_count} context domains supplied"),
+    )
+    cards = "".join(
+        (
+            '<div class="agc-intake-card">'
+            f"<span>{escape(label)}</span>"
+            f"<strong>{escape(value)}</strong>"
+            "</div>"
+        )
+        for label, value in values
+    )
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">CONTEXT PACKAGE</p>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="agc-intake-grid">{cards}</div>',
+            unsafe_allow_html=True,
+        )
+        st.caption(
+            "Synthetic local snapshot · no Confluence connection, repository scan, or external "
+            "document retrieval occurs in demo mode."
+        )
 
 
 def _confirm_si_draft(reviewed_content: str) -> bool:

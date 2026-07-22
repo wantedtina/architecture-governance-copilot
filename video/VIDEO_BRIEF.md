@@ -7,9 +7,9 @@ but may not know this prototype.
 
 ## Objective
 
-Show one reliable, end-to-end Solution Intent review workflow in less than four minutes. The
-viewer should understand the business problem, input origins, evidence-backed structured review,
-human controls, generated review record, mock Azure DevOps actions, and current PoC boundaries.
+Show one reliable, end-to-end workflow in less than four minutes: draft a Solution Intent from
+synthetic context, confirm it, perform an evidence-backed governance review, and generate a
+review record plus Azure DevOps work-item previews.
 
 ## Central message
 
@@ -28,10 +28,11 @@ records.
 
 ## Proposed solution
 
-The PoC accepts normalized SI content and a normalized review transcript, proposes a structured
+The PoC drafts an SI from a template, selected source-code context, and supporting notes. After
+human confirmation, it combines the SI with a review transcript, proposes a structured
 governance review with source evidence, allows a human to edit or exclude items, and generates a
-standardized review record plus mock ADO action work items only after explicit confirmation.
-Formal approval remains with the Domain Architect.
+standardized review record plus ADO work-item previews. Formal approval remains with the Domain
+Architect.
 
 ## Input origins
 
@@ -88,9 +89,15 @@ generous whitespace, concise callouts, clean cuts, and short fades. The real app
 largest single segment. A provisional offline macOS TTS track may be used only for the review
 draft and must be replaceable with approved human narration.
 
+The opening and closing use the approved Standard Chartered lock-up for this internal video.
+The technical frame shows a target deployment and integration architecture rather than a
+business workflow. It places the AGC Front End in Service Bench and the AGC Backend API in SKE,
+with adapters for Confluence, Teams, AIF LLM endpoints, a database, ADO, and enterprise controls.
+The frame explicitly distinguishes this target state from the locally running deterministic PoC.
+
 ## Target duration
 
-`03:50` total, with an absolute ceiling of `03:55`.
+`03:42` total, with an absolute ceiling of `03:55`.
 
 ## Prohibited claims
 

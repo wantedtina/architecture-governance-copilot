@@ -276,6 +276,15 @@ def test_drafted_si_can_be_confirmed_and_handed_to_existing_review_stage() -> No
     assert app.text_area(key=DRAFT_TEMPLATE_WIDGET_KEY).value.startswith("# Solution Intent")
     assert "notification_routes.py" in app.text_area(key=DRAFT_SOURCE_CODE_WIDGET_KEY).value
     assert "Planned initial release" in app.text_area(key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY).value
+    context_snapshot = next(
+        item.value
+        for item in app.markdown
+        if item.value.startswith('<div class="agc-intake-grid">')
+    )
+    assert "Enterprise SI template snapshot" in context_snapshot
+    assert "12 governed chapters detected" in context_snapshot
+    assert "6 selected repository artefacts" in context_snapshot
+    assert "4 context domains supplied" in context_snapshot
 
     app.button(key="agc_generate_si_draft").click().run()
     app.switch_page("pages/solution_intent_drafting.py").run()
