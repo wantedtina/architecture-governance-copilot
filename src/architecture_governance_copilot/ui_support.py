@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -21,6 +21,13 @@ from architecture_governance_copilot.models import (
 STATE_PREFIX = "agc_"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
 
+PROJECT_CONTEXT_KEY = f"{STATE_PREFIX}project_context"
+PROJECT_CONTEXT_CONFIRMED_KEY = f"{STATE_PREFIX}project_context_confirmed"
+PROJECT_CONTEXT_REFRESHED_KEY = f"{STATE_PREFIX}project_context_refreshed"
+CONTEXT_TEMPLATE_SELECTED_KEY = f"{STATE_PREFIX}context_template_selected"
+CONTEXT_REPOSITORY_SELECTED_KEY = f"{STATE_PREFIX}context_repository_selected"
+CONTEXT_SUPPORTING_SELECTED_KEY = f"{STATE_PREFIX}context_supporting_selected"
+CONTEXT_ADO_SELECTED_KEY = f"{STATE_PREFIX}context_ado_selected"
 DRAFT_PROJECT_KEY = f"{STATE_PREFIX}draft_project"
 DRAFT_TEMPLATE_KEY = f"{STATE_PREFIX}draft_template"
 DRAFT_SOURCE_CODE_KEY = f"{STATE_PREFIX}draft_source_code"
@@ -50,11 +57,12 @@ ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
 ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
 
+CONTEXT_STAGE = "context"
 DRAFT_STAGE = "drafting"
 INPUT_STAGE = "inputs"
 REVIEW_STAGE = "review"
 OUTPUT_STAGE = "outputs"
-VALID_STAGES = frozenset({DRAFT_STAGE, INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
+VALID_STAGES = frozenset({CONTEXT_STAGE, DRAFT_STAGE, INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +82,10 @@ class DraftingSampleContext:
     template: str
     source_code_context: str
     supporting_documents: str
+    governance_reference: str
+    template_reference: str
+    repository_reference: str
+    branch: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,6 +147,10 @@ def load_sample_drafting_context() -> DraftingSampleContext:
         template=template,
         source_code_context=source_code_context,
         supporting_documents=supporting_documents,
+        governance_reference="ADO Workitem - Solution Intent 12658902",
+        template_reference="v1.1",
+        repository_reference="55390-19-payment-notification-service",
+        branch="main",
     )
 
 
@@ -170,6 +186,13 @@ def load_sample_review() -> SampleReview:
 def initial_state_values() -> dict[str, object]:
     """Return independent initial values for application-owned session state."""
     return {
+        PROJECT_CONTEXT_KEY: None,
+        PROJECT_CONTEXT_CONFIRMED_KEY: False,
+        PROJECT_CONTEXT_REFRESHED_KEY: False,
+        CONTEXT_TEMPLATE_SELECTED_KEY: True,
+        CONTEXT_REPOSITORY_SELECTED_KEY: True,
+        CONTEXT_SUPPORTING_SELECTED_KEY: True,
+        CONTEXT_ADO_SELECTED_KEY: True,
         DRAFT_PROJECT_KEY: "",
         DRAFT_TEMPLATE_KEY: "",
         DRAFT_SOURCE_CODE_KEY: "",
@@ -190,7 +213,7 @@ def initial_state_values() -> dict[str, object]:
         LOADED_KEY: False,
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
-        ACTIVE_STAGE_KEY: DRAFT_STAGE,
+        ACTIVE_STAGE_KEY: CONTEXT_STAGE,
     }
 
 
@@ -254,6 +277,7 @@ def load_sample_into_state(
     state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
     state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
     state[LOADED_KEY] = True
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
     state[DRAFT_CONFIRMED_KEY] = False
 
 
@@ -262,6 +286,8 @@ def load_drafting_context_into_state(
     sample: DraftingSampleContext,
 ) -> None:
     """Populate synthetic drafting context and clear a previous draft result."""
+    state[PROJECT_CONTEXT_KEY] = sample
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = True
     state[DRAFT_PROJECT_KEY] = sample.project_name
     state[DRAFT_TEMPLATE_KEY] = sample.template
     state[DRAFT_SOURCE_CODE_KEY] = sample.source_code_context
@@ -276,6 +302,76 @@ def load_drafting_context_into_state(
     state[DRAFT_CONFIRMED_KEY] = False
     state[ERROR_KEY] = None
     state[ACTIVE_STAGE_KEY] = DRAFT_STAGE
+
+
+def open_demonstration_project_into_state(
+    state: MutableMapping[str, Any],
+    sample: DraftingSampleContext,
+) -> None:
+    """Open the synthetic workspace without pretending to connect externally."""
+    clear_analysis_state(state)
+    state[PROJECT_CONTEXT_KEY] = sample
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
+    state[PROJECT_CONTEXT_REFRESHED_KEY] = False
+    state[CONTEXT_TEMPLATE_SELECTED_KEY] = True
+    state[CONTEXT_REPOSITORY_SELECTED_KEY] = True
+    state[CONTEXT_SUPPORTING_SELECTED_KEY] = True
+    state[CONTEXT_ADO_SELECTED_KEY] = True
+    state[DRAFT_PROJECT_KEY] = ""
+    state[DRAFT_TEMPLATE_KEY] = ""
+    state[DRAFT_SOURCE_CODE_KEY] = ""
+    state[DRAFT_SUPPORTING_DOCS_KEY] = ""
+    state[DRAFT_RESULT_KEY] = None
+    state[DRAFT_FINGERPRINT_KEY] = None
+    state[DRAFT_CONFIRMED_KEY] = False
+    state[SOLUTION_INTENT_KEY] = ""
+    state[TRANSCRIPT_KEY] = ""
+    state[CONTEXT_KEY] = None
+    state[LOADED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
+
+
+def project_context_readiness(state: Mapping[str, Any]) -> tuple[str, ...]:
+    """Return concise blockers for the currently selected drafting sources."""
+    if not isinstance(state.get(PROJECT_CONTEXT_KEY), DraftingSampleContext):
+        return ("Open a demonstration project workspace.",)
+    blockers: list[str] = []
+    if state.get(CONTEXT_TEMPLATE_SELECTED_KEY) is not True:
+        blockers.append("Select the required Solution Intent template.")
+    if state.get(CONTEXT_REPOSITORY_SELECTED_KEY) is not True:
+        blockers.append("Select the required repository context.")
+    return tuple(blockers)
+
+
+def refresh_project_context(state: MutableMapping[str, Any]) -> None:
+    """Record a deterministic local validation of the selected source package."""
+    if not isinstance(state.get(PROJECT_CONTEXT_KEY), DraftingSampleContext):
+        raise ValueError("Open a demonstration project before refreshing context.")
+    state[PROJECT_CONTEXT_REFRESHED_KEY] = True
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
+
+
+def confirm_project_context_for_drafting(state: MutableMapping[str, Any]) -> None:
+    """Confirm selected synthetic sources and hand them to SI drafting."""
+    blockers = project_context_readiness(state)
+    if blockers:
+        raise ValueError(" ".join(blockers))
+    sample = state[PROJECT_CONTEXT_KEY]
+    if not isinstance(sample, DraftingSampleContext):
+        raise ValueError("Open a demonstration project workspace.")
+    selected_sample = replace(
+        sample,
+        supporting_documents=(
+            sample.supporting_documents
+            if state.get(CONTEXT_SUPPORTING_SELECTED_KEY) is True
+            else ""
+        ),
+    )
+    load_drafting_context_into_state(state, selected_sample)
+    state[PROJECT_CONTEXT_REFRESHED_KEY] = True
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = True
 
 
 def store_si_draft(
@@ -406,9 +502,9 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
 
 
 def active_stage(state: Mapping[str, Any]) -> str:
-    """Return the current valid route stage, defaulting safely to SI drafting."""
+    """Return the current valid route stage, defaulting safely to Project Context."""
     value = state.get(ACTIVE_STAGE_KEY)
-    return value if isinstance(value, str) and value in VALID_STAGES else DRAFT_STAGE
+    return value if isinstance(value, str) and value in VALID_STAGES else CONTEXT_STAGE
 
 
 def set_active_stage(state: MutableMapping[str, Any], stage: str) -> None:

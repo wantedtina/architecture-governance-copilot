@@ -4,29 +4,36 @@ async (page) => {
   await page.goto("http://localhost:8501/");
   await page.waitForLoadState("domcontentloaded");
   await page
-    .getByRole("heading", { name: "Stage 1 — Draft Solution Intent" })
+    .getByRole("heading", { name: "Stage 1 — Project Context" })
     .waitFor();
   await pause(3500);
 
   await page
-    .getByRole("button", { name: "Load Sample Drafting Context" })
+    .getByRole("button", { name: "Open Demonstration Project" })
     .click();
   await page
-    .getByRole("textbox", { name: "Project name" })
+    .getByText("ADO Workitem - Solution Intent 12658902", { exact: true })
     .waitFor();
   await pause(3500);
 
-  await page.getByRole("tab", { name: "Selected Repository Context" }).click();
-  await page
-    .getByRole("textbox", { name: "Selected source-code context" })
-    .waitFor();
+  await page.getByText("Inspect selected source previews").click();
+  await page.getByRole("tab", { name: "Repository" }).click();
   await pause(3000);
 
-  await page.getByRole("tab", { name: "Supporting Evidence" }).click();
+  await page.getByRole("tab", { name: "Evidence" }).click();
   await pause(3000);
 
-  await page.getByRole("tab", { name: "SI Template Snapshot" }).click();
+  await page.getByRole("tab", { name: "Governance Metadata" }).click();
   await pause(2500);
+
+  await page.getByRole("button", { name: "Refresh Context" }).click();
+  await pause(2500);
+
+  await page.getByRole("button", { name: "Confirm Context & Continue" }).click();
+  await page
+    .getByRole("heading", { name: "Stage 2 — Draft Solution Intent" })
+    .waitFor();
+  await pause(3500);
 
   await page.getByRole("button", { name: "Generate SI Draft" }).click();
   await page
@@ -40,7 +47,7 @@ async (page) => {
     })
     .click();
   await page
-    .getByRole("heading", { name: "Stage 2 — Review Inputs" })
+    .getByRole("heading", { name: "Stage 3 — Review Inputs" })
     .waitFor();
   await pause(3500);
 
@@ -63,7 +70,7 @@ async (page) => {
 
   await page.getByRole("button", { name: "Analyze Review" }).click();
   await page.waitForURL(/human-review/);
-  await page.getByRole("heading", { name: "Stage 3 — Human Review" }).waitFor();
+  await page.getByRole("heading", { name: "Stage 4 — Human Review" }).waitFor();
   await pause(5000);
 
   await page.getByRole("tab", { name: /Decisions · 1/ }).click();
@@ -116,7 +123,7 @@ async (page) => {
     .click();
   await page.waitForURL(/generated-outputs/);
   await page
-    .getByRole("heading", { name: "Stage 4 — Generated Outputs" })
+    .getByRole("heading", { name: "Stage 5 — Generated Outputs" })
     .waitFor();
   await pause(6500);
 

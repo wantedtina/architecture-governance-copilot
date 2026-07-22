@@ -17,6 +17,9 @@ from architecture_governance_copilot.ui_support import (
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
+    CONTEXT_STAGE,
+    CONTEXT_SUPPORTING_SELECTED_KEY,
+    CONTEXT_TEMPLATE_SELECTED_KEY,
     DRAFT_STAGE,
     ERROR_KEY,
     INPUT_STAGE,
@@ -24,6 +27,8 @@ from architecture_governance_copilot.ui_support import (
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
+    PROJECT_CONTEXT_CONFIRMED_KEY,
+    PROJECT_CONTEXT_KEY,
     REVIEW_DRAFT_KEY,
     REVIEW_STAGE,
     REVIEW_WIDGET_PREFIX,
@@ -37,15 +42,19 @@ from architecture_governance_copilot.ui_support import (
     analysis_is_stale,
     build_reviewed_result,
     clear_outputs,
+    confirm_project_context_for_drafting,
     default_review_form_data,
     humanize,
     initialize_session_state,
     input_fingerprint,
+    load_sample_drafting_context,
     load_sample_into_state,
     load_sample_review,
+    open_demonstration_project_into_state,
     optional_text,
     parse_optional_iso_date,
     preserve_review_widget_state,
+    project_context_readiness,
     reset_application_state,
     restore_review_widget_state,
     sample_paths,
@@ -95,6 +104,33 @@ def test_sample_loading_returns_validated_bundled_inputs() -> None:
     assert "[10:00] Priya Shah:" in sample.transcript
     assert sample.context.project_name == "Digital Payment Notification Service"
     assert sample.context.review_round == 2
+
+
+def test_project_context_open_readiness_and_confirmation() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_drafting_context()
+
+    assert project_context_readiness(state) == ("Open a demonstration project workspace.",)
+
+    open_demonstration_project_into_state(state, sample)
+
+    assert state[PROJECT_CONTEXT_KEY] == sample
+    assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is False
+    assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
+    assert project_context_readiness(state) == ()
+
+    state[CONTEXT_TEMPLATE_SELECTED_KEY] = False
+    assert project_context_readiness(state) == ("Select the required Solution Intent template.",)
+    state[CONTEXT_TEMPLATE_SELECTED_KEY] = True
+    state[CONTEXT_SUPPORTING_SELECTED_KEY] = False
+
+    confirm_project_context_for_drafting(state)
+
+    assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
+    assert state[ACTIVE_STAGE_KEY] == DRAFT_STAGE
+    assert state["agc_draft_project"] == sample.project_name
+    assert state["agc_draft_supporting_docs"] == ""
 
 
 @pytest.mark.parametrize(
@@ -213,7 +249,7 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
 
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[OUTPUTS_KEY] is None
-    assert state[ACTIVE_STAGE_KEY] == DRAFT_STAGE
+    assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
     assert state["unrelated"] == "preserved"
 
@@ -222,14 +258,14 @@ def test_active_stage_navigation_accepts_only_known_route_stages() -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
 
-    assert active_stage(state) == DRAFT_STAGE
+    assert active_stage(state) == CONTEXT_STAGE
     set_active_stage(state, REVIEW_STAGE)
     assert active_stage(state) == REVIEW_STAGE
     set_active_stage(state, OUTPUT_STAGE)
     assert active_stage(state) == OUTPUT_STAGE
 
     state[ACTIVE_STAGE_KEY] = "corrupt"
-    assert active_stage(state) == DRAFT_STAGE
+    assert active_stage(state) == CONTEXT_STAGE
     with pytest.raises(ValueError, match="Unknown application stage"):
         set_active_stage(state, "later_phase")
 

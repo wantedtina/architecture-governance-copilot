@@ -11,9 +11,9 @@ Domain Architect.
 The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
 not show a second review round.
 
-The four-stage header remains visible throughout: **Draft Solution Intent → Review Inputs →
-Human Review → Generated Outputs**. The recording follows the drafting path. **Use Existing
-Solution Intent** is mentioned only as an alternative and is not clicked.
+The five-stage header remains visible throughout: **Project Context → Draft Solution Intent →
+Review Inputs → Human Review → Generated Outputs**. The recording follows the drafting path.
+**Use Existing Solution Intent** is mentioned only as an alternative and is not clicked.
 
 ## Synthetic scenario
 
@@ -76,36 +76,48 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 - **Architecture Governance Copilot** and the Solution Intent review subtitle are visible.
 - A single global disclosure states **Demo Mode · Synthetic Data · No External Connections**.
-- **Stage 1 — Draft Solution Intent** is active.
-- The drafting context areas are empty.
+- **Stage 1 — Project Context** is active.
+- No project workspace is open.
 - No analysis or outputs are displayed.
 
-### Step 2 — Load and generate the SI draft
+### Step 2 — Open and confirm Project Context
 
-**Click:** **Load Sample Drafting Context**, briefly identify the three context tabs, then click
-**Generate SI Draft**.
+**Click:** **Open Demonstration Project**, inspect the four source cards and source-selection
+controls, then click **Refresh Context** and **Confirm Context & Continue**.
 
 **Expected state:**
 
-- The template, selected code context, and supporting notes are visibly synthetic.
+- The project, governance reference, SI template, repository, and branch are shown.
+- Required template and repository sources are selected; supporting evidence is optional.
+- Refresh reports a deterministic local validation with no external connection.
+- The browser navigates to **Stage 2 — Draft Solution Intent**.
+- Project Context is marked **Complete** in the five-stage header.
+
+### Step 3 — Generate the SI draft
+
+**Click:** Briefly identify the three read-only context tabs, then click **Generate SI Draft**.
+
+**Expected state:**
+
+- The confirmed template, selected code context, and supporting notes are visibly synthetic.
 - A short deterministic processing overlay ends on an editable SI draft.
 - **Confirm SI Draft & Continue to Review** remains fixed at the bottom of the viewport.
 - The draft is clearly labeled as a drafting aid, not approval or Confluence publication.
 
-### Step 3 — Confirm the SI and prepare review inputs
+### Step 4 — Confirm the SI and prepare review inputs
 
 **Click:** **Confirm SI Draft & Continue to Review**, then **Load Sample Transcript & Metadata**.
 
 **Expected state:**
 
 - A short two-phase transition validates the reviewed draft and prepares the governance handoff.
-- The browser navigates to **Stage 2 — Review Inputs**.
-- Draft Solution Intent is marked **Complete** in the four-stage header.
+- The browser navigates to **Stage 3 — Review Inputs**.
+- Draft Solution Intent is marked **Complete** in the five-stage header.
 - The confirmed SI is preserved and the matching transcript and review metadata are loaded.
 - Review metadata identifies SI version 1.2, round 2, and ticket `ARCH-POC-1024`.
 - **Analyze Review** becomes enabled.
 
-### Step 4 — Analyze the review
+### Step 5 — Analyze the review
 
 **Click:** **Analyze Review**.
 
@@ -115,8 +127,8 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
   the human-review workspace.
 - Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
 - The browser navigates to `/human-review`.
-- The progress indicator advances to step 3.
-- **Stage 3 — Human Review** replaces the full input view.
+- The progress indicator advances to step 4.
+- **Stage 4 — Human Review** replaces the full input view.
 - A compact analyzed-input summary and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
 - Metrics show one decision, three findings, one risk, two actions, one open question, and two
@@ -125,7 +137,7 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 - Every required item offers supporting evidence.
 - No generated minutes or ADO work items appear automatically.
 
-### Step 5 — Review the outcome and counts
+### Step 6 — Review the outcome and counts
 
 **Action:** Point to **Changes Requested** and scan the seven summary metrics.
 
@@ -134,7 +146,7 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 - The structured proposal is clearly labeled draft.
 - Human review is visibly separated from deterministic analysis.
 
-### Step 6 — Make a human edit
+### Step 7 — Make a human edit
 
 **Action:** Open **Actions · 2** and change the first action owner from **Alex Chen** to
 **Taylor Kim**.
@@ -145,7 +157,7 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 - Evidence remains visible and unchanged.
 - The record remains a human-reviewed draft, not a formal SI approval.
 
-### Step 7 — Exclude the Redis question
+### Step 8 — Exclude the Redis question
 
 **Click:** Open **Questions · 1**, then clear **Include in reviewed record** for the Redis open
 question.
@@ -155,7 +167,7 @@ question.
 - The Redis evidence remains read-only in the current form.
 - The question is marked for omission from the reviewed result.
 
-### Step 8 — Confirm the reviewed record
+### Step 9 — Confirm the reviewed record
 
 **Click:** **Confirm Reviewed Record & Generate Outputs**.
 
@@ -166,7 +178,7 @@ question.
 - The UI confirms output generation without claiming formal SI approval.
 - The browser navigates to `/generated-outputs`.
 - The progress indicator advances to step 4.
-- **Stage 4 — Generated Outputs** replaces the edit form.
+- **Stage 5 — Generated Outputs** replaces the edit form.
 - A **Governance package ready** completion panel clearly marks the workflow as complete.
 - Summary cards show completion, outcome, one minutes artifact, and the work-item preview count.
 - **Start New Review** provides a deliberate reset for the next rehearsal.
@@ -174,7 +186,7 @@ question.
 - Two action work-item previews remain because no action was excluded.
 - Nothing is sent to an external service.
 
-### Step 9 — Show the generated minutes
+### Step 10 — Show the generated minutes
 
 **Action:** Show the **Rendered Markdown** view, then briefly select **Raw Markdown**.
 
@@ -184,7 +196,7 @@ question.
 - Redis is absent.
 - The accountability notice says the record must be reviewed before publication.
 
-### Step 10 — Show the Azure DevOps work-item previews
+### Step 11 — Show the Azure DevOps work-item previews
 
 **Action:** Scroll to **Azure DevOps Work Item Previews**.
 
@@ -195,7 +207,7 @@ question.
 - Parent ID, due dates, priorities, tags, descriptions, and source indices are visible.
 - The page states: **No real Azure DevOps work item has been created.**
 
-### Step 11 — Close on accountability and scope
+### Step 12 — Close on accountability and scope
 
 **Action:** Return to the completion panel and point to **Start New Review** without clicking it.
 
@@ -231,7 +243,7 @@ question.
 | --- | --- | --- |
 | 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
 | 0:20–0:55 | Draft SI | Load context, generate, and confirm the synthetic SI draft. |
-| 0:55–1:10 | Review inputs | Load transcript and metadata; show the four-stage progression. |
+| 0:55–1:10 | Review inputs | Load transcript and metadata; show the five-stage progression. |
 | 1:10–1:40 | Analyze | Show Changes Requested, counts, and read-only evidence. |
 | 1:40–2:15 | Human review | Edit one owner, exclude Redis, and emphasize human control. |
 | 2:15–3:15 | Confirm and generate | Show rendered/raw minutes and two ADO work-item previews. |
@@ -299,7 +311,7 @@ or every output field.
 
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
 - [ ] Only one review round—round 2—is shown.
-- [ ] The four-stage header begins at **Draft Solution Intent**.
+- [ ] The five-stage header begins at **Project Context**.
 - [ ] SI draft generation and explicit human confirmation are shown.
 - [ ] **Load Sample Transcript & Metadata** preserves the confirmed SI.
 - [ ] Changes Requested is shown.

@@ -71,27 +71,30 @@ mean that the PoC can govern arbitrary projects or replace Domain Architect judg
 
 ## Core end-to-end user journey
 
-1. Start in the first-class Draft Solution Intent stage.
-2. Load the bundled synthetic SI template, selected source-code context, and supporting notes.
-3. Generate a deterministic SI draft behind the drafting-provider interface.
-4. Let a project-team reviewer edit and confirm the draft.
-5. Hand the confirmed SI directly to Review Inputs.
-6. Alternatively, explicitly choose **Use Existing Solution Intent** and skip drafting.
-7. Load the synthetic review transcript and metadata without replacing a confirmed SI, or load
+1. Start in the first-class Project Context stage.
+2. Open the bundled synthetic project workspace and inspect its available source package.
+3. Explicitly include or exclude the SI template, repository context, supporting evidence, and
+   governance metadata, then confirm the context package.
+4. Generate a deterministic SI draft behind the drafting-provider interface.
+5. Let a project-team reviewer edit and confirm the draft.
+6. Hand the confirmed SI directly to Review Inputs.
+7. Alternatively, explicitly choose **Use Existing Solution Intent** and skip context selection
+   and drafting.
+8. Load the synthetic review transcript and metadata without replacing a confirmed SI, or load
    the complete bundled SI, transcript, and metadata review package.
-8. Analyze the review using the SI, transcript, and review metadata.
-9. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
+9. Analyze the review using the SI, transcript, and review metadata.
+10. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
    information.
-10. Show supporting SI or transcript evidence for each extracted claim.
-11. Allow human review, editing, and removal of proposed items.
-12. Let the Domain Architect explicitly confirm the reviewed record for output generation.
-13. Generate the structured review record, review minutes, and mock ADO outputs from the
+11. Show supporting SI or transcript evidence for each extracted claim.
+12. Allow human review, editing, and removal of proposed items.
+13. Let the Domain Architect explicitly confirm the reviewed record for output generation.
+14. Generate the structured review record, review minutes, and mock ADO outputs from the
    human-confirmed state.
 
-The implemented UI uses four peer-level routed stages: Draft Solution Intent, Review Inputs,
-Human Review, and Generated Outputs. Drafting is the default start. The progress header marks
-drafting **Complete** after confirmation or **Skipped** when the user chooses the existing-SI
-path.
+The implemented UI uses five peer-level routed stages: Project Context, Draft Solution Intent,
+Review Inputs, Human Review, and Generated Outputs. Project Context is the default start. The
+progress header marks context selection and drafting **Complete** after confirmation or
+**Skipped** when the user chooses the existing-SI path.
 
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
 record for future tracking, but the application will not compare versions, persist history, or
@@ -101,7 +104,12 @@ automatically carry findings between rounds.
 
 ### Pre-review SI drafting
 
-- Present Draft Solution Intent as Stage 1, at the same navigation level as Review Inputs.
+- Present Project Context as Stage 1 and Draft Solution Intent as Stage 2, at the same navigation
+  level as Review Inputs.
+- Provide a project workspace selector and production-shaped source cards for the bundled
+  synthetic template, repository, supporting evidence, and governance metadata.
+- Require explicit confirmation of the required template and repository sources before drafting.
+- Clearly label source statuses as simulated and make no external synchronization or API calls.
 - Provide **Use Existing Solution Intent** as an explicit drafting bypass.
 - Accept project name, SI template, selected source-code context, and optional supporting notes.
 - Treat source code as pasted or pre-normalized text; do not clone, scan, or execute repositories.
@@ -268,7 +276,8 @@ The PoC is done when:
 - The bundled drafting template, source context, and supporting notes load together.
 - SI draft generation works deterministically without network access or credentials.
 - The draft is editable and requires explicit human confirmation.
-- The four-stage progress header truthfully distinguishes completed and skipped drafting.
+- The five-stage progress header truthfully distinguishes completed and skipped context and
+  drafting stages.
 - The confirmed SI appears in existing Review Inputs.
 - Loading transcript and metadata preserves the confirmed SI.
 - `uv sync` creates a working Python 3.12 environment.

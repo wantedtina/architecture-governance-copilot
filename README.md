@@ -25,22 +25,25 @@ is slow, and findings can lose their SI-section context or supporting evidence.
 
 The implemented deterministic Solution Intent Copilot can:
 
-1. load synthetic drafting context and generate a known SI draft behind a provider interface;
-2. let a human edit and confirm that draft before it enters governance review;
-3. load review transcript and metadata without replacing the confirmed SI;
-4. alternatively load one complete bundled synthetic review package;
-5. analyze both review sources with the deterministic fixture-backed extractor;
-6. display the outcome, findings, decisions, risks, actions, open questions, and missing
+1. open a synthetic project workspace and let the user inspect and select its SI template,
+   repository context, supporting evidence, and governance metadata;
+2. confirm that source package and generate a known SI draft behind a provider interface;
+3. let a human edit and confirm that draft before it enters governance review;
+4. load review transcript and metadata without replacing the confirmed SI;
+5. alternatively load one complete bundled synthetic review package;
+6. analyze both review sources with the deterministic fixture-backed extractor;
+7. display the outcome, findings, decisions, risks, actions, open questions, and missing
    information;
-7. identify supporting evidence as either SI or transcript evidence;
-8. map findings to SI sections where supported;
-9. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
-10. validate the human-reviewed record before generating Markdown minutes and mock ADO action
+8. identify supporting evidence as either SI or transcript evidence;
+9. map findings to SI sections where supported;
+10. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
+11. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
-The UI presents one consistent four-stage route hierarchy: **Draft Solution Intent → Review
-Inputs → Human Review → Generated Outputs**. Drafting is the default starting page. **Use
-Existing Solution Intent** moves directly to Review Inputs and marks drafting as skipped.
+The UI presents one consistent five-stage route hierarchy: **Project Context → Draft Solution
+Intent → Review Inputs → Human Review → Generated Outputs**. Project Context is the default
+starting page. **Use Existing Solution Intent** moves directly to Review Inputs and marks both
+context selection and drafting as skipped.
 Analysis navigates to `/human-review`, and review confirmation navigates to
 `/generated-outputs`. Browser history and Back actions therefore behave like page navigation
 while shared session state preserves the current draft and review.
@@ -196,14 +199,14 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The primary guided flow is: **Load Sample Drafting Context → Generate SI Draft → human
-edit/confirm → Load Sample Transcript & Metadata → Analyze Review → edit or exclude items →
-Confirm Reviewed Record & Generate Outputs**.
+The primary guided flow is: **Open Demonstration Project → inspect/select sources → Confirm
+Context & Continue → Generate SI Draft → human edit/confirm → Load Sample Transcript & Metadata
+→ Analyze Review → edit or exclude items → Confirm Reviewed Record & Generate Outputs**.
 
 The existing-SI shortcut is: **Use Existing Solution Intent → Load Sample Review → Analyze
 Review**.
 The application is fixture-backed and supports only the bundled synthetic drafting and review
-scenario. Human edits are preserved into Stage 1, but the current deterministic review extractor
+scenario. Human edits are preserved into Stage 2, but the current deterministic review extractor
 can analyze only the unchanged bundled SI; arbitrary edited SI analysis requires a future
 approved provider.
 
@@ -216,6 +219,8 @@ Implemented:
 - strict SI-drafting request/result models and a `SolutionIntentDrafter` provider protocol;
 - a deterministic offline drafter for the bundled template, source excerpts, and supporting
   notes;
+- a production-shaped Project Context stage with explicit source selection and simulated local
+  source statuses;
 - a first-class routed drafting stage with editable human confirmation;
 - direct handoff of the confirmed SI to Review Inputs;
 - transcript-and-metadata loading that preserves the confirmed SI;
@@ -235,7 +240,7 @@ Implemented:
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
-- one consistent four-stage route hierarchy, durable state, and
+- one consistent five-stage route hierarchy, durable state, and
   stale-analysis protection;
 - editable human review with item exclusion and read-only evidence;
 - rendered/raw Markdown output and Azure DevOps work-item preview cards; and

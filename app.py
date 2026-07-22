@@ -44,7 +44,12 @@ from architecture_governance_copilot.si_drafting import (
 from architecture_governance_copilot.ui_support import (
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
+    CONTEXT_ADO_SELECTED_KEY,
     CONTEXT_KEY,
+    CONTEXT_REPOSITORY_SELECTED_KEY,
+    CONTEXT_STAGE,
+    CONTEXT_SUPPORTING_SELECTED_KEY,
+    CONTEXT_TEMPLATE_SELECTED_KEY,
     DRAFT_CONFIRMED_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
     DRAFT_FINGERPRINT_KEY,
@@ -63,30 +68,37 @@ from architecture_governance_copilot.ui_support import (
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
+    PROJECT_CONTEXT_CONFIRMED_KEY,
+    PROJECT_CONTEXT_KEY,
+    PROJECT_CONTEXT_REFRESHED_KEY,
     REVIEW_STAGE,
     REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
+    DraftingSampleContext,
     ReviewFormData,
     analysis_is_stale,
     build_reviewed_result,
     clear_analysis_state,
     clear_outputs,
     clear_stale_si_draft,
+    confirm_project_context_for_drafting,
     confirm_si_draft_for_review,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
     initialize_session_state,
     input_fingerprint,
-    load_drafting_context_into_state,
     load_sample_drafting_context,
     load_sample_into_state,
     load_sample_review,
     load_sample_review_companions_into_state,
+    open_demonstration_project_into_state,
     preserve_review_widget_state,
+    project_context_readiness,
+    refresh_project_context,
     reset_application_state,
     restore_review_widget_state,
     set_active_stage,
@@ -100,6 +112,7 @@ _BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
 ).decode("ascii")
 
 _ROUTE_FILES = {
+    CONTEXT_STAGE: "pages/project_context.py",
     DRAFT_STAGE: "pages/solution_intent_drafting.py",
     INPUT_STAGE: "pages/review_inputs.py",
     REVIEW_STAGE: "pages/human_review.py",
@@ -120,12 +133,19 @@ def main() -> None:
     _apply_visual_theme()
     initialize_session_state(st.session_state)
 
+    context_page = st.Page(
+        _ROUTE_FILES[CONTEXT_STAGE],
+        title="Project Context",
+        icon=":material/folder_managed:",
+        url_path="project-context",
+        default=True,
+        visibility="hidden",
+    )
     drafting_page = st.Page(
         _ROUTE_FILES[DRAFT_STAGE],
         title="Draft Solution Intent",
         icon=":material/edit_document:",
         url_path="draft-solution-intent",
-        default=True,
         visibility="hidden",
     )
     input_page = st.Page(
@@ -149,13 +169,24 @@ def main() -> None:
         visibility="hidden",
     )
     selected_page = st.navigation(
-        [drafting_page, input_page, review_page, output_page],
+        [context_page, drafting_page, input_page, review_page, output_page],
         position="hidden",
     )
     selected_page.run()
 
 
+def _render_context_page() -> None:
+    _render_page_shell(CONTEXT_STAGE)
+    _render_project_context_stage()
+    _render_error()
+
+
 def _render_drafting_page() -> None:
+    if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is not True:
+        _switch_stage(
+            CONTEXT_STAGE,
+            error="Confirm a Project Context package before drafting a Solution Intent.",
+        )
     _render_page_shell(DRAFT_STAGE)
     _render_drafting_stage()
     _render_error()
@@ -193,7 +224,7 @@ def _render_review_page() -> None:
             "generating outputs."
         )
 
-    st.header("Stage 3 — Human Review")
+    st.header("Stage 4 — Human Review")
     _render_review_navigation(stale=stale)
     _render_analyzed_input_summary(analyzed_result)
     form_data, submitted = _render_human_review_stage(analyzed_result, stale=stale)
@@ -231,7 +262,7 @@ def _render_output_page() -> None:
         )
 
     _render_page_shell(OUTPUT_STAGE)
-    st.header("Stage 4 — Generated Outputs")
+    st.header("Stage 5 — Generated Outputs")
     _render_output_navigation()
     _render_output_stage(outputs)
 
@@ -294,6 +325,8 @@ def _apply_visual_theme() -> None:
             --agc-navy: #061d33;
             --agc-blue-dark: #0b56a8;
             --agc-blue: #0473ea;
+            --agc-action: #ff4b4b;
+            --agc-action-dark: #e13b3b;
             --agc-green: #38d200;
             --agc-green-dark: #238500;
             --agc-slate: #525355;
@@ -418,15 +451,17 @@ def _apply_visual_theme() -> None:
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(4, 115, 234, 0.12);
         }
-        .stButton > button[kind="primary"] {
-            border-color: var(--agc-blue);
-            background: var(--agc-blue);
+        .stButton button[kind="primary"],
+        [data-testid="stFormSubmitButton"] button[kind="primary"] {
+            border-color: var(--agc-action);
+            background: var(--agc-action);
             color: #ffffff;
-            box-shadow: 0 4px 12px rgba(4, 115, 234, 0.2);
+            box-shadow: 0 4px 12px rgba(255, 75, 75, 0.22);
         }
-        .stButton > button[kind="primary"]:hover {
-            border-color: var(--agc-blue-dark);
-            background: var(--agc-blue-dark);
+        .stButton button[kind="primary"]:hover,
+        [data-testid="stFormSubmitButton"] button[kind="primary"]:hover {
+            border-color: var(--agc-action-dark);
+            background: var(--agc-action-dark);
             color: #ffffff;
         }
         .stTextInput input:focus,
@@ -539,7 +574,7 @@ def _apply_visual_theme() -> None:
         }
         .agc-stepper {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 0.6rem;
             margin: 0.35rem 0 0.75rem;
         }
@@ -858,6 +893,7 @@ def _apply_visual_theme() -> None:
 
 def _render_sidebar(stage: str) -> None:
     stage_labels = {
+        CONTEXT_STAGE: "Project Context",
         DRAFT_STAGE: "Draft Solution Intent",
         INPUT_STAGE: "Review Inputs",
         REVIEW_STAGE: "Human Review",
@@ -870,14 +906,17 @@ def _render_sidebar(stage: str) -> None:
         st.divider()
 
         context = _current_context()
-        if stage == DRAFT_STAGE:
+        project_context = st.session_state[PROJECT_CONTEXT_KEY]
+        if stage in {CONTEXT_STAGE, DRAFT_STAGE}:
             st.markdown("**Drafting context**")
-            project_name = st.session_state[DRAFT_PROJECT_KEY]
-            if isinstance(project_name, str) and project_name:
-                st.write(project_name)
-                st.caption("SI template · source excerpts · supporting notes")
+            if isinstance(project_context, DraftingSampleContext):
+                st.write(project_context.project_name)
+                if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True:
+                    st.caption("Confirmed context package · ready for drafting")
+                else:
+                    st.caption("Workspace opened · confirmation required")
             else:
-                st.caption("Load the sample drafting context to begin.")
+                st.caption("Open a demonstration project workspace to begin.")
         else:
             st.markdown("**Review context**")
             if context is None:
@@ -900,6 +939,7 @@ def _render_sidebar(stage: str) -> None:
 
 def _render_step_progress(stage: str) -> None:
     stages = [
+        (CONTEXT_STAGE, "Project Context"),
         (DRAFT_STAGE, "Draft Solution Intent"),
         (INPUT_STAGE, "Review Inputs"),
         (REVIEW_STAGE, "Human Review"),
@@ -911,15 +951,22 @@ def _render_step_progress(stage: str) -> None:
     workflow_complete = stage == OUTPUT_STAGE and st.session_state[OUTPUT_SUCCESS_KEY] is True
     step_cards: list[str] = []
     for index, (_, label) in enumerate(stages):
-        draft_skipped = (
-            index == 0 and current_index > 0 and st.session_state[DRAFT_CONFIRMED_KEY] is not True
+        context_skipped = (
+            index == 0
+            and current_index > 0
+            and st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is not True
         )
-        draft_complete = index == 0 and st.session_state[DRAFT_CONFIRMED_KEY] is True
-        if draft_skipped:
+        context_complete = index == 0 and st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
+        draft_skipped = (
+            index == 1 and current_index > 1 and st.session_state[DRAFT_CONFIRMED_KEY] is not True
+        )
+        draft_complete = index == 1 and st.session_state[DRAFT_CONFIRMED_KEY] is True
+        if context_skipped or draft_skipped:
             status_class = "agc-step--skipped"
             status = "Skipped"
         elif (
-            draft_complete
+            context_complete
+            or draft_complete
             or index < current_index
             or (workflow_complete and index == current_index)
         ):
@@ -943,27 +990,198 @@ def _render_step_progress(stage: str) -> None:
     )
 
 
-def _render_drafting_stage() -> None:
-    st.header("Stage 1 — Draft Solution Intent")
+def _render_project_context_stage() -> None:
+    st.header("Stage 1 — Project Context")
     st.caption(
-        "Create an SI draft from a template, selected source-code context, and supporting "
-        "notes. Demo mode supports the bundled review package."
+        "Open a project workspace, inspect the available source package, and explicitly "
+        "confirm what may be used for Solution Intent drafting."
     )
+    project_context = st.session_state[PROJECT_CONTEXT_KEY]
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">PROJECT WORKSPACE</p>',
+            unsafe_allow_html=True,
+        )
+        st.selectbox(
+            "Demonstration project",
+            ("Digital Payment Notification Service",),
+            key="agc_project_workspace_selector",
+            help="The PoC includes one frozen synthetic workspace for reliable demonstration.",
+        )
+        open_column, refresh_column, existing_column, reset_column = st.columns([1.25, 1, 1.2, 0.9])
+        open_clicked = open_column.button(
+            "Open Demonstration Project",
+            key="agc_open_demonstration_project",
+            type="primary",
+            use_container_width=True,
+        )
+        refresh_clicked = refresh_column.button(
+            "Refresh Context",
+            key="agc_refresh_project_context",
+            disabled=not isinstance(project_context, DraftingSampleContext),
+            use_container_width=True,
+        )
+        use_existing_clicked = existing_column.button(
+            "Use Existing Solution Intent",
+            key="agc_use_existing_si",
+            use_container_width=True,
+        )
+        reset_clicked = reset_column.button(
+            "Reset Workspace",
+            key="agc_reset_project_context",
+            use_container_width=True,
+        )
+
+    if use_existing_clicked:
+        _switch_stage(INPUT_STAGE)
+    if reset_clicked:
+        reset_application_state(st.session_state)
+        _switch_stage(CONTEXT_STAGE)
+    if open_clicked:
+        try:
+            open_demonstration_project_into_state(
+                st.session_state,
+                load_sample_drafting_context(),
+            )
+        except (OSError, UnicodeError, ValueError) as exc:
+            st.session_state[ERROR_KEY] = f"Unable to open project workspace: {exc}"
+        else:
+            st.rerun()
+    if refresh_clicked:
+        try:
+            refresh_project_context(st.session_state)
+        except ValueError as exc:
+            st.session_state[ERROR_KEY] = f"Unable to refresh project context: {exc}"
+        else:
+            st.success("Selected local sources validated. No external systems were contacted.")
+
+    project_context = st.session_state[PROJECT_CONTEXT_KEY]
+    if not isinstance(project_context, DraftingSampleContext):
+        st.info(
+            "No project workspace is open. Select Open Demonstration Project to initialize the "
+            "synthetic source package."
+        )
+        return
+
+    _render_project_context_summary(project_context)
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">SOURCE SELECTION</p>',
+            unsafe_allow_html=True,
+        )
+        template_column, repository_column, evidence_column, ado_column = st.columns(4)
+        with template_column:
+            st.checkbox(
+                "Use SI template",
+                key=CONTEXT_TEMPLATE_SELECTED_KEY,
+                help="Required for deterministic SI generation.",
+            )
+            st.caption("Confluence · Required")
+        with repository_column:
+            st.checkbox(
+                "Use repository context",
+                key=CONTEXT_REPOSITORY_SELECTED_KEY,
+                help="Required for deterministic SI generation.",
+            )
+            st.caption("Source repository · Required")
+        with evidence_column:
+            st.checkbox(
+                "Use supporting evidence",
+                key=CONTEXT_SUPPORTING_SELECTED_KEY,
+            )
+            st.caption("Approved documents · Optional")
+        with ado_column:
+            st.checkbox(
+                "Use governance metadata",
+                key=CONTEXT_ADO_SELECTED_KEY,
+            )
+            st.caption("ADO reference · Metadata only")
+
+        with st.expander("Inspect selected source previews"):
+            template_tab, repository_tab, evidence_tab, metadata_tab = st.tabs(
+                ["SI Template", "Repository", "Evidence", "Governance Metadata"]
+            )
+            with template_tab:
+                st.caption(project_context.template_reference)
+                st.code(project_context.template, language="markdown")
+            with repository_tab:
+                st.caption(f"{project_context.repository_reference} · {project_context.branch}")
+                st.code(project_context.source_code_context, language="text")
+            with evidence_tab:
+                st.code(project_context.supporting_documents, language="markdown")
+            with metadata_tab:
+                st.json(
+                    {
+                        "project": project_context.project_name,
+                        "governance_reference": project_context.governance_reference,
+                        "mode": "synthetic_local_workspace",
+                    }
+                )
+
+    blockers = project_context_readiness(st.session_state)
+    if blockers:
+        st.warning("Context not ready: " + " ".join(blockers))
+    else:
+        refresh_status = (
+            "Validated in this session"
+            if st.session_state[PROJECT_CONTEXT_REFRESHED_KEY] is True
+            else "Bundled sources ready for validation"
+        )
+        st.success(f"Context ready for drafting · {refresh_status}")
+
+    with st.form("agc_project_context_confirmation_form", border=False):
+        confirm_context = st.form_submit_button(
+            "Confirm Context & Continue",
+            key="agc_confirm_project_context",
+            type="primary",
+            disabled=bool(blockers),
+            use_container_width=True,
+        )
+
+    if confirm_context and _confirm_project_context():
+        _switch_stage(DRAFT_STAGE)
+
+
+def _render_project_context_summary(project_context: DraftingSampleContext) -> None:
+    """Render production-shaped metadata without implying live integrations."""
+    values = (
+        ("Project", project_context.project_name),
+        ("Governance reference", project_context.governance_reference),
+        ("SI template", project_context.template_reference),
+        (
+            "Repository",
+            f"{project_context.repository_reference} · {project_context.branch}",
+        ),
+    )
+    cards = "".join(
+        (
+            '<div class="agc-intake-card">'
+            f"<span>{escape(label)}</span>"
+            f"<strong>{escape(value)}</strong>"
+            "</div>"
+        )
+        for label, value in values
+    )
+    st.markdown(
+        f'<div class="agc-intake-grid">{cards}</div>',
+        unsafe_allow_html=True,
+    )
+    st.caption(
+        "Synthetic demonstration workspace · local fixture-backed sources · simulated source "
+        "statuses · no authentication, synchronization, or external API calls."
+    )
+
+
+def _render_drafting_stage() -> None:
+    st.header("Stage 2 — Draft Solution Intent")
+    st.caption("Generate an editable SI draft from the human-confirmed Project Context package.")
+    draft_available = isinstance(st.session_state[DRAFT_RESULT_KEY], SolutionIntentDraft)
     drafting_context_ready = all(
         isinstance(value, str) and value.strip()
         for value in (
-            st.session_state.get(
-                DRAFT_PROJECT_WIDGET_KEY,
-                st.session_state[DRAFT_PROJECT_KEY],
-            ),
-            st.session_state.get(
-                DRAFT_TEMPLATE_WIDGET_KEY,
-                st.session_state[DRAFT_TEMPLATE_KEY],
-            ),
-            st.session_state.get(
-                DRAFT_SOURCE_CODE_WIDGET_KEY,
-                st.session_state[DRAFT_SOURCE_CODE_KEY],
-            ),
+            st.session_state[DRAFT_PROJECT_KEY],
+            st.session_state[DRAFT_TEMPLATE_KEY],
+            st.session_state[DRAFT_SOURCE_CODE_KEY],
         )
     )
 
@@ -972,16 +1190,11 @@ def _render_drafting_stage() -> None:
             '<p class="agc-section-label">DRAFTING ACTIONS</p>',
             unsafe_allow_html=True,
         )
-        load_column, generate_column, existing_column, reset_column = st.columns(
-            [1.35, 1.2, 1.25, 1],
-        )
-        load_clicked = load_column.button(
-            "Load Sample Drafting Context",
-            key="agc_load_drafting_context",
-            use_container_width=True,
+        generate_column, existing_column, context_column, reset_column = st.columns(
+            [1.2, 1.25, 1.15, 1],
         )
         generate_clicked = generate_column.button(
-            "Generate SI Draft",
+            "Regenerate SI Draft" if draft_available else "Generate SI Draft",
             key="agc_generate_si_draft",
             type="primary",
             disabled=not drafting_context_ready,
@@ -996,6 +1209,11 @@ def _render_drafting_stage() -> None:
             key="agc_use_existing_si",
             use_container_width=True,
         )
+        back_clicked = context_column.button(
+            "Back to Project Context",
+            key="agc_back_to_project_context",
+            use_container_width=True,
+        )
         reset_clicked = reset_column.button(
             "Reset Workspace",
             key="agc_reset_drafting",
@@ -1004,19 +1222,11 @@ def _render_drafting_stage() -> None:
 
     if use_existing_clicked:
         _switch_stage(INPUT_STAGE)
+    if back_clicked:
+        _switch_stage(CONTEXT_STAGE)
     if reset_clicked:
         reset_application_state(st.session_state)
-        _switch_stage(DRAFT_STAGE)
-    if load_clicked:
-        try:
-            load_drafting_context_into_state(
-                st.session_state,
-                load_sample_drafting_context(),
-            )
-        except (OSError, UnicodeError, ValueError) as exc:
-            st.session_state[ERROR_KEY] = f"Unable to load drafting context: {exc}"
-        else:
-            st.rerun()
+        _switch_stage(CONTEXT_STAGE)
 
     st.session_state.setdefault(
         DRAFT_PROJECT_WIDGET_KEY,
@@ -1035,10 +1245,37 @@ def _render_drafting_stage() -> None:
         st.session_state[DRAFT_SUPPORTING_DOCS_KEY],
     )
 
+    draft = st.session_state[DRAFT_RESULT_KEY]
+    if isinstance(draft, SolutionIntentDraft):
+        try:
+            current_request = SolutionIntentDraftRequest(
+                project_name=st.session_state[DRAFT_PROJECT_KEY],
+                template=st.session_state[DRAFT_TEMPLATE_KEY],
+                source_code_context=st.session_state[DRAFT_SOURCE_CODE_KEY],
+                supporting_documents=st.session_state[DRAFT_SUPPORTING_DOCS_KEY] or None,
+            )
+            stale_draft = drafting_result_is_stale(
+                current_request,
+                st.session_state[DRAFT_FINGERPRINT_KEY],
+            )
+        except ValidationError:
+            stale_draft = True
+        if stale_draft:
+            clear_stale_si_draft(st.session_state)
+            st.warning(
+                "Drafting context changed after generation. Generate a new SI draft before "
+                "human confirmation."
+            )
+        else:
+            if generate_clicked and _generate_si_draft():
+                st.rerun()
+            _render_generated_si_draft(draft)
+            return
+
     project_name = st.text_input(
         "Project name",
         key=DRAFT_PROJECT_WIDGET_KEY,
-        placeholder="Load the bundled demo context to begin.",
+        disabled=True,
     )
     if drafting_context_ready:
         _render_drafting_context_snapshot(
@@ -1054,24 +1291,21 @@ def _render_drafting_stage() -> None:
             "SI template",
             key=DRAFT_TEMPLATE_WIDGET_KEY,
             height=280,
-            placeholder="Paste the approved SI template structure.",
+            disabled=True,
         )
     with source_tab:
         source_code_context = st.text_area(
             "Selected source-code context",
             key=DRAFT_SOURCE_CODE_WIDGET_KEY,
             height=280,
-            placeholder=(
-                "Paste a repository summary or selected source excerpts. "
-                "The PoC does not scan or execute a repository."
-            ),
+            disabled=True,
         )
     with documents_tab:
         supporting_documents = st.text_area(
             "Supporting-document context",
             key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
             height=280,
-            placeholder="Paste relevant requirements, constraints, and architecture notes.",
+            disabled=True,
         )
 
     st.session_state[DRAFT_PROJECT_KEY] = project_name
@@ -1079,51 +1313,23 @@ def _render_drafting_stage() -> None:
     st.session_state[DRAFT_SOURCE_CODE_KEY] = source_code_context
     st.session_state[DRAFT_SUPPORTING_DOCS_KEY] = supporting_documents
 
-    if isinstance(st.session_state[DRAFT_RESULT_KEY], SolutionIntentDraft):
-        try:
-            current_request = SolutionIntentDraftRequest(
-                project_name=project_name,
-                template=template,
-                source_code_context=source_code_context,
-                supporting_documents=supporting_documents or None,
-            )
-            stale_draft = drafting_result_is_stale(
-                current_request,
-                st.session_state[DRAFT_FINGERPRINT_KEY],
-            )
-        except ValidationError:
-            stale_draft = True
-        if stale_draft:
-            clear_stale_si_draft(st.session_state)
-            st.warning(
-                "Drafting context changed after generation. Generate a new SI draft before "
-                "human confirmation."
-            )
-
     if generate_clicked and _generate_si_draft():
         st.rerun()
 
-    draft = st.session_state[DRAFT_RESULT_KEY]
-    if not isinstance(draft, SolutionIntentDraft):
-        st.info(
-            "No SI draft has been generated. Load the bundled demonstration context, inspect all "
-            "three inputs, then select Generate SI Draft."
-        )
-        return
-
-    st.success(
-        "Solution Intent draft generated. Review and edit it before handing it to governance."
+    st.info(
+        "No SI draft has been generated. Inspect the confirmed context package, then select "
+        "Generate SI Draft."
     )
+
+
+def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
+    """Prioritize the generated draft while keeping its sources available on demand."""
     with st.container(border=True):
         st.markdown(
             '<p class="agc-section-label">HUMAN REVIEW</p>',
             unsafe_allow_html=True,
         )
         st.markdown("### Proposed Solution Intent")
-        st.caption(
-            f"Provider: {draft.provider_name}. Generation is a drafting aid, not architecture "
-            "approval or publication."
-        )
         with st.form("agc_si_draft_review_form", clear_on_submit=False):
             submitted = st.form_submit_button(
                 "Confirm SI Draft & Continue to Review",
@@ -1131,21 +1337,65 @@ def _render_drafting_stage() -> None:
                 type="primary",
                 use_container_width=True,
             )
-            st.warning(
-                "You may edit this draft and the handoff will preserve your changes. For this "
-                "demo, keep the generated content unchanged: the offline review analyzer "
-                "supports the bundled SI only."
-            )
             reviewed_content = st.text_area(
                 "Human-reviewed SI draft",
                 key=DRAFT_CONTENT_WIDGET_KEY,
                 height=500,
+            )
+            st.success(
+                "Solution Intent draft generated. Review and edit it before handing it to "
+                "governance."
+            )
+            st.caption(
+                f"Provider: {draft.provider_name}. Generation is a drafting aid, not "
+                "architecture approval or publication."
+            )
+            st.warning(
+                "You may edit this draft and the handoff will preserve your changes. For this "
+                "demo, keep the generated content unchanged: the offline review analyzer "
+                "supports the bundled SI only."
             )
             with st.expander("Draft assumptions and safeguards"):
                 for assumption in draft.assumptions:
                     st.write(f"- {assumption}")
         if submitted and _confirm_si_draft(reviewed_content):
             _switch_stage(INPUT_STAGE)
+
+    with st.expander("View drafting sources"):
+        st.text_input(
+            "Project name",
+            key=DRAFT_PROJECT_WIDGET_KEY,
+            disabled=True,
+        )
+        _render_drafting_context_snapshot(
+            template=st.session_state[DRAFT_TEMPLATE_KEY],
+            source_code_context=st.session_state[DRAFT_SOURCE_CODE_KEY],
+            supporting_documents=st.session_state[DRAFT_SUPPORTING_DOCS_KEY],
+        )
+        template_tab, source_tab, documents_tab = st.tabs(
+            ["SI Template Snapshot", "Selected Repository Context", "Supporting Evidence"]
+        )
+        with template_tab:
+            st.text_area(
+                "SI template",
+                key=DRAFT_TEMPLATE_WIDGET_KEY,
+                height=280,
+                disabled=True,
+            )
+        with source_tab:
+            st.text_area(
+                "Selected source-code context",
+                key=DRAFT_SOURCE_CODE_WIDGET_KEY,
+                height=280,
+                disabled=True,
+            )
+        with documents_tab:
+            st.text_area(
+                "Supporting-document context",
+                key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+                height=280,
+                disabled=True,
+            )
 
 
 def _render_drafting_context_snapshot(
@@ -1191,6 +1441,61 @@ def _render_drafting_context_snapshot(
             "Synthetic local snapshot · no Confluence connection, repository scan, or external "
             "document retrieval occurs in demo mode."
         )
+
+
+def _confirm_project_context() -> bool:
+    """Validate and confirm the selected local source package with visible progress."""
+    processing_overlay = st.empty()
+    try:
+        processing_overlay.markdown(
+            _processing_overlay_markup(
+                "PROJECT CONTEXT",
+                "Validating selected sources",
+                "Checking required sources and local fixture availability.",
+                step=1,
+                total_steps=3,
+            ),
+            unsafe_allow_html=True,
+        )
+        with st.status("Preparing drafting context...", expanded=True) as status:
+            st.write("Required SI template and repository context selected")
+            _demo_pause()
+            processing_overlay.markdown(
+                _processing_overlay_markup(
+                    "PROJECT CONTEXT",
+                    "Building context manifest",
+                    "Recording source selections and provenance for this session.",
+                    step=2,
+                    total_steps=3,
+                ),
+                unsafe_allow_html=True,
+            )
+            st.write("Synthetic source manifest prepared")
+            _demo_pause()
+            processing_overlay.markdown(
+                _processing_overlay_markup(
+                    "PROJECT CONTEXT",
+                    "Opening drafting workspace",
+                    "Handing the confirmed context package to Solution Intent drafting.",
+                    step=3,
+                    total_steps=3,
+                ),
+                unsafe_allow_html=True,
+            )
+            confirm_project_context_for_drafting(st.session_state)
+            st.write("Confirmed context package ready for drafting")
+            status.update(
+                label="Context confirmed — opening Solution Intent drafting",
+                state="complete",
+                expanded=True,
+            )
+            _demo_pause()
+    except ValueError as exc:
+        st.session_state[ERROR_KEY] = f"Unable to confirm project context: {exc}"
+        return False
+    finally:
+        processing_overlay.empty()
+    return True
 
 
 def _confirm_si_draft(reviewed_content: str) -> bool:
@@ -1306,7 +1611,7 @@ def _generate_si_draft() -> bool:
 
 
 def _render_input_stage() -> None:
-    st.header("Stage 2 — Review Inputs")
+    st.header("Stage 3 — Review Inputs")
     context = _current_context()
     current_solution_intent = st.session_state.get(
         SOLUTION_INTENT_WIDGET_KEY,
@@ -1377,7 +1682,7 @@ def _render_input_stage() -> None:
 
     if reset_clicked:
         reset_application_state(st.session_state)
-        _switch_stage(DRAFT_STAGE)
+        _switch_stage(CONTEXT_STAGE)
 
     if load_clicked:
         try:
@@ -1526,7 +1831,7 @@ def _render_review_navigation(*, stale: bool) -> None:
         use_container_width=True,
     ):
         reset_application_state(st.session_state)
-        _switch_stage(DRAFT_STAGE)
+        _switch_stage(CONTEXT_STAGE)
 
 
 def _render_output_navigation() -> None:
@@ -1544,7 +1849,7 @@ def _render_output_navigation() -> None:
         use_container_width=True,
     ):
         reset_application_state(st.session_state)
-        _switch_stage(DRAFT_STAGE)
+        _switch_stage(CONTEXT_STAGE)
 
 
 def _render_analyzed_input_summary(result: GovernanceResult) -> None:
@@ -2230,7 +2535,7 @@ def _render_output_stage(outputs: GovernanceOutputs) -> None:
             use_container_width=True,
         ):
             reset_application_state(st.session_state)
-            _switch_stage(DRAFT_STAGE)
+            _switch_stage(CONTEXT_STAGE)
 
         if st.session_state[OUTPUT_SUCCESS_KEY]:
             st.caption(
