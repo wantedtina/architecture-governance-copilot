@@ -1,5 +1,13 @@
 # Repository Instructions
 
+## Language policy
+
+- Prefer Chinese for communication with the user within the session.
+- Use English everywhere outside session communication, including repository files,
+  documentation, plans, code comments, identifiers, UI text, commit messages, pull request
+  titles/descriptions, presentation materials, demo scripts, and all other deliverables.
+- Apply this policy across future sessions without requiring the user to repeat it.
+
 ## Scope and product boundaries
 
 - This repository is a hackathon proof of concept using synthetic data.
