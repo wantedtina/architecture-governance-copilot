@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import date
 
 from architecture_governance_copilot.models import (
+    ActionItem,
     EvidenceSource,
     GovernanceResult,
     SourceEvidence,
@@ -89,15 +90,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     if not result.action_items:
         lines.append(_NONE_RECORDED)
     for index, action in enumerate(result.action_items, start=1):
-        lines.extend(
-            [
-                f"{index}. **{action.title}**",
-                f"   - **Owner:** {action.owner or 'Unassigned'}",
-                f"   - **Due Date:** {_format_optional_date(action.due_date, 'Not specified')}",
-                f"   - **Priority:** {_humanize(action.priority)}",
-            ]
-        )
-        _append_item_evidence(lines, action.evidence)
+        lines.extend(format_action_item_entry(action, index).splitlines())
 
     lines.extend(["", "## Open Questions", ""])
     if not result.open_questions:
@@ -129,6 +122,20 @@ def generate_review_minutes(result: GovernanceResult) -> str:
             "",
         ]
     )
+    return "\n".join(lines)
+
+
+def format_action_item_entry(action: ActionItem, position: int) -> str:
+    """Format one numbered action exactly as it appears in the review minutes."""
+    if position < 1:
+        raise ValueError("Action position must be at least 1.")
+    lines = [
+        f"{position}. **{action.title}**",
+        f"   - **Owner:** {action.owner or 'Unassigned'}",
+        f"   - **Due Date:** {_format_optional_date(action.due_date, 'Not specified')}",
+        f"   - **Priority:** {_humanize(action.priority)}",
+    ]
+    _append_item_evidence(lines, action.evidence)
     return "\n".join(lines)
 
 

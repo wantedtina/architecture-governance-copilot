@@ -6,7 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from architecture_governance_copilot.minutes_generator import generate_review_minutes
+from architecture_governance_copilot.minutes_generator import (
+    format_action_item_entry,
+    generate_review_minutes,
+)
 from architecture_governance_copilot.models import (
     ActionItem,
     ActionPriority,
@@ -137,6 +140,27 @@ def test_sample_minutes_contain_every_governance_item(
         assert question.question in minutes
     for missing in sample_result.missing_evidence:
         assert missing.item in minutes
+
+
+def test_action_entry_formatter_matches_exact_generated_minutes_entry(
+    sample_result: GovernanceResult,
+) -> None:
+    action = sample_result.action_items[1]
+
+    entry = format_action_item_entry(action, 2)
+    minutes = generate_review_minutes(sample_result)
+    action_section = _section(minutes, "## Action Items", "## Open Questions")
+
+    assert entry in action_section
+    assert entry.startswith(f"2. **{action.title}**")
+    assert action.evidence[0].quote in entry
+
+
+def test_action_entry_formatter_rejects_nonpositive_position(
+    sample_result: GovernanceResult,
+) -> None:
+    with pytest.raises(ValueError, match="at least 1"):
+        format_action_item_entry(sample_result.action_items[0], 0)
 
 
 def test_sample_minutes_include_fixed_human_accountability_note(

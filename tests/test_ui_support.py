@@ -25,6 +25,7 @@ from architecture_governance_copilot.ui_support import (
     ERROR_KEY,
     INPUT_STAGE,
     LOADED_KEY,
+    OUTPUT_ACTION_SELECTION_KEY,
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
@@ -748,6 +749,7 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[REVIEWED_RESULT_KEY] is sample_result
     assert state[REVIEW_CHANGE_SUMMARY_KEY] is change_summary
     assert state[OUTPUTS_KEY] is outputs
+    assert state[OUTPUT_ACTION_SELECTION_KEY] == 0
     assert state[OUTPUT_SUCCESS_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == OUTPUT_STAGE
     assert state[ERROR_KEY] is None
@@ -757,4 +759,5 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[REVIEWED_RESULT_KEY] is None
     assert state[REVIEW_CHANGE_SUMMARY_KEY] is None
     assert state[OUTPUTS_KEY] is None
+    assert state[OUTPUT_ACTION_SELECTION_KEY] is None
     assert state[OUTPUT_SUCCESS_KEY] is False

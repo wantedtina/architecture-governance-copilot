@@ -58,6 +58,7 @@ ERROR_KEY = f"{STATE_PREFIX}error"
 LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
+OUTPUT_ACTION_SELECTION_KEY = f"{STATE_PREFIX}output_action_selection"
 ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
 
 CONTEXT_STAGE = "context"
@@ -278,6 +279,7 @@ def initial_state_values() -> dict[str, object]:
         LOADED_KEY: False,
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
+        OUTPUT_ACTION_SELECTION_KEY: None,
         ACTIVE_STAGE_KEY: CONTEXT_STAGE,
     }
 
@@ -324,6 +326,7 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
     state[ANALYZED_FINGERPRINT_KEY] = None
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
@@ -640,6 +643,7 @@ def store_analysis(
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
     state[ANALYZED_FINGERPRINT_KEY] = fingerprint
     state[ANALYSIS_INVALIDATION_KEY] = None
     state[ERROR_KEY] = None
@@ -658,6 +662,7 @@ def store_outputs(
     state[REVIEWED_RESULT_KEY] = reviewed_result
     state[REVIEW_CHANGE_SUMMARY_KEY] = change_summary
     state[OUTPUTS_KEY] = outputs
+    state[OUTPUT_ACTION_SELECTION_KEY] = 0 if reviewed_result.action_items else None
     state[ERROR_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = True
     state[ACTIVE_STAGE_KEY] = OUTPUT_STAGE
@@ -668,6 +673,7 @@ def clear_outputs(state: MutableMapping[str, Any]) -> None:
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = False
 
 

@@ -9,6 +9,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 import architecture_governance_copilot.ui_support as ui_support
+from architecture_governance_copilot.minutes_generator import format_action_item_entry
 from architecture_governance_copilot.ui_support import (
     ANALYSIS_INVALIDATION_KEY,
     ANALYSIS_SUCCESS_KEY,
@@ -18,6 +19,7 @@ from architecture_governance_copilot.ui_support import (
     DRAFT_SOURCE_CODE_WIDGET_KEY,
     DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
     DRAFT_TEMPLATE_WIDGET_KEY,
+    OUTPUT_ACTION_SELECTION_KEY,
     OUTPUTS_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
     REVIEWED_RESULT_KEY,
@@ -442,12 +444,23 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     assert app.button(key="agc_back_to_review")
     assert app.button(key="agc_start_new_review")
     assert any("Governance package ready" in item.value for item in app.markdown)
-    assert [(item.label, item.value) for item in app.metric] == [
-        ("Workflow", "Complete"),
-        ("Review Outcome", "Changes Requested"),
-        ("Meeting Minutes", "1"),
-        ("Work Item Previews", "2"),
-    ]
+    output_metrics = {
+        item.label: item.value
+        for item in app.metric
+        if item.label
+        in {
+            "Workflow",
+            "Review Outcome",
+            "Meeting Minutes",
+            "Work Item Previews",
+        }
+    }
+    assert output_metrics == {
+        "Workflow": "Complete",
+        "Review Outcome": "Changes Requested",
+        "Meeting Minutes": "1",
+        "Work Item Previews": "2",
+    }
     assert any(item.value == "Generated Review Record" for item in app.subheader)
     assert any(item.value == "Human Review Changes" for item in app.subheader)
     assert any(item.value == "Azure DevOps Work Item Previews" for item in app.subheader)
@@ -459,6 +472,72 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
     assert sum("Should Redis be used as a cache?" in item.value for item in app.markdown) == 1
     assert sum("Work Item Preview" in item.value for item in app.markdown) == 2
+
+
+def test_output_comparison_uses_reviewed_index_with_duplicate_titles() -> None:
+    app = _analyzed_app()
+    duplicate_title = "Resolve the confirmed governance action"
+    app.text_input(key="agc_field_action_0_title").input(duplicate_title)
+    app.text_input(key="agc_field_action_0_owner").input("First Owner")
+    app.text_input(key="agc_field_action_1_title").input(duplicate_title)
+    app.text_input(key="agc_field_action_1_owner").input("Second Owner")
+
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+
+    selector = app.selectbox(key=OUTPUT_ACTION_SELECTION_KEY)
+    assert selector.options == [
+        f"Action 1 · {duplicate_title}",
+        f"Action 2 · {duplicate_title}",
+    ]
+    selector.select(1).run()
+
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    outputs = app.session_state[OUTPUTS_KEY]
+    expected_entry = format_action_item_entry(reviewed.action_items[1], 2)
+    assert expected_entry in outputs.review_minutes
+    assert any(item.value == expected_entry for item in app.markdown)
+    assert any(
+        "Assigned to: Second Owner" in item.value and "Source action index: 1" in item.value
+        for item in app.caption
+    )
+
+
+def test_output_comparison_reindexes_after_first_action_is_excluded() -> None:
+    app = _analyzed_app()
+    app.checkbox(key="agc_field_action_0_include").uncheck()
+
+    app.button(key="agc_confirm_review").click().run()
+
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    outputs = app.session_state[OUTPUTS_KEY]
+    selector = app.selectbox(key=OUTPUT_ACTION_SELECTION_KEY)
+    expected_entry = format_action_item_entry(reviewed.action_items[0], 1)
+    assert selector.options == [f"Action 1 · {reviewed.action_items[0].title}"]
+    assert outputs.ado_work_items[0].source_action_index == 0
+    assert expected_entry in outputs.review_minutes
+    assert any(item.value == expected_entry for item in app.markdown)
+    assert any(
+        "Assigned to: Priya Shah" in item.value and "Source action index: 0" in item.value
+        for item in app.caption
+    )
+    assert any(reviewed.action_items[0].evidence[0].quote in item.value for item in app.code)
+
+
+def test_output_comparison_has_clear_empty_state_without_actions() -> None:
+    app = _analyzed_app()
+    app.checkbox(key="agc_field_action_0_include").uncheck()
+    app.checkbox(key="agc_field_action_1_include").uncheck()
+
+    app.button(key="agc_confirm_review").click().run()
+
+    assert not app.exception
+    assert app.session_state[OUTPUT_ACTION_SELECTION_KEY] is None
+    assert all(item.key != OUTPUT_ACTION_SELECTION_KEY for item in app.selectbox)
+    assert any(
+        "No action items were included in the reviewed record" in item.value for item in app.info
+    )
+    assert not app.session_state[OUTPUTS_KEY].ado_work_items
 
 
 def test_no_change_confirmation_shows_explicit_review_summary_state() -> None:

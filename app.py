@@ -23,6 +23,7 @@ from architecture_governance_copilot.governance_service import (
     GovernanceOutputs,
     GovernanceReviewService,
 )
+from architecture_governance_copilot.minutes_generator import format_action_item_entry
 from architecture_governance_copilot.models import (
     ActionPriority,
     EvidenceSource,
@@ -64,6 +65,7 @@ from architecture_governance_copilot.ui_support import (
     DRAFT_TEMPLATE_WIDGET_KEY,
     ERROR_KEY,
     INPUT_STAGE,
+    OUTPUT_ACTION_SELECTION_KEY,
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
     OUTPUTS_KEY,
@@ -2454,8 +2456,13 @@ def _render_missing_evidence_edits(result: GovernanceResult) -> list[dict[str, o
     return edits
 
 
-def _render_evidence(evidence_items: Sequence[SourceEvidence], label: str) -> None:
-    with st.expander(f"{label} ({len(evidence_items)})", expanded=False):
+def _render_evidence(
+    evidence_items: Sequence[SourceEvidence],
+    label: str,
+    *,
+    expanded: bool = False,
+) -> None:
+    with st.expander(f"{label} ({len(evidence_items)})", expanded=expanded):
         if not evidence_items:
             st.caption("No direct quote recorded.")
             return
@@ -2650,8 +2657,86 @@ def _render_output_stage(
             )
         _render_review_change_summary(change_summary)
 
+    if isinstance(reviewed_result, GovernanceResult):
+        _render_evidence_to_output_comparison(reviewed_result, outputs)
     _render_minutes_output(outputs.review_minutes)
     _render_ado_outputs(outputs)
+
+
+def _render_evidence_to_output_comparison(
+    reviewed_result: GovernanceResult,
+    outputs: GovernanceOutputs,
+) -> None:
+    st.subheader("Evidence-to-Output Comparison")
+    st.caption(
+        "Trace one human-confirmed action from its direct source evidence to the exact "
+        "minutes entry and Azure DevOps preview generated from the reviewed record."
+    )
+    if not reviewed_result.action_items:
+        st.info(
+            "No action items were included in the reviewed record, so no action work-item "
+            "comparison is available."
+        )
+        return
+
+    selected_value = st.session_state.get(OUTPUT_ACTION_SELECTION_KEY)
+    if not isinstance(selected_value, int) or not (
+        0 <= selected_value < len(reviewed_result.action_items)
+    ):
+        st.session_state[OUTPUT_ACTION_SELECTION_KEY] = 0
+
+    selected_index = st.selectbox(
+        "Confirmed action",
+        options=range(len(reviewed_result.action_items)),
+        format_func=lambda index: (
+            f"Action {index + 1} · {reviewed_result.action_items[index].title}"
+        ),
+        key=OUTPUT_ACTION_SELECTION_KEY,
+        help="Actions are matched to generated previews by their reviewed collection index.",
+    )
+    action = reviewed_result.action_items[selected_index]
+    minutes_entry = format_action_item_entry(action, selected_index + 1)
+    matching_items = [
+        item for item in outputs.ado_work_items if item.source_action_index == selected_index
+    ]
+
+    evidence_column, output_column = st.columns(2)
+    with evidence_column.container(border=True):
+        st.markdown("**Direct source evidence**")
+        st.caption("Read-only quotes and locators retained from the validated source snapshot.")
+        _render_evidence(action.evidence, "Action supporting evidence", expanded=True)
+
+    with output_column.container(border=True):
+        st.markdown("**Confirmed action and generated output**")
+        st.markdown(f"**Title:** {action.title}")
+        details = st.columns(3)
+        details[0].markdown("**Owner**")
+        details[0].write(action.owner or "Unassigned")
+        details[1].markdown("**Due date**")
+        details[1].write(action.due_date.isoformat() if action.due_date else "Not specified")
+        details[2].markdown("**Priority**")
+        details[2].write(humanize(action.priority.value))
+
+        st.markdown("##### Actual minutes entry")
+        st.markdown(minutes_entry)
+
+        st.markdown("##### Azure DevOps preview")
+        if len(matching_items) != 1:
+            st.warning(
+                "No unique work-item preview maps to this confirmed action. "
+                "No substitute preview was inferred."
+            )
+            return
+        item = matching_items[0]
+        st.markdown(f"**{item.title}**")
+        st.caption(
+            f"Assigned to: {item.assigned_to or 'Unassigned'} · "
+            f"Due: {item.due_date.isoformat() if item.due_date else 'Not specified'} · "
+            f"Priority: {humanize(item.priority.value)} · "
+            f"Source action index: {item.source_action_index}"
+        )
+        with st.expander("Full work-item description"):
+            st.markdown(item.description)
 
 
 def _render_review_change_summary(change_summary: ReviewChangeSummary) -> None:
