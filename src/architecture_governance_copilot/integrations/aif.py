@@ -103,6 +103,9 @@ class AifTransportFailure(RuntimeError):
 class AifTransport(Protocol):
     """Submit one structured governance-analysis request."""
 
+    # TODO(INTERNAL-AIF): Implement the approved company transport described in
+    # docs/INTERNAL_INTEGRATION_HANDOFF.md without changing this validated boundary.
+
     def analyze(self, request: AifGovernanceRequest) -> str | Mapping[str, object]:
         """Return one JSON-compatible structured provider response."""
         ...

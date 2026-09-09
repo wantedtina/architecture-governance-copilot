@@ -94,6 +94,9 @@ class ConfluenceApiResponse:
 class ConfluenceContentTransport(Protocol):
     """Fetch one content API object for an explicit page and expansion."""
 
+    # TODO(INTERNAL-CONFLUENCE): Implement the approved company read transport
+    # described in docs/INTERNAL_INTEGRATION_HANDOFF.md; keep canonicalization here.
+
     def get_content(
         self,
         page_id: str,

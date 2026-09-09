@@ -156,6 +156,9 @@ class AdoGatewayError(RuntimeError):
 class AdoGateway(Protocol):
     """Minimal Create, read-back, and correlation-reconciliation boundary."""
 
+    # TODO(INTERNAL-ADO): Implement the approved company gateway and mapping from
+    # docs/INTERNAL_INTEGRATION_HANDOFF.md; do not bypass preview or confirmation.
+
     def find_by_correlation(
         self,
         target: AdoTargetConfiguration,
