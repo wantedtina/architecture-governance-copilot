@@ -805,9 +805,9 @@ def test_unsubmitted_review_edits_do_not_replace_confirmed_snapshot() -> None:
     assert app.session_state[OUTPUTS_KEY] == confirmed_outputs
 
 
-def test_routed_back_navigation_preserves_current_analysis() -> None:
+def test_routed_back_navigation_preserves_pending_review_edits() -> None:
     app = _analyzed_app()
-    app.text_input(key="agc_field_action_0_owner").input("Taylor Kim").run()
+    app.text_input(key="agc_field_action_0_owner").input("Taylor Kim")
 
     app.button(key="agc_back_to_inputs").click().run()
 

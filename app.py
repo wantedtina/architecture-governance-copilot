@@ -2247,62 +2247,61 @@ def _render_human_review_stage(
     )
     _render_analysis_summary(analyzed_result)
 
-    with st.form("agc_review_form", clear_on_submit=False):
-        with st.container(border=True):
-            st.markdown(
-                '<p class="agc-section-label">GOVERNANCE DISPOSITION</p>',
-                unsafe_allow_html=True,
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">GOVERNANCE DISPOSITION</p>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("### Review Outcome")
+        outcome_column, evidence_column = st.columns([1, 2])
+        with outcome_column:
+            review_outcome = _enum_selectbox(
+                "Review outcome",
+                ReviewOutcome,
+                analyzed_result.review_outcome.value,
+                key="agc_field_outcome",
             )
-            st.markdown("### Review Outcome")
-            outcome_column, evidence_column = st.columns([1, 2])
-            with outcome_column:
-                review_outcome = _enum_selectbox(
-                    "Review outcome",
-                    ReviewOutcome,
-                    analyzed_result.review_outcome.value,
-                    key="agc_field_outcome",
-                )
-            with evidence_column:
-                _render_evidence(
-                    analyzed_result.outcome_evidence,
-                    "Outcome supporting evidence",
-                )
+        with evidence_column:
+            _render_evidence(
+                analyzed_result.outcome_evidence,
+                "Outcome supporting evidence",
+            )
 
-        submitted = st.form_submit_button(
-            "Confirm Reviewed Record & Generate Outputs",
-            key="agc_confirm_review",
-            type="primary",
-            use_container_width=True,
-        )
+    submitted = st.button(
+        "Confirm Reviewed Record & Generate Outputs",
+        key="agc_confirm_review",
+        type="primary",
+        width="stretch",
+    )
 
-        review_tabs = st.tabs(
-            [
-                f"Decisions · {len(analyzed_result.decisions)}",
-                f"Findings · {len(analyzed_result.findings)}",
-                f"Risks · {len(analyzed_result.risks)}",
-                f"Actions · {len(analyzed_result.action_items)}",
-                f"Questions · {len(analyzed_result.open_questions)}",
-                f"Missing Info · {len(analyzed_result.missing_evidence)}",
-            ]
-        )
-        with review_tabs[0]:
-            decisions = _render_decision_edits(analyzed_result)
-        with review_tabs[1]:
-            findings = _render_finding_edits(analyzed_result)
-        with review_tabs[2]:
-            risks = _render_risk_edits(analyzed_result)
-        with review_tabs[3]:
-            actions = _render_action_edits(analyzed_result)
-        with review_tabs[4]:
-            questions = _render_question_edits(analyzed_result)
-        with review_tabs[5]:
-            missing = _render_missing_evidence_edits(analyzed_result)
+    review_tabs = st.tabs(
+        [
+            f"Decisions · {len(analyzed_result.decisions)}",
+            f"Findings · {len(analyzed_result.findings)}",
+            f"Risks · {len(analyzed_result.risks)}",
+            f"Actions · {len(analyzed_result.action_items)}",
+            f"Questions · {len(analyzed_result.open_questions)}",
+            f"Missing Info · {len(analyzed_result.missing_evidence)}",
+        ]
+    )
+    with review_tabs[0]:
+        decisions = _render_decision_edits(analyzed_result)
+    with review_tabs[1]:
+        findings = _render_finding_edits(analyzed_result)
+    with review_tabs[2]:
+        risks = _render_risk_edits(analyzed_result)
+    with review_tabs[3]:
+        actions = _render_action_edits(analyzed_result)
+    with review_tabs[4]:
+        questions = _render_question_edits(analyzed_result)
+    with review_tabs[5]:
+        missing = _render_missing_evidence_edits(analyzed_result)
 
-        st.divider()
-        st.caption(
-            "Confirmation validates the edited record and generates local demo artifacts. "
-            "It does not publish or create records in an external system."
-        )
+    st.divider()
+    st.caption(
+        "Confirmation validates the edited record and generates local demo artifacts. "
+        "It does not publish or create records in an external system."
+    )
 
     return (
         ReviewFormData(
