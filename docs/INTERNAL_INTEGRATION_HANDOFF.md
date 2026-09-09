@@ -115,7 +115,7 @@ Complete this record in the approved internal system, not in this public reposit
 | Existing synthetic ADO item read without cookies | Not run | Approved auth scheme, status, ID/revision, verified field names |
 | One separately confirmed Create and GET read-back | Passed with in-memory fake; live not run | Correlation, ID/revision, redacted field comparison, operator |
 | Stale, duplicate, and unknown-result branches | Passed with fakes; live not run | Test identifiers and reconciliation outcome |
-| Offline flow with internal connections disabled | Passed | Frozen commit and verification command results |
+| Offline flow with internal connections disabled | Passed | Frozen implementation commit `85e8d75d42bb7216cbcfb70d8520a0a5411e37df`; see `SUBMISSION_BASELINE.md` for verification results |
 
 Passing fake acceptance is the external-preparation gate only. Mark the internal live gate passed
 only after every applicable live check above has direct evidence.

@@ -707,3 +707,18 @@ replace internal mappings:
 - [ADO Update](https://learn.microsoft.com/en-us/rest/api/azure/devops/wit/work-items/update?view=azure-devops-rest-7.1)
 - [Confluence Cloud pages](https://developer.atlassian.com/cloud/confluence/rest/v2/api-group-page/)
 - [Confluence Data Center content](https://developer.atlassian.com/server/confluence/rest/v1000/api-group-content-resource/)
+
+## 10. Submission implementation completion record
+
+I1–I8 and I10 are complete for the 14 September submission baseline. The frozen implementation
+and content commit is `85e8d75d42bb7216cbcfb70d8520a0a5411e37df`; the canonical release tag is
+`submission-2026-09-14`. G1 and G2 passed. G3 was not run because approved live endpoints,
+authentication, mappings, and controlled targets were not supplied or added. I9 therefore remains
+correctly deferred, and no incomplete secondary-write controls are exposed.
+
+The final environment used Python 3.12.7 with `uv`; `uv.lock` remained unchanged. The complete
+verification record, browser scenarios, startup/reset guidance, capability matrix, and known
+limits are recorded in [SUBMISSION_BASELINE.md](SUBMISSION_BASELINE.md). That record separates
+automated, real-browser, fake-integration, and unperformed live acceptance evidence. Later
+presentation/media work and all post-submission conference or Shark Tank preparation remain
+outside this implementation freeze.
