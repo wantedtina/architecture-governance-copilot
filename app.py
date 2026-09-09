@@ -6,7 +6,7 @@ import json
 import os
 import time
 from base64 import b64encode
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import date
 from enum import StrEnum
 from html import escape
@@ -22,6 +22,9 @@ from architecture_governance_copilot.governance_service import (
     generate_governance_outputs,
 )
 from architecture_governance_copilot.integrations.aif import AifAnalysisError
+from architecture_governance_copilot.integrations.azure_devops import (
+    InMemoryFakeAdoGateway,
+)
 from architecture_governance_copilot.integrations.confluence import (
     ConfluencePageSnapshot,
     ConfluenceReadError,
@@ -40,10 +43,21 @@ from architecture_governance_copilot.models import (
     SolutionIntentReviewContext,
     SourceEvidence,
 )
+from architecture_governance_copilot.publication import (
+    AdoPublicationConfirmation,
+    AdoPublicationCoordinator,
+    AdoPublicationOperation,
+    AdoPublicationPreview,
+    PublicationStatus,
+    PublicationValidationError,
+    build_ado_publication_preview,
+    confirm_ado_publication_preview,
+)
 from architecture_governance_copilot.runtime_dependencies import (
     ReviewMode,
     available_review_modes,
     build_review_runtime,
+    internal_fake_ado_target,
     review_mode_descriptor,
 )
 from architecture_governance_copilot.si_drafting import (
@@ -52,6 +66,11 @@ from architecture_governance_copilot.si_drafting import (
     SolutionIntentDraftingService,
 )
 from architecture_governance_copilot.ui_support import (
+    ADO_FAKE_GATEWAY_KEY,
+    ADO_PUBLICATION_CONFIRMATION_KEY,
+    ADO_PUBLICATION_HISTORY_KEY,
+    ADO_PUBLICATION_OPERATION_KEY,
+    ADO_PUBLICATION_PREVIEW_KEY,
     ANALYZED_RESULT_KEY,
     CONFLUENCE_SNAPSHOT_KEY,
     CONTEXT_ADO_SELECTED_KEY,
@@ -98,6 +117,7 @@ from architecture_governance_copilot.ui_support import (
     build_review_change_summary,
     build_reviewed_result,
     clear_outputs,
+    clear_publication_preview,
     clear_stale_si_draft,
     confirm_project_context_for_drafting,
     confirm_si_draft_for_review,
@@ -118,12 +138,15 @@ from architecture_governance_copilot.ui_support import (
     preserve_review_widget_state,
     project_context_readiness,
     record_internal_source_load_failure,
+    record_publication_operation,
     refresh_project_context,
     reset_application_state,
     restore_review_widget_state,
     set_active_stage,
     store_analysis,
     store_outputs,
+    store_publication_confirmation,
+    store_publication_preview,
     store_si_draft,
     switch_review_mode,
     update_review_inputs,
@@ -2859,6 +2882,8 @@ def _render_output_stage(
         _render_evidence_to_output_comparison(reviewed_result, outputs)
     _render_minutes_output(outputs.review_minutes)
     _render_ado_outputs(outputs)
+    if isinstance(reviewed_result, GovernanceResult):
+        _render_fake_ado_publication(reviewed_result)
 
 
 def _render_evidence_to_output_comparison(
@@ -3038,6 +3063,215 @@ def _render_ado_outputs(outputs: GovernanceOutputs) -> None:
             file_name="ado-work-item-previews.json",
             mime="application/json",
             key="agc_download_ado",
+        )
+
+
+def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
+    """Render the explicit preview-confirm-submit flow for the non-network fake only."""
+    if current_review_mode(st.session_state) is not ReviewMode.INTERNAL_FAKE:
+        return
+    snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
+    if not isinstance(snapshot, ConfluencePageSnapshot):
+        return
+    selected_index = st.session_state.get(OUTPUT_ACTION_SELECTION_KEY)
+    if not isinstance(selected_index, int) or not (
+        0 <= selected_index < len(reviewed_result.action_items)
+    ):
+        return
+
+    target = internal_fake_ado_target()
+    preview_value = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
+    preview = preview_value if isinstance(preview_value, AdoPublicationPreview) else None
+    if preview is not None:
+        try:
+            current_preview = build_ado_publication_preview(
+                reviewed_result,
+                snapshot,
+                selected_index,
+                target,
+            )
+        except PublicationValidationError:
+            clear_publication_preview(st.session_state)
+            preview = None
+        else:
+            if current_preview != preview:
+                clear_publication_preview(st.session_state)
+                preview = None
+
+    with st.container(border=True):
+        st.subheader("Fake Azure DevOps publication")
+        st.warning(
+            "Synthetic target · no network. This demonstrates the guarded Create contract; "
+            "it does not publish to Azure DevOps."
+        )
+        st.caption(
+            "Prepare one exact JSON Patch request, inspect it, confirm it separately, then "
+            "submit it once to the in-memory fake gateway."
+        )
+
+        if st.button(
+            "Prepare exact Create preview",
+            key="agc_prepare_ado_publication",
+            icon=":material/preview:",
+            width="stretch",
+        ):
+            try:
+                preview = build_ado_publication_preview(
+                    reviewed_result,
+                    snapshot,
+                    selected_index,
+                    target,
+                )
+            except PublicationValidationError as exc:
+                st.error(str(exc))
+            else:
+                store_publication_preview(st.session_state, preview)
+
+        if preview is None:
+            st.info("No exact Create request is currently prepared.")
+            _render_publication_operation()
+            return
+
+        st.markdown(f"**Selected action:** {preview.action_title}")
+        st.caption(
+            f"Target: {target.project} · Type: {target.work_item_type} · "
+            f"Correlation: {preview.request.correlation_id}"
+        )
+        st.code(preview.request.url, language=None)
+        st.json(
+            [operation.model_dump(mode="json") for operation in preview.request.operations],
+            expanded=False,
+        )
+
+        confirmation_value = st.session_state.get(ADO_PUBLICATION_CONFIRMATION_KEY)
+        confirmation = (
+            confirmation_value
+            if isinstance(confirmation_value, AdoPublicationConfirmation)
+            else None
+        )
+        if confirmation is None and st.button(
+            "Confirm exact preview",
+            key="agc_confirm_ado_publication",
+            icon=":material/check_circle:",
+            width="stretch",
+        ):
+            confirmation = confirm_ado_publication_preview(preview)
+            store_publication_confirmation(st.session_state, confirmation)
+
+        if confirmation is not None:
+            st.success("Exact Create preview confirmed. No request has been sent yet.")
+            history_value = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
+            history = history_value if isinstance(history_value, Mapping) else {}
+            protected = history.get(preview.request.correlation_id)
+            protected_status = (
+                protected.status if isinstance(protected, AdoPublicationOperation) else None
+            )
+            if st.button(
+                "Submit once to fake Azure DevOps",
+                key="agc_submit_ado_publication",
+                type="primary",
+                icon=":material/send:",
+                disabled=protected_status
+                in {
+                    PublicationStatus.SUBMITTING,
+                    PublicationStatus.SUCCEEDED,
+                    PublicationStatus.UNKNOWN_RESULT,
+                },
+                width="stretch",
+            ):
+                _submit_fake_ado_publication(
+                    preview,
+                    confirmation,
+                    reviewed_result,
+                    snapshot,
+                )
+                st.session_state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
+                st.rerun()
+
+        _render_publication_operation()
+
+
+def _submit_fake_ado_publication(
+    preview: AdoPublicationPreview,
+    confirmation: AdoPublicationConfirmation,
+    reviewed_result: GovernanceResult,
+    snapshot: ConfluencePageSnapshot,
+) -> None:
+    """Recheck the fake source and submit the already confirmed exact request once."""
+    try:
+        runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE)
+        if runtime.confluence_reader is None or runtime.confluence_page_id is None:
+            raise PublicationValidationError("The fake source reader is unavailable.")
+        current_snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
+        if not _same_source_snapshot(current_snapshot, snapshot):
+            raise PublicationValidationError(
+                "The Confluence source changed and must be analyzed and confirmed again."
+            )
+        gateway_value = st.session_state.get(ADO_FAKE_GATEWAY_KEY)
+        gateway = (
+            gateway_value
+            if isinstance(gateway_value, InMemoryFakeAdoGateway)
+            else InMemoryFakeAdoGateway()
+        )
+        st.session_state[ADO_FAKE_GATEWAY_KEY] = gateway
+        history_value = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
+        history = history_value if isinstance(history_value, Mapping) else {}
+        coordinator = AdoPublicationCoordinator(
+            gateway,
+            transition=lambda operation: record_publication_operation(
+                st.session_state,
+                operation,
+            ),
+        )
+        coordinator.publish(
+            preview=preview,
+            confirmation=confirmation,
+            reviewed_result=reviewed_result,
+            source_snapshot=current_snapshot,
+            target=internal_fake_ado_target(),
+            prior_operations=history,
+        )
+    except (PublicationValidationError, ValueError, RuntimeError) as exc:
+        st.error(str(exc))
+
+
+def _same_source_snapshot(
+    current: ConfluencePageSnapshot,
+    expected: ConfluencePageSnapshot,
+) -> bool:
+    """Compare publication-relevant source identity without retrieval timestamps."""
+    return (
+        current.page_id,
+        current.version,
+        current.canonicalizer_version,
+        current.content_fingerprint,
+    ) == (
+        expected.page_id,
+        expected.version,
+        expected.canonicalizer_version,
+        expected.content_fingerprint,
+    )
+
+
+def _render_publication_operation() -> None:
+    operation_value = st.session_state.get(ADO_PUBLICATION_OPERATION_KEY)
+    if not isinstance(operation_value, AdoPublicationOperation):
+        return
+    operation = operation_value
+    if operation.status is PublicationStatus.SUCCEEDED:
+        st.success(operation.message)
+    elif operation.status is PublicationStatus.DEFINITELY_FAILED:
+        st.error(operation.message)
+    elif operation.status is PublicationStatus.UNKNOWN_RESULT:
+        st.warning(operation.message)
+    else:
+        st.info(operation.message)
+    if operation.receipt is not None:
+        receipt = operation.receipt
+        st.markdown(f"**Receipt ID:** {receipt.work_item_id}")
+        st.caption(
+            f"Revision: {receipt.revision or 'Unknown'} · Verified: "
+            f"{'Yes' if receipt.verified else 'No'} · Correlation: {receipt.correlation_id}"
         )
 
 

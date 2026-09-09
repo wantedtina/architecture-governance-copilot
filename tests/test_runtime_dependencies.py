@@ -67,6 +67,12 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     assert "Priya Shah" not in runtime.review_transcript
     assert runtime.confluence_reader is not None
     assert runtime.confluence_page_id is not None
+    assert runtime.ado_target is not None
+    assert runtime.ado_target.project == "Synthetic Governance"
+    assert runtime.ado_target.work_item_type == "Governance Action"
+    assert runtime.ado_target.fields.classification_values == {
+        "Custom.GovernanceClassification": "Architecture"
+    }
 
     snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
     result = runtime.extractor.extract(

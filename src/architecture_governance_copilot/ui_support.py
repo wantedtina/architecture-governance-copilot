@@ -19,6 +19,11 @@ from architecture_governance_copilot.models import (
     SolutionIntentReviewContext,
     SourceEvidence,
 )
+from architecture_governance_copilot.publication import (
+    AdoPublicationConfirmation,
+    AdoPublicationOperation,
+    AdoPublicationPreview,
+)
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     ReviewMode,
@@ -64,6 +69,11 @@ LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
 OUTPUT_ACTION_SELECTION_KEY = f"{STATE_PREFIX}output_action_selection"
+ADO_PUBLICATION_PREVIEW_KEY = f"{STATE_PREFIX}ado_publication_preview"
+ADO_PUBLICATION_CONFIRMATION_KEY = f"{STATE_PREFIX}ado_publication_confirmation"
+ADO_PUBLICATION_OPERATION_KEY = f"{STATE_PREFIX}ado_publication_operation"
+ADO_PUBLICATION_HISTORY_KEY = f"{STATE_PREFIX}ado_publication_history"
+ADO_FAKE_GATEWAY_KEY = f"{STATE_PREFIX}ado_fake_gateway"
 REVIEW_MODE_KEY = f"{STATE_PREFIX}review_mode"
 REVIEW_MODE_WIDGET_KEY = f"{STATE_PREFIX}review_mode_widget"
 REVIEW_PROVIDER_CONFIGURATION_ID_KEY = f"{STATE_PREFIX}review_provider_configuration_id"
@@ -289,6 +299,11 @@ def initial_state_values() -> dict[str, object]:
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
         OUTPUT_ACTION_SELECTION_KEY: None,
+        ADO_PUBLICATION_PREVIEW_KEY: None,
+        ADO_PUBLICATION_CONFIRMATION_KEY: None,
+        ADO_PUBLICATION_OPERATION_KEY: None,
+        ADO_PUBLICATION_HISTORY_KEY: {},
+        ADO_FAKE_GATEWAY_KEY: None,
         REVIEW_MODE_KEY: ReviewMode.OFFLINE.value,
         REVIEW_PROVIDER_CONFIGURATION_ID_KEY: OFFLINE_PROVIDER_CONFIGURATION_ID,
         CONFLUENCE_SNAPSHOT_KEY: None,
@@ -339,6 +354,7 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    clear_publication_preview(state)
     state[ANALYZED_FINGERPRINT_KEY] = None
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
@@ -395,6 +411,7 @@ def invalidate_analysis_for_input_change(
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    clear_publication_preview(state)
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
     invalidation = AnalysisInvalidation(
@@ -454,6 +471,7 @@ def prepare_analysis_attempt(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    clear_publication_preview(state)
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
@@ -773,6 +791,7 @@ def store_analysis(
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    clear_publication_preview(state)
     state[ANALYZED_FINGERPRINT_KEY] = fingerprint
     state[ANALYSIS_INVALIDATION_KEY] = None
     state[ERROR_KEY] = None
@@ -792,6 +811,7 @@ def store_outputs(
     state[REVIEW_CHANGE_SUMMARY_KEY] = change_summary
     state[OUTPUTS_KEY] = outputs
     state[OUTPUT_ACTION_SELECTION_KEY] = 0 if reviewed_result.action_items else None
+    clear_publication_preview(state)
     state[ERROR_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = True
     state[ACTIVE_STAGE_KEY] = OUTPUT_STAGE
@@ -803,15 +823,25 @@ def clear_outputs(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    clear_publication_preview(state)
     state[OUTPUT_SUCCESS_KEY] = False
 
 
 def reset_application_state(state: MutableMapping[str, Any]) -> None:
-    """Remove every application-owned value and restore the initial state."""
+    """Reset local workflow data while retaining remote-result reconciliation facts."""
+    publication_history = state.get(ADO_PUBLICATION_HISTORY_KEY)
+    retained_history = dict(publication_history) if isinstance(publication_history, Mapping) else {}
+    retained_operation = state.get(ADO_PUBLICATION_OPERATION_KEY)
+    retained_gateway = state.get(ADO_FAKE_GATEWAY_KEY)
     for key in tuple(state):
         if key.startswith(STATE_PREFIX):
             del state[key]
     initialize_session_state(state)
+    state[ADO_PUBLICATION_HISTORY_KEY] = retained_history
+    if isinstance(retained_operation, AdoPublicationOperation):
+        state[ADO_PUBLICATION_OPERATION_KEY] = retained_operation
+    if retained_gateway is not None:
+        state[ADO_FAKE_GATEWAY_KEY] = retained_gateway
     state[DRAFT_PROJECT_WIDGET_KEY] = ""
     state[DRAFT_TEMPLATE_WIDGET_KEY] = ""
     state[DRAFT_SOURCE_CODE_WIDGET_KEY] = ""
@@ -819,6 +849,46 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
     state[DRAFT_CONTENT_WIDGET_KEY] = ""
     state[SOLUTION_INTENT_WIDGET_KEY] = ""
     state[TRANSCRIPT_WIDGET_KEY] = ""
+
+
+def clear_publication_preview(state: MutableMapping[str, Any]) -> None:
+    """Revoke current publication eligibility without erasing operation history."""
+    state[ADO_PUBLICATION_PREVIEW_KEY] = None
+    state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
+
+
+def store_publication_preview(
+    state: MutableMapping[str, Any],
+    preview: AdoPublicationPreview,
+) -> None:
+    """Store one exact preview and clear any confirmation for an older request."""
+    state[ADO_PUBLICATION_PREVIEW_KEY] = preview
+    state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
+
+
+def store_publication_confirmation(
+    state: MutableMapping[str, Any],
+    confirmation: AdoPublicationConfirmation,
+) -> None:
+    """Store a confirmation only when it matches the displayed exact preview."""
+    preview = state.get(ADO_PUBLICATION_PREVIEW_KEY)
+    if not isinstance(preview, AdoPublicationPreview):
+        raise ValueError("Prepare an exact publication preview before confirming it.")
+    if confirmation.preview_fingerprint != preview.preview_fingerprint:
+        raise ValueError("The publication confirmation does not match the current preview.")
+    state[ADO_PUBLICATION_CONFIRMATION_KEY] = confirmation
+
+
+def record_publication_operation(
+    state: MutableMapping[str, Any],
+    operation: AdoPublicationOperation,
+) -> None:
+    """Retain the latest state and correlation-indexed receipt for reconciliation."""
+    state[ADO_PUBLICATION_OPERATION_KEY] = operation
+    history_value = state.get(ADO_PUBLICATION_HISTORY_KEY)
+    history = dict(history_value) if isinstance(history_value, Mapping) else {}
+    history[operation.correlation_id] = operation
+    state[ADO_PUBLICATION_HISTORY_KEY] = history
 
 
 def active_stage(state: Mapping[str, Any]) -> str:

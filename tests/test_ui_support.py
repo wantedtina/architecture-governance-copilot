@@ -15,12 +15,21 @@ from architecture_governance_copilot.integrations.confluence import (
     build_confluence_snapshot,
 )
 from architecture_governance_copilot.models import GovernanceResult
+from architecture_governance_copilot.publication import (
+    AdoPublicationOperation,
+    PublicationStatus,
+)
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     ReviewMode,
 )
 from architecture_governance_copilot.ui_support import (
     ACTIVE_STAGE_KEY,
+    ADO_FAKE_GATEWAY_KEY,
+    ADO_PUBLICATION_CONFIRMATION_KEY,
+    ADO_PUBLICATION_HISTORY_KEY,
+    ADO_PUBLICATION_OPERATION_KEY,
+    ADO_PUBLICATION_PREVIEW_KEY,
     ANALYSIS_INVALIDATION_KEY,
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_FINGERPRINT_KEY,
@@ -384,6 +393,13 @@ def test_review_widget_values_are_preserved_across_routed_pages() -> None:
 
 
 def test_reset_removes_application_state_and_restores_initial_values() -> None:
+    operation = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="agc-retained",
+        request_binding_fingerprint="binding",
+        message="Manual reconciliation is required.",
+    )
+    gateway = object()
     state: dict[str, object] = {
         SOLUTION_INTENT_KEY: "old SI",
         OUTPUTS_KEY: object(),
@@ -392,6 +408,11 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
             outputs_invalidated=True,
         ),
         f"{REVIEW_WIDGET_PREFIX}action_0_owner": "Old owner",
+        ADO_PUBLICATION_PREVIEW_KEY: object(),
+        ADO_PUBLICATION_CONFIRMATION_KEY: object(),
+        ADO_PUBLICATION_OPERATION_KEY: operation,
+        ADO_PUBLICATION_HISTORY_KEY: {operation.correlation_id: operation},
+        ADO_FAKE_GATEWAY_KEY: gateway,
         "unrelated": "preserved",
     }
 
@@ -402,6 +423,11 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
     assert state[ANALYSIS_INVALIDATION_KEY] is None
     assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
+    assert state[ADO_PUBLICATION_PREVIEW_KEY] is None
+    assert state[ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+    assert state[ADO_PUBLICATION_HISTORY_KEY] == {operation.correlation_id: operation}
+    assert state[ADO_FAKE_GATEWAY_KEY] is gateway
     assert state["unrelated"] == "preserved"
 
 
@@ -965,6 +991,16 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     change_summary = build_review_change_summary(sample_result, sample_result, form_data)
     state: dict[str, object] = {ERROR_KEY: "old error"}
     initialize_session_state(state)
+    retained_operation = AdoPublicationOperation(
+        status=PublicationStatus.SUCCEEDED,
+        correlation_id="agc-existing",
+        request_binding_fingerprint="binding",
+        message="Verified.",
+    )
+    state[ADO_PUBLICATION_PREVIEW_KEY] = object()
+    state[ADO_PUBLICATION_CONFIRMATION_KEY] = object()
+    state[ADO_PUBLICATION_OPERATION_KEY] = retained_operation
+    state[ADO_PUBLICATION_HISTORY_KEY] = {retained_operation.correlation_id: retained_operation}
 
     store_outputs(state, sample_result, change_summary, outputs)
 
@@ -975,6 +1011,8 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[OUTPUT_SUCCESS_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == OUTPUT_STAGE
     assert state[ERROR_KEY] is None
+    assert state[ADO_PUBLICATION_PREVIEW_KEY] is None
+    assert state[ADO_PUBLICATION_CONFIRMATION_KEY] is None
 
     clear_outputs(state)
 
@@ -983,3 +1021,7 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[OUTPUTS_KEY] is None
     assert state[OUTPUT_ACTION_SELECTION_KEY] is None
     assert state[OUTPUT_SUCCESS_KEY] is False
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == retained_operation
+    assert state[ADO_PUBLICATION_HISTORY_KEY] == {
+        retained_operation.correlation_id: retained_operation
+    }

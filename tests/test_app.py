@@ -9,8 +9,16 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 import architecture_governance_copilot.ui_support as ui_support
+from architecture_governance_copilot.integrations.azure_devops import InMemoryFakeAdoGateway
 from architecture_governance_copilot.minutes_generator import format_action_item_entry
+from architecture_governance_copilot.publication import (
+    AdoPublicationOperation,
+    PublicationStatus,
+)
 from architecture_governance_copilot.ui_support import (
+    ADO_FAKE_GATEWAY_KEY,
+    ADO_PUBLICATION_HISTORY_KEY,
+    ADO_PUBLICATION_OPERATION_KEY,
     ANALYSIS_INVALIDATION_KEY,
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_RESULT_KEY,
@@ -102,6 +110,7 @@ def test_review_mode_is_offline_only_without_internal_configuration(
     assert control.options == ["Offline demo"]
     assert app.button(key="agc_load_sample")
     assert all(item.key != "agc_load_internal_review" for item in app.button)
+    assert all(item.key != "agc_prepare_ado_publication" for item in app.button)
     assert any("Zero-configuration deterministic mode" in item.value for item in app.caption)
 
 
@@ -144,6 +153,33 @@ def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
 
     assert [item.value for item in app.header] == ["Stage 5 — Generated Outputs"]
     assert any(item.value == "Generated Review Record" for item in app.subheader)
+    app.switch_page("pages/generated_outputs.py").run()
+    assert app.button(key="agc_prepare_ado_publication")
+
+    app.button(key="agc_prepare_ado_publication").click().run()
+
+    assert app.button(key="agc_confirm_ado_publication")
+    assert all(item.key != "agc_submit_ado_publication" for item in app.button)
+    assert any("$Governance%20Action?api-version=7.1" in item.value for item in app.code)
+
+    app.button(key="agc_confirm_ado_publication").click().run()
+
+    assert app.button(key="agc_submit_ado_publication")
+    assert any("No request has been sent yet" in item.value for item in app.success)
+
+    app.button(key="agc_submit_ado_publication").click().run()
+
+    operation = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    gateway = app.session_state[ADO_FAKE_GATEWAY_KEY]
+    history = app.session_state[ADO_PUBLICATION_HISTORY_KEY]
+    assert isinstance(operation, AdoPublicationOperation)
+    assert operation.status is PublicationStatus.SUCCEEDED
+    assert operation.receipt is not None and operation.receipt.verified
+    assert isinstance(gateway, InMemoryFakeAdoGateway)
+    assert len(gateway.create_calls) == 1
+    assert history[operation.correlation_id] == operation
+    assert all(item.key != "agc_submit_ado_publication" for item in app.button)
+    assert any("Created work item verified" in item.value for item in app.success)
     assert not app.exception
 
 

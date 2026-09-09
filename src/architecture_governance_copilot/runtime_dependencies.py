@@ -16,6 +16,10 @@ from architecture_governance_copilot.integrations.aif import (
     AifGovernanceExtractor,
     FakeAifTransport,
 )
+from architecture_governance_copilot.integrations.azure_devops import (
+    AdoFieldMapping,
+    AdoTargetConfiguration,
+)
 from architecture_governance_copilot.integrations.confluence import (
     ConfluenceApiResponse,
     ConfluenceContentApiReader,
@@ -57,6 +61,7 @@ class ReviewRuntime:
     confluence_page_id: str | None = None
     review_transcript: str | None = None
     review_context: SolutionIntentReviewContext | None = None
+    ado_target: AdoTargetConfiguration | None = None
 
 
 def available_review_modes(
@@ -145,6 +150,33 @@ def build_review_runtime(
         confluence_page_id=INTERNAL_FAKE_PAGE_ID,
         review_transcript=transcript,
         review_context=context,
+        ado_target=internal_fake_ado_target(),
+    )
+
+
+def internal_fake_ado_target() -> AdoTargetConfiguration:
+    """Return the explicit non-network target used by the internal fake workflow."""
+    return AdoTargetConfiguration(
+        organization_url="https://example.invalid/ado/synthetic-org",
+        project="Synthetic Governance",
+        work_item_type="Governance Action",
+        fields=AdoFieldMapping(
+            title="System.Title",
+            description="System.Description",
+            assigned_to="System.AssignedTo",
+            due_date="Microsoft.VSTS.Scheduling.DueDate",
+            priority="Microsoft.VSTS.Common.Priority",
+            tags="System.Tags",
+            correlation="Custom.GovernanceCorrelation",
+            classification_values={
+                "Custom.GovernanceClassification": "Architecture",
+            },
+        ),
+        owner_identities={
+            "Casey Wong": "casey.wong.synthetic@example.invalid",
+        },
+        parent_work_item_ids={"SYN-204": 204},
+        priority_values={"high": 1, "medium": 2, "low": 3},
     )
 
 
