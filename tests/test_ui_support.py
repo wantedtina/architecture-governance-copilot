@@ -29,6 +29,7 @@ from architecture_governance_copilot.ui_support import (
     OUTPUTS_KEY,
     PROJECT_CONTEXT_CONFIRMED_KEY,
     PROJECT_CONTEXT_KEY,
+    REVIEW_CHANGE_SUMMARY_KEY,
     REVIEW_DRAFT_KEY,
     REVIEW_STAGE,
     REVIEW_WIDGET_PREFIX,
@@ -40,6 +41,7 @@ from architecture_governance_copilot.ui_support import (
     TRANSCRIPT_WIDGET_KEY,
     active_stage,
     analysis_is_stale,
+    build_review_change_summary,
     build_reviewed_result,
     clear_outputs,
     confirm_project_context_for_drafting,
@@ -374,6 +376,203 @@ def test_invalid_reviewed_date_prevents_result_validation(
         )
 
 
+def test_review_change_summary_covers_every_editable_field_after_normalization(
+    sample_result: GovernanceResult,
+) -> None:
+    defaults = default_review_form_data(sample_result)
+    decisions = _editable_mappings(defaults.decisions)
+    findings = _editable_mappings(defaults.findings)
+    risks = _editable_mappings(defaults.risks)
+    actions = _editable_mappings(defaults.action_items)
+    questions = _editable_mappings(defaults.open_questions)
+    missing = _editable_mappings(defaults.missing_evidence)
+
+    decisions[0].update({"statement": "Updated decision", "rationale": " "})
+    findings[0].update(
+        {
+            "title": "Updated finding",
+            "description": "Updated description",
+            "category": " ",
+            "si_section": "Operations",
+            "severity": "critical",
+            "status": "deferred",
+            "recommended_change": "Updated recommendation",
+            "owner": "Morgan Rivera",
+            "due_date": "",
+        }
+    )
+    risks[0].update(
+        {
+            "description": "Updated risk",
+            "severity": "medium",
+            "owner": "Risk Owner",
+        }
+    )
+    actions[0].update(
+        {
+            "title": "Updated action",
+            "owner": "Taylor Kim",
+            "due_date": "2026-07-30",
+            "priority": "medium",
+        }
+    )
+    questions[0].update({"question": "Updated question?", "owner": "Question Owner"})
+    missing[0].update({"item": "Updated evidence request", "reason": " "})
+    form_data = replace(
+        defaults,
+        review_outcome="conditionally_approved",
+        decisions=tuple(decisions),
+        findings=tuple(findings),
+        risks=tuple(risks),
+        action_items=tuple(actions),
+        open_questions=tuple(questions),
+        missing_evidence=tuple(missing),
+    )
+
+    reviewed = build_reviewed_result(sample_result, form_data)
+    summary = build_review_change_summary(sample_result, reviewed, form_data)
+
+    assert summary.has_changes
+    assert summary.excluded_items == ()
+    assert {(change.collection, change.field) for change in summary.field_changes} == {
+        ("Review", "Outcome"),
+        ("Decision", "Statement"),
+        ("Decision", "Rationale"),
+        ("Finding", "Title"),
+        ("Finding", "Description"),
+        ("Finding", "Category"),
+        ("Finding", "SI section"),
+        ("Finding", "Severity"),
+        ("Finding", "Status"),
+        ("Finding", "Recommended change"),
+        ("Finding", "Owner"),
+        ("Finding", "Due date"),
+        ("Risk", "Description"),
+        ("Risk", "Severity"),
+        ("Risk", "Owner"),
+        ("Action item", "Title"),
+        ("Action item", "Owner"),
+        ("Action item", "Due date"),
+        ("Action item", "Priority"),
+        ("Open question", "Question"),
+        ("Open question", "Owner"),
+        ("Missing information", "Item"),
+        ("Missing information", "Reason"),
+    }
+    category_change = next(
+        change
+        for change in summary.field_changes
+        if change.collection == "Finding" and change.field == "Category"
+    )
+    assert category_change.before == "Resilience"
+    assert category_change.after is None
+    assert reviewed.findings[0].evidence == sample_result.findings[0].evidence
+    assert all(change.field != "Evidence" for change in summary.field_changes)
+
+
+def test_review_change_summary_ignores_equivalent_normalized_values(
+    sample_result: GovernanceResult,
+) -> None:
+    defaults = default_review_form_data(sample_result)
+    decisions = _editable_mappings(defaults.decisions)
+    findings = _editable_mappings(defaults.findings)
+    risks = _editable_mappings(defaults.risks)
+    actions = _editable_mappings(defaults.action_items)
+    questions = _editable_mappings(defaults.open_questions)
+    decisions[0]["statement"] = f"  {sample_result.decisions[0].statement}  "
+    findings[2]["owner"] = " "
+    findings[2]["due_date"] = " "
+    risks[0]["owner"] = " "
+    actions[0]["due_date"] = " 2026-07-24 "
+    questions[0]["owner"] = " "
+    form_data = replace(
+        defaults,
+        decisions=tuple(decisions),
+        findings=tuple(findings),
+        risks=tuple(risks),
+        action_items=tuple(actions),
+        open_questions=tuple(questions),
+    )
+
+    reviewed = build_reviewed_result(sample_result, form_data)
+    summary = build_review_change_summary(sample_result, reviewed, form_data)
+
+    assert not summary.has_changes
+    assert summary.field_changes == ()
+    assert summary.excluded_items == ()
+
+
+def test_review_change_summary_reports_only_original_names_for_excluded_items(
+    sample_result: GovernanceResult,
+) -> None:
+    defaults = default_review_form_data(sample_result)
+    replacements: dict[str, tuple[dict[str, object], ...]] = {}
+    for attribute in (
+        "decisions",
+        "findings",
+        "risks",
+        "action_items",
+        "open_questions",
+        "missing_evidence",
+    ):
+        edits = _editable_mappings(getattr(defaults, attribute))
+        for edit in edits:
+            edit["include"] = False
+        replacements[attribute] = tuple(edits)
+    replacements["findings"][0]["title"] = "Ignored edited title"
+    replacements["findings"][0]["due_date"] = "not a date"
+    form_data = replace(defaults, **replacements)
+
+    reviewed = build_reviewed_result(sample_result, form_data)
+    summary = build_review_change_summary(sample_result, reviewed, form_data)
+
+    assert not reviewed.decisions
+    assert not reviewed.findings
+    assert not reviewed.risks
+    assert not reviewed.action_items
+    assert not reviewed.open_questions
+    assert not reviewed.missing_evidence
+    assert summary.field_changes == ()
+    assert len(summary.excluded_items) == 10
+    assert summary.excluded_items[1].item_name == sample_result.findings[0].title
+    assert all(item.item_name != "Ignored edited title" for item in summary.excluded_items)
+
+
+def test_review_change_summary_distinguishes_duplicate_titles_by_original_position(
+    sample_result: GovernanceResult,
+) -> None:
+    duplicate_title = sample_result.action_items[0].title
+    duplicate_result = sample_result.model_copy(
+        update={
+            "action_items": [
+                sample_result.action_items[0].model_copy(deep=True),
+                sample_result.action_items[1].model_copy(
+                    update={"title": duplicate_title},
+                    deep=True,
+                ),
+            ]
+        },
+        deep=True,
+    )
+    defaults = default_review_form_data(duplicate_result)
+    actions = _editable_mappings(defaults.action_items)
+    actions[0]["owner"] = "First Owner"
+    actions[1]["owner"] = "Second Owner"
+    form_data = replace(defaults, action_items=tuple(actions))
+
+    reviewed = build_reviewed_result(duplicate_result, form_data)
+    summary = build_review_change_summary(duplicate_result, reviewed, form_data)
+    owner_changes = [
+        change
+        for change in summary.field_changes
+        if change.collection == "Action item" and change.field == "Owner"
+    ]
+
+    assert [change.item_index for change in owner_changes] == [0, 1]
+    assert [change.item_name for change in owner_changes] == [duplicate_title, duplicate_title]
+    assert [change.after for change in owner_changes] == ["First Owner", "Second Owner"]
+
+
 def test_outputs_are_generated_from_reviewed_result_and_are_deterministic(
     sample_result: GovernanceResult,
 ) -> None:
@@ -407,12 +606,15 @@ def test_store_and_clear_outputs_manage_only_generated_state(
 ) -> None:
     service = GovernanceReviewService(DeterministicDemoExtractor())
     outputs = service.generate_outputs(sample_result)
+    form_data = default_review_form_data(sample_result)
+    change_summary = build_review_change_summary(sample_result, sample_result, form_data)
     state: dict[str, object] = {ERROR_KEY: "old error"}
     initialize_session_state(state)
 
-    store_outputs(state, sample_result, outputs)
+    store_outputs(state, sample_result, change_summary, outputs)
 
     assert state[REVIEWED_RESULT_KEY] is sample_result
+    assert state[REVIEW_CHANGE_SUMMARY_KEY] is change_summary
     assert state[OUTPUTS_KEY] is outputs
     assert state[OUTPUT_SUCCESS_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == OUTPUT_STAGE
@@ -421,5 +623,6 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     clear_outputs(state)
 
     assert state[REVIEWED_RESULT_KEY] is None
+    assert state[REVIEW_CHANGE_SUMMARY_KEY] is None
     assert state[OUTPUTS_KEY] is None
     assert state[OUTPUT_SUCCESS_KEY] is False

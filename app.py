@@ -71,6 +71,7 @@ from architecture_governance_copilot.ui_support import (
     PROJECT_CONTEXT_CONFIRMED_KEY,
     PROJECT_CONTEXT_KEY,
     PROJECT_CONTEXT_REFRESHED_KEY,
+    REVIEW_CHANGE_SUMMARY_KEY,
     REVIEW_STAGE,
     REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_KEY,
@@ -78,8 +79,10 @@ from architecture_governance_copilot.ui_support import (
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
     DraftingSampleContext,
+    ReviewChangeSummary,
     ReviewFormData,
     analysis_is_stale,
+    build_review_change_summary,
     build_reviewed_result,
     clear_analysis_state,
     clear_outputs,
@@ -253,9 +256,13 @@ def _render_output_page() -> None:
         st.session_state[ANALYZED_FINGERPRINT_KEY],
     )
     outputs = st.session_state[OUTPUTS_KEY]
-    if stale or not isinstance(outputs, GovernanceOutputs):
-        if stale:
-            clear_outputs(st.session_state)
+    change_summary = st.session_state[REVIEW_CHANGE_SUMMARY_KEY]
+    if (
+        stale
+        or not isinstance(outputs, GovernanceOutputs)
+        or not isinstance(change_summary, ReviewChangeSummary)
+    ):
+        clear_outputs(st.session_state)
         _switch_stage(
             REVIEW_STAGE,
             error="Confirm the current reviewed record before opening Generated Outputs.",
@@ -264,7 +271,7 @@ def _render_output_page() -> None:
     _render_page_shell(OUTPUT_STAGE)
     st.header("Stage 5 — Generated Outputs")
     _render_output_navigation()
-    _render_output_stage(outputs)
+    _render_output_stage(outputs, change_summary)
 
 
 def _render_page_shell(stage: str) -> None:
@@ -2467,6 +2474,11 @@ def _generate_reviewed_outputs(
             unsafe_allow_html=True,
         )
         reviewed_result = build_reviewed_result(analyzed_result, form_data)
+        change_summary = build_review_change_summary(
+            analyzed_result,
+            reviewed_result,
+            form_data,
+        )
         with st.status(
             "Preparing reviewed governance artifacts...",
             expanded=True,
@@ -2500,7 +2512,7 @@ def _generate_reviewed_outputs(
                 unsafe_allow_html=True,
             )
             st.write(f"Prepared {len(outputs.ado_work_items)} Azure DevOps work-item previews")
-            store_outputs(st.session_state, reviewed_result, outputs)
+            store_outputs(st.session_state, reviewed_result, change_summary, outputs)
             processing_status.update(
                 label="Artifacts ready — opening Generated Outputs",
                 state="complete",
@@ -2514,7 +2526,10 @@ def _generate_reviewed_outputs(
     return True
 
 
-def _render_output_stage(outputs: GovernanceOutputs) -> None:
+def _render_output_stage(
+    outputs: GovernanceOutputs,
+    change_summary: ReviewChangeSummary,
+) -> None:
     reviewed_result = st.session_state[REVIEWED_RESULT_KEY]
     with st.container(border=True):
         st.markdown(
@@ -2532,7 +2547,7 @@ def _render_output_stage(outputs: GovernanceOutputs) -> None:
             "Start New Review",
             key="agc_start_new_review",
             type="primary",
-            use_container_width=True,
+            width="stretch",
         ):
             reset_application_state(st.session_state)
             _switch_stage(CONTEXT_STAGE)
@@ -2554,9 +2569,45 @@ def _render_output_stage(outputs: GovernanceOutputs) -> None:
                 "Work Item Previews",
                 len(outputs.ado_work_items),
             )
+        _render_review_change_summary(change_summary)
 
     _render_minutes_output(outputs.review_minutes)
     _render_ado_outputs(outputs)
+
+
+def _render_review_change_summary(change_summary: ReviewChangeSummary) -> None:
+    st.subheader("Human Review Changes")
+    st.caption(
+        "Compared with the validated provider analysis. Supporting evidence remains read-only "
+        "and is not part of this editable comparison."
+    )
+    if not change_summary.has_changes:
+        st.info("No changes were made during human review. All proposed items were retained.")
+        return
+
+    if change_summary.field_changes:
+        st.markdown("#### Confirmed field changes")
+        for change in change_summary.field_changes:
+            location = change.collection
+            if change.item_index is not None:
+                location = f"{location} {change.item_index + 1}: {change.item_name}"
+            with st.container(border=True):
+                st.markdown(f"**{location} · {change.field}**")
+                st.caption(f"Before — {_display_review_change_value(change.before, change.field)}")
+                st.caption(f"After — {_display_review_change_value(change.after, change.field)}")
+
+    if change_summary.excluded_items:
+        st.markdown("#### Excluded items")
+        for item in change_summary.excluded_items:
+            st.markdown(f"- **{item.collection} {item.item_index + 1}:** {item.item_name}")
+
+
+def _display_review_change_value(value: str | None, field: str) -> str:
+    if value is None:
+        return "Not set"
+    if field in {"Outcome", "Priority", "Severity", "Status"}:
+        return humanize(value)
+    return value
 
 
 def _render_minutes_output(review_minutes: str) -> None:

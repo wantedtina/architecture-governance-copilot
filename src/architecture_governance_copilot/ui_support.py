@@ -6,6 +6,7 @@ import hashlib
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, replace
 from datetime import date
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,7 @@ ANALYZED_RESULT_KEY = f"{STATE_PREFIX}analyzed_result"
 REVIEW_DRAFT_KEY = f"{STATE_PREFIX}review_draft"
 REVIEW_WIDGET_VALUES_KEY = f"{STATE_PREFIX}review_widget_values"
 REVIEWED_RESULT_KEY = f"{STATE_PREFIX}reviewed_result"
+REVIEW_CHANGE_SUMMARY_KEY = f"{STATE_PREFIX}review_change_summary"
 OUTPUTS_KEY = f"{STATE_PREFIX}generated_outputs"
 ANALYZED_FINGERPRINT_KEY = f"{STATE_PREFIX}analyzed_fingerprint"
 ERROR_KEY = f"{STATE_PREFIX}error"
@@ -63,6 +65,24 @@ INPUT_STAGE = "inputs"
 REVIEW_STAGE = "review"
 OUTPUT_STAGE = "outputs"
 VALID_STAGES = frozenset({CONTEXT_STAGE, DRAFT_STAGE, INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE})
+
+_REVIEW_FIELD_LABELS = {
+    "statement": "Statement",
+    "rationale": "Rationale",
+    "title": "Title",
+    "description": "Description",
+    "category": "Category",
+    "si_section": "SI section",
+    "severity": "Severity",
+    "status": "Status",
+    "recommended_change": "Recommended change",
+    "owner": "Owner",
+    "due_date": "Due date",
+    "priority": "Priority",
+    "question": "Question",
+    "item": "Item",
+    "reason": "Reason",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +137,40 @@ class ReviewFormData:
     action_items: tuple[Mapping[str, object], ...]
     open_questions: tuple[Mapping[str, object], ...]
     missing_evidence: tuple[Mapping[str, object], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewFieldChange:
+    """One normalized field change confirmed during human review."""
+
+    collection: str
+    item_index: int | None
+    item_name: str
+    field: str
+    before: str | None
+    after: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewExcludedItem:
+    """One analyzed item excluded during human review."""
+
+    collection: str
+    item_index: int
+    item_name: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewChangeSummary:
+    """Normalized differences between provider analysis and human confirmation."""
+
+    field_changes: tuple[ReviewFieldChange, ...]
+    excluded_items: tuple[ReviewExcludedItem, ...]
+
+    @property
+    def has_changes(self) -> bool:
+        """Return whether the reviewer changed or excluded anything."""
+        return bool(self.field_changes or self.excluded_items)
 
 
 def drafting_sample_paths() -> DraftingSamplePaths:
@@ -207,6 +261,7 @@ def initial_state_values() -> dict[str, object]:
         REVIEW_DRAFT_KEY: None,
         REVIEW_WIDGET_VALUES_KEY: {},
         REVIEWED_RESULT_KEY: None,
+        REVIEW_CHANGE_SUMMARY_KEY: None,
         OUTPUTS_KEY: None,
         ANALYZED_FINGERPRINT_KEY: None,
         ERROR_KEY: None,
@@ -257,6 +312,7 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[ANALYZED_RESULT_KEY] = None
     state[REVIEW_DRAFT_KEY] = None
     state[REVIEWED_RESULT_KEY] = None
+    state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[ANALYZED_FINGERPRINT_KEY] = None
     state[ERROR_KEY] = None
@@ -458,6 +514,7 @@ def store_analysis(
     state[ANALYZED_RESULT_KEY] = result
     state[REVIEW_DRAFT_KEY] = result.model_copy(deep=True)
     state[REVIEWED_RESULT_KEY] = None
+    state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[ANALYZED_FINGERPRINT_KEY] = fingerprint
     state[ERROR_KEY] = None
@@ -469,10 +526,12 @@ def store_analysis(
 def store_outputs(
     state: MutableMapping[str, Any],
     reviewed_result: GovernanceResult,
+    change_summary: ReviewChangeSummary,
     outputs: GovernanceOutputs,
 ) -> None:
-    """Store validated reviewed data and its generated outputs."""
+    """Store validated reviewed data, its change summary, and generated outputs."""
     state[REVIEWED_RESULT_KEY] = reviewed_result
+    state[REVIEW_CHANGE_SUMMARY_KEY] = change_summary
     state[OUTPUTS_KEY] = outputs
     state[ERROR_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = True
@@ -482,6 +541,7 @@ def store_outputs(
 def clear_outputs(state: MutableMapping[str, Any]) -> None:
     """Clear reviewed and generated output state after an invalid submission."""
     state[REVIEWED_RESULT_KEY] = None
+    state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = False
 
@@ -743,6 +803,124 @@ def build_reviewed_result(
         ],
     }
     return GovernanceResult.model_validate(payload)
+
+
+def build_review_change_summary(
+    analyzed_result: GovernanceResult,
+    reviewed_result: GovernanceResult,
+    form_data: ReviewFormData,
+) -> ReviewChangeSummary:
+    """Compare validated reviewed values with their original analyzed positions."""
+    field_changes: list[ReviewFieldChange] = []
+    excluded_items: list[ReviewExcludedItem] = []
+
+    if analyzed_result.review_outcome != reviewed_result.review_outcome:
+        field_changes.append(
+            ReviewFieldChange(
+                collection="Review",
+                item_index=None,
+                item_name="Governance outcome",
+                field="Outcome",
+                before=_summary_value(analyzed_result.review_outcome),
+                after=_summary_value(reviewed_result.review_outcome),
+            )
+        )
+
+    collection_specs = (
+        ("decisions", "Decision", "statement", ("statement", "rationale")),
+        (
+            "findings",
+            "Finding",
+            "title",
+            (
+                "title",
+                "description",
+                "category",
+                "si_section",
+                "severity",
+                "status",
+                "recommended_change",
+                "owner",
+                "due_date",
+            ),
+        ),
+        ("risks", "Risk", "description", ("description", "severity", "owner")),
+        (
+            "action_items",
+            "Action item",
+            "title",
+            ("title", "owner", "due_date", "priority"),
+        ),
+        (
+            "open_questions",
+            "Open question",
+            "question",
+            ("question", "owner"),
+        ),
+        (
+            "missing_evidence",
+            "Missing information",
+            "item",
+            ("item", "reason"),
+        ),
+    )
+
+    for attribute, collection, name_field, fields in collection_specs:
+        originals = getattr(analyzed_result, attribute)
+        reviewed_items = getattr(reviewed_result, attribute)
+        edits = getattr(form_data, attribute)
+        _require_edit_count(collection.lower(), edits, len(originals))
+        retained_index = 0
+        for item_index, (original, edit) in enumerate(zip(originals, edits, strict=True)):
+            original_name = str(getattr(original, name_field))
+            if not _included(edit):
+                excluded_items.append(
+                    ReviewExcludedItem(
+                        collection=collection,
+                        item_index=item_index,
+                        item_name=original_name,
+                    )
+                )
+                continue
+
+            if retained_index >= len(reviewed_items):
+                raise ValueError(f"Reviewed {collection.lower()} positions do not match analysis.")
+            reviewed_item = reviewed_items[retained_index]
+            retained_index += 1
+            for field in fields:
+                before = getattr(original, field)
+                after = getattr(reviewed_item, field)
+                if before == after:
+                    continue
+                field_changes.append(
+                    ReviewFieldChange(
+                        collection=collection,
+                        item_index=item_index,
+                        item_name=original_name,
+                        field=_REVIEW_FIELD_LABELS[field],
+                        before=_summary_value(before),
+                        after=_summary_value(after),
+                    )
+                )
+        if retained_index != len(reviewed_items):
+            raise ValueError(f"Reviewed {collection.lower()} positions do not match analysis.")
+
+    return ReviewChangeSummary(
+        field_changes=tuple(field_changes),
+        excluded_items=tuple(excluded_items),
+    )
+
+
+def _summary_value(value: object) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, StrEnum):
+        return value.value
+    if isinstance(value, str):
+        return value
+    raise TypeError(f"Unsupported review summary value: {type(value).__name__}")
 
 
 def _copy_evidence(evidence: list[SourceEvidence]) -> list[SourceEvidence]:

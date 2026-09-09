@@ -15,6 +15,7 @@ from architecture_governance_copilot.ui_support import (
     DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
     DRAFT_TEMPLATE_WIDGET_KEY,
     OUTPUTS_KEY,
+    REVIEW_CHANGE_SUMMARY_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_WIDGET_KEY,
 )
@@ -443,14 +444,26 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
         ("Work Item Previews", "2"),
     ]
     assert any(item.value == "Generated Review Record" for item in app.subheader)
+    assert any(item.value == "Human Review Changes" for item in app.subheader)
     assert any(item.value == "Azure DevOps Work Item Previews" for item in app.subheader)
     assert any(
         item.value == "Preview only · No work items were submitted to Azure DevOps."
         for item in app.warning
     )
     assert any("Taylor Kim" in item.value for item in app.markdown)
-    assert not any("Should Redis be used as a cache?" in item.value for item in app.markdown)
+    assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
+    assert sum("Should Redis be used as a cache?" in item.value for item in app.markdown) == 1
     assert sum("Work Item Preview" in item.value for item in app.markdown) == 2
+
+
+def test_no_change_confirmation_shows_explicit_review_summary_state() -> None:
+    app = _analyzed_app()
+
+    app.button(key="agc_confirm_review").click().run()
+
+    assert not app.exception
+    assert any(item.value == "Human Review Changes" for item in app.subheader)
+    assert any("No changes were made during human review" in item.value for item in app.info)
 
 
 def test_start_new_review_clears_completed_workflow_and_returns_to_drafting() -> None:
@@ -475,6 +488,22 @@ def test_invalid_review_date_shows_error_without_stale_outputs() -> None:
     assert not app.exception
     assert any("Use YYYY-MM-DD" in item.value for item in app.error)
     assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
+
+
+def test_generation_failure_clears_previous_review_change_summary() -> None:
+    app = _analyzed_app()
+    app.button(key="agc_confirm_review").click().run()
+    assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] is not None
+
+    app.button(key="agc_back_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_due_date").input("24 July 2026")
+    app.button(key="agc_confirm_review").click().run()
+
+    assert not app.exception
+    assert any("Use YYYY-MM-DD" in item.value for item in app.error)
+    assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] is None
+    assert app.session_state[OUTPUTS_KEY] is None
 
 
 def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
@@ -520,6 +549,11 @@ def test_routed_back_navigation_preserves_current_analysis() -> None:
         "Outcome",
         "Changes Requested",
     )
+
+    app.button(key="agc_confirm_review").click().run()
+
+    assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
+    assert any("After — Taylor Kim" in item.value for item in app.caption)
 
 
 def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> None:
