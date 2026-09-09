@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from architecture_governance_copilot.evidence_validation import validate_governance_evidence
 from architecture_governance_copilot.models import (
     EvidenceSource,
     FindingStatus,
@@ -238,6 +239,12 @@ def test_all_evidence_quotes_and_locators_match_their_sources() -> None:
     solution_intent = SOLUTION_INTENT_PATH.read_text(encoding="utf-8")
     transcript_lines = TRANSCRIPT_PATH.read_text(encoding="utf-8").splitlines()
     headings = solution_intent_headings(solution_intent)
+
+    validate_governance_evidence(
+        result,
+        solution_intent,
+        TRANSCRIPT_PATH.read_text(encoding="utf-8"),
+    )
 
     for evidence in iter_evidence(result):
         if evidence.source_type is EvidenceSource.SOLUTION_INTENT:

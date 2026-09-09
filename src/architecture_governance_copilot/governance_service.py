@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from architecture_governance_copilot.ado_generator import generate_mock_ado_work_items
+from architecture_governance_copilot.evidence_validation import EvidenceValidatingExtractor
 from architecture_governance_copilot.extractors import GovernanceExtractor
 from architecture_governance_copilot.minutes_generator import generate_review_minutes
 from architecture_governance_copilot.models import (
@@ -26,7 +27,7 @@ class GovernanceReviewService:
     """Coordinate governance analysis and reviewed-result output generation."""
 
     def __init__(self, extractor: GovernanceExtractor) -> None:
-        self._extractor = extractor
+        self._extractor = EvidenceValidatingExtractor(extractor)
 
     def analyze_review(
         self,

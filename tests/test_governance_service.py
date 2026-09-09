@@ -13,6 +13,7 @@ import pytest
 import architecture_governance_copilot.governance_service as governance_service_module
 from architecture_governance_copilot import GovernanceOutputs, GovernanceReviewService
 from architecture_governance_copilot.ado_generator import generate_mock_ado_work_items
+from architecture_governance_copilot.evidence_validation import EvidenceValidationError
 from architecture_governance_copilot.extractors import (
     DeterministicDemoExtractor,
     DeterministicFixtureError,
@@ -23,6 +24,7 @@ from architecture_governance_copilot.models import (
     FindingSeverity,
     GovernanceResult,
     MockAdoWorkItem,
+    ReviewOutcome,
     SolutionIntentReviewContext,
 )
 
@@ -76,11 +78,21 @@ def sample_context() -> SolutionIntentReviewContext:
     )
 
 
+@pytest.fixture
+def source_free_result(sample_context: SolutionIntentReviewContext) -> GovernanceResult:
+    """Build a valid result without evidence for service delegation tests."""
+    return GovernanceResult(
+        context=sample_context,
+        review_outcome=ReviewOutcome.NOT_STATED,
+    )
+
+
 def test_service_accepts_structural_extractor_and_has_synchronous_public_api(
+    source_free_result: GovernanceResult,
     sample_result: GovernanceResult,
     sample_context: SolutionIntentReviewContext,
 ) -> None:
-    extractor = RecordingExtractor(sample_result)
+    extractor = RecordingExtractor(source_free_result)
     service = GovernanceReviewService(extractor)
 
     assert isinstance(extractor, GovernanceExtractor)
@@ -125,18 +137,18 @@ def test_governance_outputs_is_frozen_slotted_and_uses_tuple() -> None:
 
 
 def test_analyze_review_delegates_exact_arguments_once_without_rewriting(
-    sample_result: GovernanceResult,
+    source_free_result: GovernanceResult,
     sample_context: SolutionIntentReviewContext,
 ) -> None:
     solution_intent = "".join(["  Synthetic SI", "\r\n", "with final spaces  "])
     transcript = "".join(["\n", "  [10:00] Synthetic transcript", "\r\n"])
     context_before = sample_context.model_dump(mode="json")
-    extractor = RecordingExtractor(sample_result)
+    extractor = RecordingExtractor(source_free_result)
     service = GovernanceReviewService(extractor)
 
     returned = service.analyze_review(solution_intent, transcript, sample_context)
 
-    assert returned is sample_result
+    assert returned is source_free_result
     assert len(extractor.calls) == 1
     supplied_si, supplied_transcript, supplied_context = extractor.calls[0]
     assert supplied_si is solution_intent
@@ -151,7 +163,7 @@ def test_analyze_review_delegates_exact_arguments_once_without_rewriting(
 
 def test_analyze_review_does_not_call_output_generators(
     monkeypatch: pytest.MonkeyPatch,
-    sample_result: GovernanceResult,
+    source_free_result: GovernanceResult,
     sample_context: SolutionIntentReviewContext,
 ) -> None:
     def fail_if_called(_: GovernanceResult) -> str:
@@ -159,9 +171,9 @@ def test_analyze_review_does_not_call_output_generators(
 
     monkeypatch.setattr(governance_service_module, "generate_review_minutes", fail_if_called)
     monkeypatch.setattr(governance_service_module, "generate_mock_ado_work_items", fail_if_called)
-    service = GovernanceReviewService(RecordingExtractor(sample_result))
+    service = GovernanceReviewService(RecordingExtractor(source_free_result))
 
-    assert service.analyze_review("SI", "transcript", sample_context) is sample_result
+    assert service.analyze_review("SI", "transcript", sample_context) is source_free_result
 
 
 @pytest.mark.parametrize(
@@ -187,6 +199,23 @@ def test_analyze_review_propagates_extractor_exceptions_unchanged(
     assert captured.value is error
     assert complete_document not in str(captured.value)
     assert len(extractor.calls) == 1
+
+
+def test_analyze_review_rejects_invalid_provider_evidence_after_one_delegation(
+    sample_result: GovernanceResult,
+    sample_context: SolutionIntentReviewContext,
+) -> None:
+    invalid_result = sample_result.model_copy(deep=True)
+    invalid_result.outcome_evidence[0].quote = "Unsupported provider claim."
+    extractor = RecordingExtractor(invalid_result)
+    service = GovernanceReviewService(extractor)
+    solution_intent = SOLUTION_INTENT_PATH.read_text(encoding="utf-8")
+    transcript = TRANSCRIPT_PATH.read_text(encoding="utf-8")
+
+    with pytest.raises(EvidenceValidationError, match=r"outcome_evidence\[0\]"):
+        service.analyze_review(solution_intent, transcript, sample_context)
+
+    assert extractor.calls == [(solution_intent, transcript, sample_context)]
 
 
 def test_generate_outputs_matches_direct_generators_without_using_extractor(
@@ -246,10 +275,10 @@ def test_generate_outputs_preserves_validated_human_review_edits(
 
 
 def test_analysis_and_output_generation_remain_separate_public_stages(
-    sample_result: GovernanceResult,
+    source_free_result: GovernanceResult,
     sample_context: SolutionIntentReviewContext,
 ) -> None:
-    service = GovernanceReviewService(RecordingExtractor(sample_result))
+    service = GovernanceReviewService(RecordingExtractor(source_free_result))
 
     analysis = service.analyze_review("SI", "transcript", sample_context)
 
