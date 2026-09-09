@@ -13,6 +13,7 @@ from architecture_governance_copilot.governance_service import GovernanceReviewS
 from architecture_governance_copilot.models import GovernanceResult
 from architecture_governance_copilot.ui_support import (
     ACTIVE_STAGE_KEY,
+    ANALYSIS_INVALIDATION_KEY,
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
@@ -39,12 +40,14 @@ from architecture_governance_copilot.ui_support import (
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
+    AnalysisInvalidation,
     active_stage,
     analysis_is_stale,
     build_review_change_summary,
     build_reviewed_result,
     clear_outputs,
     confirm_project_context_for_drafting,
+    current_analysis_invalidation,
     default_review_form_data,
     humanize,
     initialize_session_state,
@@ -55,6 +58,7 @@ from architecture_governance_copilot.ui_support import (
     open_demonstration_project_into_state,
     optional_text,
     parse_optional_iso_date,
+    prepare_analysis_attempt,
     preserve_review_widget_state,
     project_context_readiness,
     reset_application_state,
@@ -63,6 +67,7 @@ from architecture_governance_copilot.ui_support import (
     set_active_stage,
     store_analysis,
     store_outputs,
+    update_review_inputs,
 )
 
 
@@ -176,7 +181,7 @@ def test_invalid_optional_date_has_concise_message() -> None:
         parse_optional_iso_date("30 July 2026")
 
 
-def test_loading_sample_clears_previous_analysis_outputs_and_review_widgets(
+def test_loading_sample_invalidates_previous_outputs_and_review_widgets(
     sample_result: GovernanceResult,
 ) -> None:
     state: dict[str, object] = {}
@@ -195,14 +200,136 @@ def test_loading_sample_clears_previous_analysis_outputs_and_review_widgets(
     assert state[TRANSCRIPT_KEY] == sample.transcript
     assert state[CONTEXT_KEY] == sample.context
     assert state[CONTEXT_KEY] is not sample.context
-    assert state[ANALYZED_RESULT_KEY] is None
+    assert state[ANALYZED_RESULT_KEY] is sample_result
     assert state[REVIEWED_RESULT_KEY] is None
     assert state[OUTPUTS_KEY] is None
+    invalidation = state[ANALYSIS_INVALIDATION_KEY]
+    assert isinstance(invalidation, AnalysisInvalidation)
+    assert invalidation.outputs_invalidated is True
+    assert invalidation.reason == "The sample review package changed the review inputs."
+    assert state[ANALYSIS_SUCCESS_KEY] is False
     assert state[LOADED_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
     assert state[SOLUTION_INTENT_WIDGET_KEY] == sample.solution_intent
     assert state[TRANSCRIPT_WIDGET_KEY] == sample.transcript
     assert f"{REVIEW_WIDGET_PREFIX}finding_0_title" not in state
+
+
+def test_real_input_change_without_outputs_invalidates_only_analysis(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    load_sample_into_state(state, sample)
+    store_analysis(
+        state,
+        sample_result,
+        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+    )
+    state[f"{REVIEW_WIDGET_PREFIX}action_0_owner"] = "Taylor Kim"
+
+    changed = update_review_inputs(
+        state,
+        solution_intent=f"{sample.solution_intent}\nEdited",
+        transcript=sample.transcript,
+        context=sample.context,
+        reason="The Solution Intent changed.",
+    )
+
+    assert changed is True
+    invalidation = state[ANALYSIS_INVALIDATION_KEY]
+    assert isinstance(invalidation, AnalysisInvalidation)
+    assert invalidation.reason == "The Solution Intent changed."
+    assert invalidation.outputs_invalidated is False
+    assert state[ANALYZED_RESULT_KEY] is sample_result
+    assert state[REVIEW_DRAFT_KEY] is not None
+    assert state[REVIEWED_RESULT_KEY] is None
+    assert state[REVIEW_CHANGE_SUMMARY_KEY] is None
+    assert state[OUTPUTS_KEY] is None
+    assert state[ANALYSIS_SUCCESS_KEY] is False
+    assert state[OUTPUT_SUCCESS_KEY] is False
+    assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
+
+
+def test_noop_input_update_does_not_invalidate_analysis(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    load_sample_into_state(state, sample)
+    store_analysis(
+        state,
+        sample_result,
+        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+    )
+
+    changed = update_review_inputs(
+        state,
+        solution_intent=sample.solution_intent,
+        transcript=sample.transcript,
+        context=sample.context,
+    )
+
+    assert changed is False
+    assert current_analysis_invalidation(state) is None
+    assert state[ANALYSIS_SUCCESS_KEY] is True
+
+
+def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    load_sample_into_state(state, sample)
+    fingerprint = input_fingerprint(sample.solution_intent, sample.transcript, sample.context)
+    store_analysis(state, sample_result, fingerprint)
+
+    update_review_inputs(
+        state,
+        solution_intent=f"{sample.solution_intent}\nEdited",
+        transcript=sample.transcript,
+        context=sample.context,
+    )
+    update_review_inputs(
+        state,
+        solution_intent=sample.solution_intent,
+        transcript=sample.transcript,
+        context=sample.context,
+    )
+    prepare_analysis_attempt(state)
+
+    assert isinstance(current_analysis_invalidation(state), AnalysisInvalidation)
+    assert state[ANALYZED_RESULT_KEY] is sample_result
+    assert state[ANALYSIS_SUCCESS_KEY] is False
+
+    store_analysis(state, sample_result, fingerprint)
+
+    assert current_analysis_invalidation(state) is None
+    assert state[ANALYSIS_SUCCESS_KEY] is True
+
+
+def test_missing_metadata_invalidates_an_existing_analysis(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    load_sample_into_state(state, sample)
+    store_analysis(
+        state,
+        sample_result,
+        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+    )
+
+    state[CONTEXT_KEY] = None
+
+    invalidation = current_analysis_invalidation(state)
+    assert isinstance(invalidation, AnalysisInvalidation)
+    assert invalidation.outputs_invalidated is False
+    assert state[ANALYSIS_SUCCESS_KEY] is False
 
 
 def test_storing_analysis_creates_independent_draft_and_clears_outputs(
@@ -243,6 +370,10 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
     state: dict[str, object] = {
         SOLUTION_INTENT_KEY: "old SI",
         OUTPUTS_KEY: object(),
+        ANALYSIS_INVALIDATION_KEY: AnalysisInvalidation(
+            reason="Inputs changed.",
+            outputs_invalidated=True,
+        ),
         f"{REVIEW_WIDGET_PREFIX}action_0_owner": "Old owner",
         "unrelated": "preserved",
     }
@@ -251,6 +382,7 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
 
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[OUTPUTS_KEY] is None
+    assert state[ANALYSIS_INVALIDATION_KEY] is None
     assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
     assert state["unrelated"] == "preserved"

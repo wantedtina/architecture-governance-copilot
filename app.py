@@ -42,7 +42,6 @@ from architecture_governance_copilot.si_drafting import (
     SolutionIntentDraftingService,
 )
 from architecture_governance_copilot.ui_support import (
-    ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_ADO_SELECTED_KEY,
     CONTEXT_KEY,
@@ -78,17 +77,17 @@ from architecture_governance_copilot.ui_support import (
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
+    AnalysisInvalidation,
     DraftingSampleContext,
     ReviewChangeSummary,
     ReviewFormData,
-    analysis_is_stale,
     build_review_change_summary,
     build_reviewed_result,
-    clear_analysis_state,
     clear_outputs,
     clear_stale_si_draft,
     confirm_project_context_for_drafting,
     confirm_si_draft_for_review,
+    current_analysis_invalidation,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
@@ -99,6 +98,7 @@ from architecture_governance_copilot.ui_support import (
     load_sample_review,
     load_sample_review_companions_into_state,
     open_demonstration_project_into_state,
+    prepare_analysis_attempt,
     preserve_review_widget_state,
     project_context_readiness,
     refresh_project_context,
@@ -108,6 +108,7 @@ from architecture_governance_copilot.ui_support import (
     store_analysis,
     store_outputs,
     store_si_draft,
+    update_review_inputs,
 )
 
 _BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
@@ -210,57 +211,40 @@ def _render_review_page() -> None:
         )
 
     restore_review_widget_state(st.session_state)
-    context = _current_context()
-    stale = analysis_is_stale(
-        st.session_state[SOLUTION_INTENT_KEY],
-        st.session_state[TRANSCRIPT_KEY],
-        context,
-        st.session_state[ANALYZED_FINGERPRINT_KEY],
-    )
-    if stale and st.session_state[OUTPUTS_KEY] is not None:
-        clear_outputs(st.session_state)
+    invalidation = current_analysis_invalidation(st.session_state)
 
     _render_page_shell(REVIEW_STAGE)
-    if stale:
-        st.warning(
-            "The review inputs changed after analysis. Run Analyze Review again before "
-            "generating outputs."
-        )
-
     st.header("Stage 4 — Human Review")
-    _render_review_navigation(stale=stale)
-    _render_analyzed_input_summary(analyzed_result)
-    form_data, submitted = _render_human_review_stage(analyzed_result, stale=stale)
-    if submitted and _generate_reviewed_outputs(
-        analyzed_result,
-        form_data,
-        stale=stale,
-    ):
+    _render_review_navigation(analysis_invalid=invalidation is not None)
+    if invalidation is not None:
+        _render_invalidation_notice(invalidation)
+    _render_analyzed_input_summary(analyzed_result, valid=invalidation is None)
+    if invalidation is not None:
+        _render_error()
+        return
+
+    form_data, submitted = _render_human_review_stage(analyzed_result)
+    if submitted and _generate_reviewed_outputs(analyzed_result, form_data):
         _switch_stage(OUTPUT_STAGE)
     _render_error()
 
 
 def _render_output_page() -> None:
+    invalidation = current_analysis_invalidation(st.session_state)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
+    if invalidation is not None and isinstance(analyzed_result, GovernanceResult):
+        clear_outputs(st.session_state)
+        _switch_stage(REVIEW_STAGE)
     if not isinstance(analyzed_result, GovernanceResult):
         _switch_stage(
             INPUT_STAGE,
             error="Complete review analysis before opening the Generated Outputs page.",
         )
 
-    context = _current_context()
-    stale = analysis_is_stale(
-        st.session_state[SOLUTION_INTENT_KEY],
-        st.session_state[TRANSCRIPT_KEY],
-        context,
-        st.session_state[ANALYZED_FINGERPRINT_KEY],
-    )
     outputs = st.session_state[OUTPUTS_KEY]
     change_summary = st.session_state[REVIEW_CHANGE_SUMMARY_KEY]
-    if (
-        stale
-        or not isinstance(outputs, GovernanceOutputs)
-        or not isinstance(change_summary, ReviewChangeSummary)
+    if not isinstance(outputs, GovernanceOutputs) or not isinstance(
+        change_summary, ReviewChangeSummary
     ):
         clear_outputs(st.session_state)
         _switch_stage(
@@ -1628,6 +1612,14 @@ def _render_input_stage() -> None:
         TRANSCRIPT_WIDGET_KEY,
         st.session_state[TRANSCRIPT_KEY],
     )
+    if isinstance(current_solution_intent, str) and isinstance(current_transcript, str):
+        update_review_inputs(
+            st.session_state,
+            solution_intent=current_solution_intent,
+            transcript=current_transcript,
+            context=context,
+        )
+    invalidation = current_analysis_invalidation(st.session_state)
     review_inputs_ready = (
         isinstance(current_solution_intent, str)
         and bool(current_solution_intent.strip())
@@ -1674,7 +1666,9 @@ def _render_input_stage() -> None:
             use_container_width=True,
         )
 
-        if review_inputs_ready and st.session_state[DRAFT_CONFIRMED_KEY]:
+        if invalidation is not None:
+            status_column.warning("Reanalysis required")
+        elif review_inputs_ready and st.session_state[DRAFT_CONFIRMED_KEY]:
             status_column.success("Confirmed SI + review companions ready")
         elif review_inputs_ready:
             status_column.success("Review package loaded · Inputs are editable")
@@ -1750,8 +1744,12 @@ def _render_input_stage() -> None:
                 height=315,
                 placeholder="Load the bundled review package to begin.",
             )
-    st.session_state[SOLUTION_INTENT_KEY] = solution_intent
-    st.session_state[TRANSCRIPT_KEY] = transcript
+    update_review_inputs(
+        st.session_state,
+        solution_intent=solution_intent,
+        transcript=transcript,
+        context=context,
+    )
 
     if analyze_clicked:
         with processing_placeholder.container():
@@ -1760,18 +1758,9 @@ def _render_input_stage() -> None:
 
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
     if isinstance(analyzed_result, GovernanceResult):
-        stale = analysis_is_stale(
-            st.session_state[SOLUTION_INTENT_KEY],
-            st.session_state[TRANSCRIPT_KEY],
-            context,
-            st.session_state[ANALYZED_FINGERPRINT_KEY],
-        )
-        if stale:
-            clear_outputs(st.session_state)
-            st.warning(
-                "The inputs changed after the previous analysis. Select Analyze Review "
-                "to process the current version."
-            )
+        invalidation = current_analysis_invalidation(st.session_state)
+        if invalidation is not None:
+            _render_invalidation_notice(invalidation)
         elif st.button(
             "Return to Human Review",
             key="agc_return_to_review",
@@ -1814,7 +1803,7 @@ def _render_context(context: SolutionIntentReviewContext) -> None:
         )
 
 
-def _render_review_navigation(*, stale: bool) -> None:
+def _render_review_navigation(*, analysis_invalid: bool) -> None:
     back_column, output_column, reset_column = st.columns([1.4, 1.4, 1])
     if back_column.button(
         "← Back to Review Inputs",
@@ -1823,7 +1812,9 @@ def _render_review_navigation(*, stale: bool) -> None:
     ):
         _switch_stage(INPUT_STAGE)
 
-    outputs_available = isinstance(st.session_state[OUTPUTS_KEY], GovernanceOutputs) and not stale
+    outputs_available = (
+        isinstance(st.session_state[OUTPUTS_KEY], GovernanceOutputs) and not analysis_invalid
+    )
     if output_column.button(
         "View Generated Outputs →",
         key="agc_view_outputs",
@@ -1859,10 +1850,11 @@ def _render_output_navigation() -> None:
         _switch_stage(CONTEXT_STAGE)
 
 
-def _render_analyzed_input_summary(result: GovernanceResult) -> None:
-    st.success("Review analysis completed. No outputs were generated automatically.")
+def _render_analyzed_input_summary(result: GovernanceResult, *, valid: bool = True) -> None:
+    if valid:
+        st.success("Review analysis completed. No outputs were generated automatically.")
     with st.container(border=True):
-        st.markdown("#### Analyzed Review Inputs")
+        st.markdown("#### Analyzed Review Inputs" if valid else "#### Previous Analysis Snapshot")
         columns = st.columns(4)
         values = [
             ("Project", result.context.project_name),
@@ -1880,10 +1872,25 @@ def _render_analyzed_input_summary(result: GovernanceResult) -> None:
         for column, (label, value) in zip(columns, values, strict=True):
             column.markdown(f"**{label}**")
             column.write(value)
-        st.caption(
-            "The bundled Solution Intent, review transcript, and metadata were analyzed "
-            "together. Return to Review Inputs to inspect or change the sources."
-        )
+        if valid:
+            st.caption(
+                "The bundled Solution Intent, review transcript, and metadata were analyzed "
+                "together. Return to Review Inputs to inspect or change the sources."
+            )
+        else:
+            st.caption(
+                "This snapshot is retained for reference only and cannot be confirmed. "
+                "Return to Review Inputs and run Analyze Review again."
+            )
+
+
+def _render_invalidation_notice(invalidation: AnalysisInvalidation) -> None:
+    invalidated_target = "outputs" if invalidation.outputs_invalidated else "analysis"
+    st.warning(
+        f"Inputs changed → {invalidated_target} invalidated. Run Analyze Review again before "
+        "confirming the reviewed record or generating outputs."
+    )
+    st.caption(f"Reason: {invalidation.reason}")
 
 
 def _processing_overlay_markup(
@@ -1915,7 +1922,7 @@ def _processing_overlay_markup(
 
 
 def _analyze_current_inputs() -> bool:
-    clear_analysis_state(st.session_state)
+    prepare_analysis_attempt(st.session_state)
     solution_intent = st.session_state[SOLUTION_INTENT_KEY]
     transcript = st.session_state[TRANSCRIPT_KEY]
     context = _current_context()
@@ -1996,8 +2003,6 @@ def _render_error() -> None:
 
 def _render_human_review_stage(
     analyzed_result: GovernanceResult,
-    *,
-    stale: bool,
 ) -> tuple[ReviewFormData, bool]:
     st.subheader("Draft Structured Review")
     st.caption(
@@ -2031,7 +2036,6 @@ def _render_human_review_stage(
             "Confirm Reviewed Record & Generate Outputs",
             key="agc_confirm_review",
             type="primary",
-            disabled=stale,
             use_container_width=True,
         )
 
@@ -2104,20 +2108,29 @@ def _render_decision_edits(result: GovernanceResult) -> list[dict[str, object]]:
             st.markdown(f"**Decision {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_decision_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_decision_{index}_include",
+                    value=True,
+                ),
             )
             statement = st.text_area(
                 "Statement",
-                value=decision.statement,
                 key=f"agc_field_decision_{index}_statement",
                 height=80,
+                **_review_widget_default(
+                    f"agc_field_decision_{index}_statement",
+                    value=decision.statement,
+                ),
             )
             rationale = st.text_area(
                 "Rationale (optional)",
-                value=decision.rationale or "",
                 key=f"agc_field_decision_{index}_rationale",
                 height=70,
+                **_review_widget_default(
+                    f"agc_field_decision_{index}_rationale",
+                    value=decision.rationale or "",
+                ),
             )
             _render_evidence(decision.evidence, "Supporting evidence")
             edits.append(
@@ -2140,30 +2153,45 @@ def _render_finding_edits(result: GovernanceResult) -> list[dict[str, object]]:
             st.markdown(f"**Review Finding {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_finding_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_include",
+                    value=True,
+                ),
             )
             title = st.text_input(
                 "Title",
-                value=finding.title,
                 key=f"agc_field_finding_{index}_title",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_title",
+                    value=finding.title,
+                ),
             )
             description = st.text_area(
                 "Description",
-                value=finding.description,
                 key=f"agc_field_finding_{index}_description",
                 height=80,
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_description",
+                    value=finding.description,
+                ),
             )
             category_column, section_column = st.columns(2)
             category = category_column.text_input(
                 "Category (optional)",
-                value=finding.category or "",
                 key=f"agc_field_finding_{index}_category",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_category",
+                    value=finding.category or "",
+                ),
             )
             si_section = section_column.text_input(
                 "SI section (optional)",
-                value=finding.si_section or "",
                 key=f"agc_field_finding_{index}_si_section",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_si_section",
+                    value=finding.si_section or "",
+                ),
             )
             severity_column, status_column = st.columns(2)
             with severity_column:
@@ -2182,20 +2210,29 @@ def _render_finding_edits(result: GovernanceResult) -> list[dict[str, object]]:
                 )
             recommended_change = st.text_area(
                 "Recommended change (optional)",
-                value=finding.recommended_change or "",
                 key=f"agc_field_finding_{index}_recommended_change",
                 height=80,
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_recommended_change",
+                    value=finding.recommended_change or "",
+                ),
             )
             owner_column, date_column = st.columns(2)
             owner = owner_column.text_input(
                 "Owner (optional)",
-                value=finding.owner or "",
                 key=f"agc_field_finding_{index}_owner",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_owner",
+                    value=finding.owner or "",
+                ),
             )
             due_date = date_column.text_input(
                 "Due date (optional, YYYY-MM-DD)",
-                value=_date_text(finding.due_date),
                 key=f"agc_field_finding_{index}_due_date",
+                **_review_widget_default(
+                    f"agc_field_finding_{index}_due_date",
+                    value=_date_text(finding.due_date),
+                ),
             )
             _render_evidence(finding.evidence, "Supporting evidence")
             edits.append(
@@ -2225,14 +2262,20 @@ def _render_risk_edits(result: GovernanceResult) -> list[dict[str, object]]:
             st.markdown(f"**Risk {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_risk_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_risk_{index}_include",
+                    value=True,
+                ),
             )
             description = st.text_area(
                 "Description",
-                value=risk.description,
                 key=f"agc_field_risk_{index}_description",
                 height=80,
+                **_review_widget_default(
+                    f"agc_field_risk_{index}_description",
+                    value=risk.description,
+                ),
             )
             severity_column, owner_column = st.columns(2)
             with severity_column:
@@ -2244,8 +2287,11 @@ def _render_risk_edits(result: GovernanceResult) -> list[dict[str, object]]:
                 )
             owner = owner_column.text_input(
                 "Owner (optional)",
-                value=risk.owner or "",
                 key=f"agc_field_risk_{index}_owner",
+                **_review_widget_default(
+                    f"agc_field_risk_{index}_owner",
+                    value=risk.owner or "",
+                ),
             )
             _render_evidence(risk.evidence, "Supporting evidence")
             edits.append(
@@ -2269,24 +2315,36 @@ def _render_action_edits(result: GovernanceResult) -> list[dict[str, object]]:
             st.markdown(f"**Action Item {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_action_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_action_{index}_include",
+                    value=True,
+                ),
             )
             title = st.text_input(
                 "Title",
-                value=action.title,
                 key=f"agc_field_action_{index}_title",
+                **_review_widget_default(
+                    f"agc_field_action_{index}_title",
+                    value=action.title,
+                ),
             )
             owner_column, date_column, priority_column = st.columns(3)
             owner = owner_column.text_input(
                 "Owner (optional)",
-                value=action.owner or "",
                 key=f"agc_field_action_{index}_owner",
+                **_review_widget_default(
+                    f"agc_field_action_{index}_owner",
+                    value=action.owner or "",
+                ),
             )
             due_date = date_column.text_input(
                 "Due date (optional, YYYY-MM-DD)",
-                value=_date_text(action.due_date),
                 key=f"agc_field_action_{index}_due_date",
+                **_review_widget_default(
+                    f"agc_field_action_{index}_due_date",
+                    value=_date_text(action.due_date),
+                ),
             )
             with priority_column:
                 priority = _enum_selectbox(
@@ -2318,19 +2376,28 @@ def _render_question_edits(result: GovernanceResult) -> list[dict[str, object]]:
             st.markdown(f"**Open Question {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_question_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_question_{index}_include",
+                    value=True,
+                ),
             )
             question_text = st.text_area(
                 "Question",
-                value=question.question,
                 key=f"agc_field_question_{index}_question",
                 height=70,
+                **_review_widget_default(
+                    f"agc_field_question_{index}_question",
+                    value=question.question,
+                ),
             )
             owner = st.text_input(
                 "Owner (optional)",
-                value=question.owner or "",
                 key=f"agc_field_question_{index}_owner",
+                **_review_widget_default(
+                    f"agc_field_question_{index}_owner",
+                    value=question.owner or "",
+                ),
             )
             _render_evidence(question.evidence, "Supporting evidence")
             edits.append(
@@ -2353,19 +2420,28 @@ def _render_missing_evidence_edits(result: GovernanceResult) -> list[dict[str, o
             st.markdown(f"**Missing Information {index + 1}**")
             include = st.checkbox(
                 "Include in reviewed record",
-                value=True,
                 key=f"agc_field_missing_{index}_include",
+                **_review_widget_default(
+                    f"agc_field_missing_{index}_include",
+                    value=True,
+                ),
             )
             item = st.text_input(
                 "Item",
-                value=missing.item,
                 key=f"agc_field_missing_{index}_item",
+                **_review_widget_default(
+                    f"agc_field_missing_{index}_item",
+                    value=missing.item,
+                ),
             )
             reason = st.text_area(
                 "Reason (optional)",
-                value=missing.reason or "",
                 key=f"agc_field_missing_{index}_reason",
                 height=70,
+                **_review_widget_default(
+                    f"agc_field_missing_{index}_reason",
+                    value=missing.reason or "",
+                ),
             )
             _render_evidence(missing.evidence, "Supporting evidence")
             edits.append(
@@ -2423,10 +2499,15 @@ def _enum_selectbox(
     return st.selectbox(
         label,
         options=options,
-        index=options.index(current_value),
         format_func=humanize,
         key=key,
+        **_review_widget_default(key, index=options.index(current_value)),
     )
+
+
+def _review_widget_default(key: str, **default: object) -> dict[str, object]:
+    """Supply a widget default only before routed state has restored its key."""
+    return {} if key in st.session_state else default
 
 
 def _date_text(value: date | None) -> str:
@@ -2454,14 +2535,12 @@ def _demo_pause() -> None:
 def _generate_reviewed_outputs(
     analyzed_result: GovernanceResult,
     form_data: ReviewFormData,
-    *,
-    stale: bool,
 ) -> bool:
     clear_outputs(st.session_state)
     st.session_state[ERROR_KEY] = None
     processing_overlay = st.empty()
     try:
-        if stale:
+        if current_analysis_invalidation(st.session_state) is not None:
             raise ValueError("Inputs changed after analysis. Run Analyze Review again.")
         processing_overlay.markdown(
             _processing_overlay_markup(

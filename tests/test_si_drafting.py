@@ -19,6 +19,7 @@ from architecture_governance_copilot.si_drafting import (
     SolutionIntentDraftingService,
 )
 from architecture_governance_copilot.ui_support import (
+    ANALYSIS_INVALIDATION_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
     DRAFT_CONFIRMED_KEY,
@@ -35,6 +36,7 @@ from architecture_governance_copilot.ui_support import (
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
+    AnalysisInvalidation,
     clear_stale_si_draft,
     confirm_si_draft_for_review,
     drafting_input_fingerprint,
@@ -180,8 +182,9 @@ def test_drafting_state_load_generate_confirm_and_companion_handoff() -> None:
     assert state[SOLUTION_INTENT_WIDGET_KEY] == confirmed_content
     assert state[TRANSCRIPT_KEY] == ""
     assert state[CONTEXT_KEY] is None
-    assert state[ANALYZED_RESULT_KEY] is None
+    assert state[ANALYZED_RESULT_KEY] is not None
     assert state[OUTPUTS_KEY] is None
+    assert isinstance(state[ANALYSIS_INVALIDATION_KEY], AnalysisInvalidation)
     assert state[DRAFT_CONFIRMED_KEY] is True
     assert state["agc_active_stage"] == INPUT_STAGE
 

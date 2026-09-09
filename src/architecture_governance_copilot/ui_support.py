@@ -53,6 +53,7 @@ REVIEWED_RESULT_KEY = f"{STATE_PREFIX}reviewed_result"
 REVIEW_CHANGE_SUMMARY_KEY = f"{STATE_PREFIX}review_change_summary"
 OUTPUTS_KEY = f"{STATE_PREFIX}generated_outputs"
 ANALYZED_FINGERPRINT_KEY = f"{STATE_PREFIX}analyzed_fingerprint"
+ANALYSIS_INVALIDATION_KEY = f"{STATE_PREFIX}analysis_invalidation"
 ERROR_KEY = f"{STATE_PREFIX}error"
 LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
@@ -173,6 +174,14 @@ class ReviewChangeSummary:
         return bool(self.field_changes or self.excluded_items)
 
 
+@dataclass(frozen=True, slots=True)
+class AnalysisInvalidation:
+    """Reason an earlier analysis can no longer be confirmed or published."""
+
+    reason: str
+    outputs_invalidated: bool
+
+
 def drafting_sample_paths() -> DraftingSamplePaths:
     """Resolve bundled SI-drafting paths independently of the working directory."""
     samples_dir = Path(__file__).resolve().parents[2] / "samples"
@@ -264,6 +273,7 @@ def initial_state_values() -> dict[str, object]:
         REVIEW_CHANGE_SUMMARY_KEY: None,
         OUTPUTS_KEY: None,
         ANALYZED_FINGERPRINT_KEY: None,
+        ANALYSIS_INVALIDATION_KEY: None,
         ERROR_KEY: None,
         LOADED_KEY: False,
         ANALYSIS_SUCCESS_KEY: False,
@@ -307,7 +317,7 @@ def restore_review_widget_state(state: MutableMapping[str, Any]) -> None:
 
 
 def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
-    """Clear analysis, reviewed records, outputs, and related messages."""
+    """Clear analysis and derived records without erasing an invalidation notice."""
     clear_review_widget_state(state)
     state[ANALYZED_RESULT_KEY] = None
     state[REVIEW_DRAFT_KEY] = None
@@ -321,20 +331,125 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[ACTIVE_STAGE_KEY] = INPUT_STAGE
 
 
+def update_review_inputs(
+    state: MutableMapping[str, Any],
+    *,
+    solution_intent: str,
+    transcript: str,
+    context: SolutionIntentReviewContext | None,
+    reason: str = "Review inputs changed.",
+) -> bool:
+    """Store review inputs and invalidate derived state after a real change."""
+    changed = (
+        state.get(SOLUTION_INTENT_KEY) != solution_intent
+        or state.get(TRANSCRIPT_KEY) != transcript
+        or state.get(CONTEXT_KEY) != context
+    )
+    state[SOLUTION_INTENT_KEY] = solution_intent
+    state[TRANSCRIPT_KEY] = transcript
+    state[CONTEXT_KEY] = context
+    if changed:
+        invalidate_analysis_for_input_change(state, reason)
+    return changed
+
+
+def invalidate_analysis_for_input_change(
+    state: MutableMapping[str, Any],
+    reason: str,
+) -> AnalysisInvalidation | None:
+    """Revoke confirmation eligibility while retaining why inputs became stale."""
+    existing = state.get(ANALYSIS_INVALIDATION_KEY)
+    analyzed_result = state.get(ANALYZED_RESULT_KEY)
+    if not isinstance(existing, AnalysisInvalidation) and analyzed_result is None:
+        return None
+
+    had_outputs = any(
+        state.get(key) is not None
+        for key in (
+            REVIEWED_RESULT_KEY,
+            REVIEW_CHANGE_SUMMARY_KEY,
+            OUTPUTS_KEY,
+        )
+    )
+    if isinstance(existing, AnalysisInvalidation):
+        reason = existing.reason
+        had_outputs = had_outputs or existing.outputs_invalidated
+
+    clear_review_widget_state(state)
+    state[REVIEWED_RESULT_KEY] = None
+    state[REVIEW_CHANGE_SUMMARY_KEY] = None
+    state[OUTPUTS_KEY] = None
+    state[ANALYSIS_SUCCESS_KEY] = False
+    state[OUTPUT_SUCCESS_KEY] = False
+    invalidation = AnalysisInvalidation(
+        reason=reason.strip() or "Review inputs changed.",
+        outputs_invalidated=had_outputs,
+    )
+    state[ANALYSIS_INVALIDATION_KEY] = invalidation
+    return invalidation
+
+
+def current_analysis_invalidation(
+    state: MutableMapping[str, Any],
+) -> AnalysisInvalidation | None:
+    """Return or derive the invalidation state for the current review inputs."""
+    existing = state.get(ANALYSIS_INVALIDATION_KEY)
+    if isinstance(existing, AnalysisInvalidation):
+        return existing
+
+    analyzed_result = state.get(ANALYZED_RESULT_KEY)
+    if not isinstance(analyzed_result, GovernanceResult):
+        return None
+    context = state.get(CONTEXT_KEY)
+    valid_context = context if isinstance(context, SolutionIntentReviewContext) else None
+    solution_intent = state.get(SOLUTION_INTENT_KEY)
+    transcript = state.get(TRANSCRIPT_KEY)
+    fingerprint = state.get(ANALYZED_FINGERPRINT_KEY)
+    if not isinstance(solution_intent, str) or not isinstance(transcript, str):
+        return invalidate_analysis_for_input_change(state, "Review inputs changed.")
+    if not isinstance(fingerprint, str):
+        return invalidate_analysis_for_input_change(state, "Analysis state is incomplete.")
+    if analysis_is_stale(
+        solution_intent,
+        transcript,
+        valid_context,
+        fingerprint,
+    ):
+        return invalidate_analysis_for_input_change(state, "Review inputs changed.")
+    return None
+
+
+def prepare_analysis_attempt(state: MutableMapping[str, Any]) -> None:
+    """Clear derived confirmation state without clearing an invalidation marker."""
+    clear_review_widget_state(state)
+    state[REVIEWED_RESULT_KEY] = None
+    state[REVIEW_CHANGE_SUMMARY_KEY] = None
+    state[OUTPUTS_KEY] = None
+    state[ERROR_KEY] = None
+    state[ANALYSIS_SUCCESS_KEY] = False
+    state[OUTPUT_SUCCESS_KEY] = False
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
+
+
 def load_sample_into_state(
     state: MutableMapping[str, Any],
     sample: SampleReview,
 ) -> None:
-    """Populate sample inputs while invalidating all previous derived state."""
-    clear_analysis_state(state)
-    state[SOLUTION_INTENT_KEY] = sample.solution_intent
-    state[TRANSCRIPT_KEY] = sample.transcript
+    """Populate sample inputs while retaining any required reanalysis notice."""
+    update_review_inputs(
+        state,
+        solution_intent=sample.solution_intent,
+        transcript=sample.transcript,
+        context=sample.context.model_copy(deep=True),
+        reason="The sample review package changed the review inputs.",
+    )
     state[SOLUTION_INTENT_WIDGET_KEY] = sample.solution_intent
     state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
-    state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
     state[LOADED_KEY] = True
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
     state[DRAFT_CONFIRMED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
 
 
 def load_drafting_context_into_state(
@@ -365,7 +480,13 @@ def open_demonstration_project_into_state(
     sample: DraftingSampleContext,
 ) -> None:
     """Open the synthetic workspace without pretending to connect externally."""
-    clear_analysis_state(state)
+    update_review_inputs(
+        state,
+        solution_intent="",
+        transcript="",
+        context=None,
+        reason="The project workspace changed the review inputs.",
+    )
     state[PROJECT_CONTEXT_KEY] = sample
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
     state[PROJECT_CONTEXT_REFRESHED_KEY] = False
@@ -380,9 +501,6 @@ def open_demonstration_project_into_state(
     state[DRAFT_RESULT_KEY] = None
     state[DRAFT_FINGERPRINT_KEY] = None
     state[DRAFT_CONFIRMED_KEY] = False
-    state[SOLUTION_INTENT_KEY] = ""
-    state[TRANSCRIPT_KEY] = ""
-    state[CONTEXT_KEY] = None
     state[LOADED_KEY] = False
     state[ERROR_KEY] = None
     state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
@@ -476,12 +594,15 @@ def confirm_si_draft_for_review(
     normalized = confirmed_content.strip()
     if not normalized:
         raise ValueError("Confirmed Solution Intent must not be blank.")
-    clear_analysis_state(state)
-    state[SOLUTION_INTENT_KEY] = normalized
+    update_review_inputs(
+        state,
+        solution_intent=normalized,
+        transcript="",
+        context=None,
+        reason="The confirmed Solution Intent changed the review inputs.",
+    )
     state[SOLUTION_INTENT_WIDGET_KEY] = normalized
-    state[TRANSCRIPT_KEY] = ""
     state[TRANSCRIPT_WIDGET_KEY] = ""
-    state[CONTEXT_KEY] = None
     state[LOADED_KEY] = False
     state[DRAFT_CONFIRMED_KEY] = True
     state[ACTIVE_STAGE_KEY] = INPUT_STAGE
@@ -495,12 +616,15 @@ def load_sample_review_companions_into_state(
     solution_intent = str(state.get(SOLUTION_INTENT_KEY, "")).strip()
     if not solution_intent:
         raise ValueError("Confirm or enter a Solution Intent before loading review companions.")
-    clear_analysis_state(state)
-    state[SOLUTION_INTENT_KEY] = solution_intent
+    update_review_inputs(
+        state,
+        solution_intent=solution_intent,
+        transcript=sample.transcript,
+        context=sample.context.model_copy(deep=True),
+        reason="The review transcript or metadata changed.",
+    )
     state[SOLUTION_INTENT_WIDGET_KEY] = solution_intent
-    state[TRANSCRIPT_KEY] = sample.transcript
     state[TRANSCRIPT_WIDGET_KEY] = sample.transcript
-    state[CONTEXT_KEY] = sample.context.model_copy(deep=True)
     state[LOADED_KEY] = True
 
 
@@ -517,6 +641,7 @@ def store_analysis(
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[ANALYZED_FINGERPRINT_KEY] = fingerprint
+    state[ANALYSIS_INVALIDATION_KEY] = None
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = True
     state[OUTPUT_SUCCESS_KEY] = False

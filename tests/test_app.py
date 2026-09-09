@@ -10,12 +10,17 @@ from streamlit.testing.v1 import AppTest
 
 import architecture_governance_copilot.ui_support as ui_support
 from architecture_governance_copilot.ui_support import (
+    ANALYSIS_INVALIDATION_KEY,
+    ANALYSIS_SUCCESS_KEY,
+    ANALYZED_RESULT_KEY,
+    CONTEXT_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
     DRAFT_SOURCE_CODE_WIDGET_KEY,
     DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
     DRAFT_TEMPLATE_WIDGET_KEY,
     OUTPUTS_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
+    REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_WIDGET_KEY,
 )
@@ -522,12 +527,94 @@ def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
 
     assert not app.exception
     assert any(
-        "inputs changed" in item.value.lower() and "analy" in item.value.lower()
+        "Inputs changed → outputs invalidated. Run Analyze Review again" in item.value
         for item in app.warning
     )
     assert all(item.key != "agc_confirm_review" for item in app.button)
     assert app.session_state[OUTPUTS_KEY] is None
+    assert app.session_state[REVIEWED_RESULT_KEY] is None
+    assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] is None
+    assert app.session_state[ANALYSIS_SUCCESS_KEY] is False
+    assert app.session_state[ANALYZED_RESULT_KEY] is not None
+    assert all("Review analysis completed" not in item.value for item in app.success)
     assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
+
+
+def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice() -> None:
+    app = _analyzed_app()
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    original = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value
+
+    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nEdited").run()
+    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(original).run()
+
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
+    assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
+    assert all(item.key != "agc_return_to_review" for item in app.button)
+
+    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nUnsupported edit").run()
+    app.button(key="agc_analyze").click().run()
+
+    assert not app.exception
+    assert any("Analysis failed" in item.value for item in app.error)
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
+    assert app.session_state[ANALYSIS_SUCCESS_KEY] is False
+    assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
+
+
+def test_sample_reload_requires_and_successful_reanalysis_restores_review() -> None:
+    app = _analyzed_app()
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    original = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value
+    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nEdited").run()
+
+    app.button(key="agc_load_sample").click().run()
+
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
+    assert all(item.key != "agc_return_to_review" for item in app.button)
+
+    app.button(key="agc_analyze").click().run()
+    app.switch_page("pages/human_review.py").run()
+
+    assert not app.exception
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
+    assert app.session_state[ANALYSIS_SUCCESS_KEY] is True
+    assert app.button(key="agc_confirm_review")
+    assert any("Review analysis completed" in item.value for item in app.success)
+
+
+def test_missing_metadata_and_output_deep_link_route_to_invalid_review_snapshot() -> None:
+    app = _analyzed_app()
+    app.session_state[CONTEXT_KEY] = None
+
+    app.switch_page("pages/generated_outputs.py").run()
+
+    assert not app.exception
+    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
+    assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
+    assert any("Previous Analysis Snapshot" in item.value for item in app.markdown)
+    assert all(item.key != "agc_confirm_review" for item in app.button)
+
+
+def test_unsubmitted_review_edits_do_not_replace_confirmed_snapshot() -> None:
+    app = _analyzed_app()
+    app.button(key="agc_confirm_review").click().run()
+    confirmed_result = app.session_state[REVIEWED_RESULT_KEY]
+    confirmed_summary = app.session_state[REVIEW_CHANGE_SUMMARY_KEY]
+    confirmed_outputs = app.session_state[OUTPUTS_KEY]
+
+    app.button(key="agc_back_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("Taylor Kim").run()
+    app.button(key="agc_view_outputs").click().run()
+
+    assert not app.exception
+    assert app.session_state[REVIEWED_RESULT_KEY] == confirmed_result
+    assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] == confirmed_summary
+    assert app.session_state[OUTPUTS_KEY] == confirmed_outputs
 
 
 def test_routed_back_navigation_preserves_current_analysis() -> None:
@@ -538,6 +625,7 @@ def test_routed_back_navigation_preserves_current_analysis() -> None:
 
     assert [item.value for item in app.header] == ["Stage 3 — Review Inputs"]
     app.switch_page("pages/review_inputs.py").run()
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
     assert app.button(key="agc_return_to_review")
 
     app.button(key="agc_return_to_review").click().run()
@@ -569,4 +657,5 @@ def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> 
     assert not app.exception
     assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
     assert not app.text_area
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
     assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
