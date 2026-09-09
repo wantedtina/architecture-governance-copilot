@@ -3,12 +3,14 @@
 ## Identified version
 
 - Branch: `codex/final-stage-i2-review-summary`
-- Frozen implementation and content commit: `85e8d75d42bb7216cbcfb70d8520a0a5411e37df`
-- Release tag: `submission-2026-09-14`
+- Frozen implementation and content commit: `ce5fd3f2a760504da40440558180c5245ed291e9`
+- Release tag: `submission-2026-09-14-r1`
 - Scope: I1–I8 and I10 complete; I9 conditionally deferred
 
-The tag identifies this record plus the frozen implementation commit above. Presentation, media,
-conference, and Shark Tank work are not part of this baseline.
+The tag identifies this record plus the frozen implementation commit above. It supersedes the
+historical `submission-2026-09-14` candidate, which remains unchanged after a real-browser
+demonstration exposed a pending-form navigation defect. Presentation, media, conference, and
+Shark Tank work are not part of this baseline.
 
 ## Gate status
 
@@ -49,6 +51,8 @@ Real-browser verification used clean local Streamlit sessions and synthetic data
   evidence-to-output comparison agreed; the original evidence remained unchanged and the related
   Missing Information entry remained present.
 - Browser Back and Forward preserved the routed workflow state.
+- Pending Human Review edits and exclusions survived Back to Review Inputs and Return to Human
+  Review without confirming the record or generating outputs.
 - Returning from outputs through Human Review to Review Inputs restored both source texts without
   false invalidation. A subsequent substantive SI edit invalidated the old analysis and outputs.
 - A clean deep link to `/generated-outputs` safely returned to Review Inputs with recovery guidance.
@@ -94,4 +98,3 @@ correlation. The current fake gateway is intentionally non-durable.
   forward.
 - Provider output is always a proposal. Formal architecture approval remains a human Domain
   Architect responsibility.
-

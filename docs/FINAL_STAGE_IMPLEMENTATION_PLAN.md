@@ -711,8 +711,10 @@ replace internal mappings:
 ## 10. Submission implementation completion record
 
 I1–I8 and I10 are complete for the 14 September submission baseline. The frozen implementation
-and content commit is `85e8d75d42bb7216cbcfb70d8520a0a5411e37df`; the canonical release tag is
-`submission-2026-09-14`. G1 and G2 passed. G3 was not run because approved live endpoints,
+and content commit is `ce5fd3f2a760504da40440558180c5245ed291e9`; the canonical release tag is
+`submission-2026-09-14-r1`. This immutable revision supersedes the retained
+`submission-2026-09-14` candidate after a real-browser form-navigation correction. G1 and G2
+passed. G3 was not run because approved live endpoints,
 authentication, mappings, and controlled targets were not supplied or added. I9 therefore remains
 correctly deferred, and no incomplete secondary-write controls are exposed.
 
