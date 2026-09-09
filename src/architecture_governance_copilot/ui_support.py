@@ -11,12 +11,17 @@ from pathlib import Path
 from typing import Any
 
 from architecture_governance_copilot.governance_service import GovernanceOutputs
+from architecture_governance_copilot.integrations.confluence import ConfluencePageSnapshot
 from architecture_governance_copilot.models import (
     GovernanceResult,
     SolutionIntentDraft,
     SolutionIntentDraftRequest,
     SolutionIntentReviewContext,
     SourceEvidence,
+)
+from architecture_governance_copilot.runtime_dependencies import (
+    OFFLINE_PROVIDER_CONFIGURATION_ID,
+    ReviewMode,
 )
 
 STATE_PREFIX = "agc_"
@@ -59,6 +64,10 @@ LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
 OUTPUT_ACTION_SELECTION_KEY = f"{STATE_PREFIX}output_action_selection"
+REVIEW_MODE_KEY = f"{STATE_PREFIX}review_mode"
+REVIEW_MODE_WIDGET_KEY = f"{STATE_PREFIX}review_mode_widget"
+REVIEW_PROVIDER_CONFIGURATION_ID_KEY = f"{STATE_PREFIX}review_provider_configuration_id"
+CONFLUENCE_SNAPSHOT_KEY = f"{STATE_PREFIX}confluence_snapshot"
 ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
 
 CONTEXT_STAGE = "context"
@@ -280,6 +289,9 @@ def initial_state_values() -> dict[str, object]:
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
         OUTPUT_ACTION_SELECTION_KEY: None,
+        REVIEW_MODE_KEY: ReviewMode.OFFLINE.value,
+        REVIEW_PROVIDER_CONFIGURATION_ID_KEY: OFFLINE_PROVIDER_CONFIGURATION_ID,
+        CONFLUENCE_SNAPSHOT_KEY: None,
         ACTIVE_STAGE_KEY: CONTEXT_STAGE,
     }
 
@@ -382,6 +394,7 @@ def invalidate_analysis_for_input_change(
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
     invalidation = AnalysisInvalidation(
@@ -408,6 +421,15 @@ def current_analysis_invalidation(
     solution_intent = state.get(SOLUTION_INTENT_KEY)
     transcript = state.get(TRANSCRIPT_KEY)
     fingerprint = state.get(ANALYZED_FINGERPRINT_KEY)
+    mode = current_review_mode(state)
+    snapshot_value = state.get(CONFLUENCE_SNAPSHOT_KEY)
+    snapshot = snapshot_value if isinstance(snapshot_value, ConfluencePageSnapshot) else None
+    provider_identity = state.get(REVIEW_PROVIDER_CONFIGURATION_ID_KEY)
+    valid_provider_identity = (
+        provider_identity
+        if isinstance(provider_identity, str) and provider_identity.strip()
+        else OFFLINE_PROVIDER_CONFIGURATION_ID
+    )
     if not isinstance(solution_intent, str) or not isinstance(transcript, str):
         return invalidate_analysis_for_input_change(state, "Review inputs changed.")
     if not isinstance(fingerprint, str):
@@ -417,6 +439,9 @@ def current_analysis_invalidation(
         transcript,
         valid_context,
         fingerprint,
+        mode=mode,
+        source_snapshot=snapshot,
+        provider_configuration_identity=valid_provider_identity,
     ):
         return invalidate_analysis_for_input_change(state, "Review inputs changed.")
     return None
@@ -428,6 +453,7 @@ def prepare_analysis_attempt(state: MutableMapping[str, Any]) -> None:
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
@@ -439,6 +465,9 @@ def load_sample_into_state(
     sample: SampleReview,
 ) -> None:
     """Populate sample inputs while retaining any required reanalysis notice."""
+    state[REVIEW_MODE_KEY] = ReviewMode.OFFLINE.value
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = OFFLINE_PROVIDER_CONFIGURATION_ID
+    state[CONFLUENCE_SNAPSHOT_KEY] = None
     update_review_inputs(
         state,
         solution_intent=sample.solution_intent,
@@ -452,6 +481,106 @@ def load_sample_into_state(
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
     state[DRAFT_CONFIRMED_KEY] = False
     state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
+
+
+def current_review_mode(state: Mapping[str, Any]) -> ReviewMode:
+    """Return the current supported review mode, defaulting safely to offline."""
+    value = state.get(REVIEW_MODE_KEY)
+    try:
+        return ReviewMode(value)
+    except (TypeError, ValueError):
+        return ReviewMode.OFFLINE
+
+
+def switch_review_mode(
+    state: MutableMapping[str, Any],
+    mode: ReviewMode,
+    provider_configuration_identity: str,
+) -> bool:
+    """Switch source/provider identity and revoke eligibility from the old mode."""
+    normalized_identity = provider_configuration_identity.strip()
+    if not normalized_identity:
+        raise ValueError("A provider configuration identity is required.")
+    changed = (
+        current_review_mode(state) is not mode
+        or state.get(REVIEW_PROVIDER_CONFIGURATION_ID_KEY) != normalized_identity
+    )
+    if not changed:
+        return False
+    state[REVIEW_MODE_KEY] = mode.value
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = normalized_identity
+    state[CONFLUENCE_SNAPSHOT_KEY] = None
+    update_review_inputs(
+        state,
+        solution_intent="",
+        transcript="",
+        context=None,
+        reason="The review source or analysis provider changed.",
+    )
+    state[SOLUTION_INTENT_WIDGET_KEY] = ""
+    state[TRANSCRIPT_WIDGET_KEY] = ""
+    state[LOADED_KEY] = False
+    state[DRAFT_CONFIRMED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
+    return True
+
+
+def load_internal_review_into_state(
+    state: MutableMapping[str, Any],
+    *,
+    snapshot: ConfluencePageSnapshot,
+    transcript: str,
+    context: SolutionIntentReviewContext,
+    provider_configuration_identity: str,
+) -> None:
+    """Load one fake internal source package without bundled review companions."""
+    if current_review_mode(state) is not ReviewMode.INTERNAL_FAKE:
+        raise ValueError("Internal review sources require Internal fake mode.")
+    normalized_transcript = transcript.strip()
+    if not normalized_transcript:
+        raise ValueError("The internal review transcript must not be blank.")
+    normalized_provider_identity = provider_configuration_identity.strip()
+    if not normalized_provider_identity:
+        raise ValueError("A provider configuration identity is required.")
+    previous_snapshot = state.get(CONFLUENCE_SNAPSHOT_KEY)
+    state[CONFLUENCE_SNAPSHOT_KEY] = snapshot.model_copy(deep=True)
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = normalized_provider_identity
+    update_review_inputs(
+        state,
+        solution_intent=snapshot.canonical_text,
+        transcript=normalized_transcript,
+        context=context.model_copy(deep=True),
+        reason="The internal review source package changed.",
+    )
+    if isinstance(previous_snapshot, ConfluencePageSnapshot) and _source_snapshot_identity(
+        previous_snapshot
+    ) != _source_snapshot_identity(snapshot):
+        invalidate_analysis_for_input_change(state, "The Confluence source snapshot changed.")
+    state[SOLUTION_INTENT_WIDGET_KEY] = snapshot.canonical_text
+    state[TRANSCRIPT_WIDGET_KEY] = normalized_transcript
+    state[LOADED_KEY] = True
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
+    state[DRAFT_CONFIRMED_KEY] = False
+    state[ERROR_KEY] = None
+    state[ACTIVE_STAGE_KEY] = INPUT_STAGE
+
+
+def record_internal_source_load_failure(state: MutableMapping[str, Any]) -> None:
+    """Clear an unusable source so prior eligibility cannot survive a load failure."""
+    state[CONFLUENCE_SNAPSHOT_KEY] = None
+    existing_transcript = state.get(TRANSCRIPT_KEY)
+    transcript = existing_transcript if isinstance(existing_transcript, str) else ""
+    update_review_inputs(
+        state,
+        solution_intent="",
+        transcript=transcript,
+        context=None,
+        reason="The internal source could not be loaded.",
+    )
+    state[SOLUTION_INTENT_WIDGET_KEY] = ""
+    state[LOADED_KEY] = False
     state[ACTIVE_STAGE_KEY] = INPUT_STAGE
 
 
@@ -709,10 +838,24 @@ def input_fingerprint(
     solution_intent: str,
     transcript: str,
     context: SolutionIntentReviewContext,
+    *,
+    mode: ReviewMode = ReviewMode.OFFLINE,
+    source_snapshot: ConfluencePageSnapshot | None = None,
+    provider_configuration_identity: str = OFFLINE_PROVIDER_CONFIGURATION_ID,
 ) -> str:
     """Create a stable fingerprint for the current analyzed inputs."""
     digest = hashlib.sha256()
-    for value in (solution_intent, transcript, context.model_dump_json()):
+    source_identity = (
+        _source_snapshot_identity(source_snapshot) if source_snapshot is not None else "none"
+    )
+    for value in (
+        mode.value,
+        provider_configuration_identity,
+        source_identity,
+        solution_intent,
+        transcript,
+        context.model_dump_json(),
+    ):
         encoded = value.encode("utf-8")
         digest.update(len(encoded).to_bytes(8, "big"))
         digest.update(encoded)
@@ -724,13 +867,64 @@ def analysis_is_stale(
     transcript: str,
     context: SolutionIntentReviewContext | None,
     analyzed_fingerprint: str | None,
+    *,
+    mode: ReviewMode = ReviewMode.OFFLINE,
+    source_snapshot: ConfluencePageSnapshot | None = None,
+    provider_configuration_identity: str = OFFLINE_PROVIDER_CONFIGURATION_ID,
 ) -> bool:
     """Return whether current inputs differ from a previous analysis."""
     if analyzed_fingerprint is None:
         return False
     if context is None:
         return True
-    return input_fingerprint(solution_intent, transcript, context) != analyzed_fingerprint
+    if mode is ReviewMode.INTERNAL_FAKE and source_snapshot is None:
+        return True
+    return (
+        input_fingerprint(
+            solution_intent,
+            transcript,
+            context,
+            mode=mode,
+            source_snapshot=source_snapshot,
+            provider_configuration_identity=provider_configuration_identity,
+        )
+        != analyzed_fingerprint
+    )
+
+
+def current_input_fingerprint(
+    state: Mapping[str, Any],
+    context: SolutionIntentReviewContext,
+) -> str:
+    """Fingerprint current review inputs with their source and provider identity."""
+    solution_intent = state.get(SOLUTION_INTENT_KEY)
+    transcript = state.get(TRANSCRIPT_KEY)
+    if not isinstance(solution_intent, str) or not isinstance(transcript, str):
+        raise ValueError("Review inputs are incomplete.")
+    snapshot_value = state.get(CONFLUENCE_SNAPSHOT_KEY)
+    snapshot = snapshot_value if isinstance(snapshot_value, ConfluencePageSnapshot) else None
+    provider_identity = state.get(REVIEW_PROVIDER_CONFIGURATION_ID_KEY)
+    if not isinstance(provider_identity, str) or not provider_identity.strip():
+        raise ValueError("Review provider configuration is missing.")
+    return input_fingerprint(
+        solution_intent,
+        transcript,
+        context,
+        mode=current_review_mode(state),
+        source_snapshot=snapshot,
+        provider_configuration_identity=provider_identity,
+    )
+
+
+def _source_snapshot_identity(snapshot: ConfluencePageSnapshot) -> str:
+    return "|".join(
+        (
+            snapshot.page_id,
+            str(snapshot.version),
+            snapshot.canonicalizer_version,
+            snapshot.content_fingerprint,
+        )
+    )
 
 
 def humanize(value: str) -> str:

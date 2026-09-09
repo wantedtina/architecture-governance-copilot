@@ -43,9 +43,14 @@ class GovernanceReviewService:
         reviewed_result: GovernanceResult,
     ) -> GovernanceOutputs:
         """Generate deterministic outputs from a caller-supplied reviewed result."""
-        review_minutes = generate_review_minutes(reviewed_result)
-        ado_work_items = tuple(generate_mock_ado_work_items(reviewed_result))
-        return GovernanceOutputs(
-            review_minutes=review_minutes,
-            ado_work_items=ado_work_items,
-        )
+        return generate_governance_outputs(reviewed_result)
+
+
+def generate_governance_outputs(reviewed_result: GovernanceResult) -> GovernanceOutputs:
+    """Generate outputs without constructing or invoking an analysis provider."""
+    review_minutes = generate_review_minutes(reviewed_result)
+    ado_work_items = tuple(generate_mock_ado_work_items(reviewed_result))
+    return GovernanceOutputs(
+        review_minutes=review_minutes,
+        ado_work_items=ado_work_items,
+    )

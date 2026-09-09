@@ -1,0 +1,84 @@
+{
+  "context": {
+    "project_name": "Synthetic Order Routing Service",
+    "si_title": "Solution Intent - Synthetic Order Routing Service",
+    "si_version": "0.7",
+    "current_si_status": "under_review",
+    "review_round": 1,
+    "ado_ticket_id": "SYN-204",
+    "domain_architect": "Morgan Lee",
+    "review_date": "2026-09-09"
+  },
+  "review_outcome": "changes_requested",
+  "outcome_evidence": [
+    {
+      "source_type": "meeting_transcript",
+      "quote": "The outcome is changes requested.",
+      "speaker": "Morgan Lee",
+      "timestamp": "09:00",
+      "reference": "provider-reference-1"
+    }
+  ],
+  "findings": [
+    {
+      "title": "Single-zone recovery option is not documented",
+      "description": "The current design identifies one availability zone without a documented recovery option.",
+      "category": "Resilience",
+      "si_section": "Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Document the agreed recovery option and its operating procedure.",
+      "owner": "Casey Wong",
+      "due_date": "2026-09-12",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "The service currently runs in a single availability zone.",
+          "section": "Resilience",
+          "reference": "provider-reference-2"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The single-zone design requires a documented recovery option.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:03",
+          "reference": "provider-reference-3"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "risks": [],
+  "action_items": [
+    {
+      "title": "Document the recovery option",
+      "owner": "Casey Wong",
+      "due_date": "2026-09-12",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will document a recovery option by 12 September 2026.",
+          "speaker": "Casey Wong",
+          "timestamp": "09:05",
+          "reference": "provider-reference-4"
+        }
+      ]
+    }
+  ],
+  "open_questions": [],
+  "missing_evidence": [
+    {
+      "item": "Confirmed production support ownership",
+      "reason": "An accountable production support owner is required before readiness review.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Production support ownership has not been assigned.",
+          "section": "Operations",
+          "reference": "provider-reference-5"
+        }
+      ]
+    }
+  ]
+}

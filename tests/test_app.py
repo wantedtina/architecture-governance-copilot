@@ -91,6 +91,62 @@ def test_importing_app_does_not_load_sample_files(
     assert "main" in namespace
 
 
+def test_review_mode_is_offline_only_without_internal_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
+    app = _review_inputs_app()
+
+    control = app.segmented_control(key="agc_review_mode_widget")
+    assert control.value == "offline"
+    assert control.options == ["Offline demo"]
+    assert app.button(key="agc_load_sample")
+    assert all(item.key != "agc_load_internal_review" for item in app.button)
+    assert any("Zero-configuration deterministic mode" in item.value for item in app.caption)
+
+
+def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("AGC_INTERNAL_FAKE_ENABLED", "1")
+    monkeypatch.setenv("AGC_DEMO_STEP_DELAY_SECONDS", "0")
+    app = _review_inputs_app()
+
+    control = app.segmented_control(key="agc_review_mode_widget")
+    assert control.options == ["Offline demo", "Internal fake · no network"]
+    control.set_value("internal_fake").run()
+
+    assert app.button(key="agc_analyze").disabled
+    assert app.button(key="agc_refresh_internal_source").disabled
+    assert all(item.key != "agc_load_sample" for item in app.button)
+    assert any("Configured fake only" in item.value for item in app.warning)
+    assert any("Internal fake · no network" in item.value for item in app.markdown)
+
+    app.button(key="agc_load_internal_review").click().run()
+
+    solution_intent = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY)
+    transcript = app.text_area(key=TRANSCRIPT_WIDGET_KEY)
+    assert solution_intent.disabled
+    assert "Synthetic Order Routing Service" in solution_intent.value
+    assert "Morgan Lee" in transcript.value
+    assert "Priya Shah" not in transcript.value
+    assert not app.button(key="agc_analyze").disabled
+    assert not app.button(key="agc_refresh_internal_source").disabled
+
+    app.button(key="agc_analyze").click().run()
+
+    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert any("No outputs were generated automatically" in item.value for item in app.success)
+    app.switch_page("pages/human_review.py").run()
+    assert any("Fake AIF" in item.value for item in app.caption)
+
+    app.button(key="agc_confirm_review").click().run()
+
+    assert [item.value for item in app.header] == ["Stage 5 — Generated Outputs"]
+    assert any(item.value == "Generated Review Record" for item in app.subheader)
+    assert not app.exception
+
+
 @pytest.mark.parametrize(
     ("configured_value", "expected"),
     [

@@ -3,20 +3,29 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import date
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from architecture_governance_copilot.extractors import DeterministicDemoExtractor
 from architecture_governance_copilot.governance_service import GovernanceReviewService
+from architecture_governance_copilot.integrations.confluence import (
+    ConfluencePagePayload,
+    build_confluence_snapshot,
+)
 from architecture_governance_copilot.models import GovernanceResult
+from architecture_governance_copilot.runtime_dependencies import (
+    OFFLINE_PROVIDER_CONFIGURATION_ID,
+    ReviewMode,
+)
 from architecture_governance_copilot.ui_support import (
     ACTIVE_STAGE_KEY,
     ANALYSIS_INVALIDATION_KEY,
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
+    CONFLUENCE_SNAPSHOT_KEY,
     CONTEXT_KEY,
     CONTEXT_STAGE,
     CONTEXT_SUPPORTING_SELECTED_KEY,
@@ -33,6 +42,8 @@ from architecture_governance_copilot.ui_support import (
     PROJECT_CONTEXT_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
     REVIEW_DRAFT_KEY,
+    REVIEW_MODE_KEY,
+    REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
     REVIEW_STAGE,
     REVIEW_WIDGET_PREFIX,
     REVIEW_WIDGET_VALUES_KEY,
@@ -49,10 +60,13 @@ from architecture_governance_copilot.ui_support import (
     clear_outputs,
     confirm_project_context_for_drafting,
     current_analysis_invalidation,
+    current_input_fingerprint,
+    current_review_mode,
     default_review_form_data,
     humanize,
     initialize_session_state,
     input_fingerprint,
+    load_internal_review_into_state,
     load_sample_drafting_context,
     load_sample_into_state,
     load_sample_review,
@@ -62,12 +76,14 @@ from architecture_governance_copilot.ui_support import (
     prepare_analysis_attempt,
     preserve_review_widget_state,
     project_context_readiness,
+    record_internal_source_load_failure,
     reset_application_state,
     restore_review_widget_state,
     sample_paths,
     set_active_stage,
     store_analysis,
     store_outputs,
+    switch_review_mode,
     update_review_inputs,
 )
 
@@ -434,6 +450,212 @@ def test_input_fingerprint_detects_stale_si_transcript_and_context() -> None:
         changed_context,
         fingerprint,
     )
+
+
+def _internal_snapshot(
+    *,
+    version: int = 7,
+    retrieved_at: datetime | None = None,
+    raw_body: str = "# Synthetic SI\n\nComplete internal source.",
+):
+    payload = ConfluencePagePayload(
+        page_id="synthetic-page-204",
+        title="Synthetic Solution Intent",
+        space="SYNTHETIC",
+        version=version,
+        url="https://example.invalid/wiki/synthetic-page-204",
+        raw_body=raw_body,
+        body_format="markdown",
+    )
+    return build_confluence_snapshot(
+        payload,
+        retrieved_at=retrieved_at or datetime(2026, 9, 9, tzinfo=UTC),
+    )
+
+
+def test_review_mode_defaults_offline_and_switch_revokes_previous_results(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    load_sample_into_state(state, sample)
+    store_analysis(
+        state,
+        sample_result,
+        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+    )
+    state[OUTPUTS_KEY] = object()
+    state[OUTPUT_ACTION_SELECTION_KEY] = 0
+
+    assert current_review_mode(state) is ReviewMode.OFFLINE
+    assert state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] == OFFLINE_PROVIDER_CONFIGURATION_ID
+    assert switch_review_mode(state, ReviewMode.INTERNAL_FAKE, "fake-aif-v2")
+
+    assert current_review_mode(state) is ReviewMode.INTERNAL_FAKE
+    assert state[REVIEW_MODE_KEY] == ReviewMode.INTERNAL_FAKE.value
+    assert state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] == "fake-aif-v2"
+    assert state[CONFLUENCE_SNAPSHOT_KEY] is None
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert state[TRANSCRIPT_KEY] == ""
+    assert state[ANALYZED_RESULT_KEY] == sample_result
+    assert state[OUTPUTS_KEY] is None
+    assert state[OUTPUT_ACTION_SELECTION_KEY] is None
+    assert current_analysis_invalidation(state) is not None
+    assert not switch_review_mode(state, ReviewMode.INTERNAL_FAKE, "fake-aif-v2")
+
+
+def test_internal_source_identity_excludes_retrieval_time_but_includes_version() -> None:
+    sample = load_sample_review()
+    first = _internal_snapshot()
+    refreshed = _internal_snapshot(
+        retrieved_at=first.retrieved_at + timedelta(minutes=5),
+    )
+    changed_version = _internal_snapshot(version=8)
+    fingerprint = input_fingerprint(
+        first.canonical_text,
+        sample.transcript,
+        sample.context,
+        mode=ReviewMode.INTERNAL_FAKE,
+        source_snapshot=first,
+        provider_configuration_identity="fake-aif-v2",
+    )
+
+    assert not analysis_is_stale(
+        refreshed.canonical_text,
+        sample.transcript,
+        sample.context,
+        fingerprint,
+        mode=ReviewMode.INTERNAL_FAKE,
+        source_snapshot=refreshed,
+        provider_configuration_identity="fake-aif-v2",
+    )
+    assert analysis_is_stale(
+        changed_version.canonical_text,
+        sample.transcript,
+        sample.context,
+        fingerprint,
+        mode=ReviewMode.INTERNAL_FAKE,
+        source_snapshot=changed_version,
+        provider_configuration_identity="fake-aif-v2",
+    )
+    assert analysis_is_stale(
+        first.canonical_text,
+        sample.transcript,
+        sample.context,
+        fingerprint,
+        mode=ReviewMode.INTERNAL_FAKE,
+        source_snapshot=first,
+        provider_configuration_identity="fake-aif-v3",
+    )
+    assert analysis_is_stale(
+        first.canonical_text,
+        sample.transcript,
+        sample.context,
+        fingerprint,
+        mode=ReviewMode.OFFLINE,
+        source_snapshot=None,
+        provider_configuration_identity=OFFLINE_PROVIDER_CONFIGURATION_ID,
+    )
+
+
+def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_version(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    switch_review_mode(state, ReviewMode.INTERNAL_FAKE, "fake-aif-v2")
+    first = _internal_snapshot()
+    load_internal_review_into_state(
+        state,
+        snapshot=first,
+        transcript=sample.transcript,
+        context=sample.context,
+        provider_configuration_identity="fake-aif-v2",
+    )
+    store_analysis(state, sample_result, current_input_fingerprint(state, sample.context))
+
+    load_internal_review_into_state(
+        state,
+        snapshot=_internal_snapshot(
+            retrieved_at=first.retrieved_at + timedelta(minutes=5),
+        ),
+        transcript=sample.transcript,
+        context=sample.context,
+        provider_configuration_identity="fake-aif-v2",
+    )
+
+    assert current_analysis_invalidation(state) is None
+    assert state[ANALYZED_RESULT_KEY] == sample_result
+
+    load_internal_review_into_state(
+        state,
+        snapshot=_internal_snapshot(version=8),
+        transcript=sample.transcript,
+        context=sample.context,
+        provider_configuration_identity="fake-aif-v2",
+    )
+
+    invalidation = current_analysis_invalidation(state)
+    assert invalidation is not None
+    assert invalidation.reason == "The Confluence source snapshot changed."
+
+
+def test_internal_source_load_and_failure_preserve_explicit_eligibility_rules(
+    sample_result: GovernanceResult,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    switch_review_mode(state, ReviewMode.INTERNAL_FAKE, "fake-aif-v2")
+    snapshot = _internal_snapshot()
+
+    load_internal_review_into_state(
+        state,
+        snapshot=snapshot,
+        transcript=sample.transcript,
+        context=sample.context,
+        provider_configuration_identity="fake-aif-v2",
+    )
+
+    assert state[CONFLUENCE_SNAPSHOT_KEY] == snapshot
+    assert state[SOLUTION_INTENT_KEY] == snapshot.canonical_text
+    assert state[TRANSCRIPT_KEY] == sample.transcript.strip()
+    fingerprint = current_input_fingerprint(state, sample.context)
+    assert not analysis_is_stale(
+        snapshot.canonical_text,
+        sample.transcript.strip(),
+        sample.context,
+        fingerprint,
+        mode=ReviewMode.INTERNAL_FAKE,
+        source_snapshot=snapshot,
+        provider_configuration_identity="fake-aif-v2",
+    )
+    store_analysis(state, sample_result, fingerprint)
+
+    record_internal_source_load_failure(state)
+
+    assert state[CONFLUENCE_SNAPSHOT_KEY] is None
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert state[CONTEXT_KEY] is None
+    assert state[ANALYSIS_INVALIDATION_KEY] is not None
+
+
+def test_internal_source_load_rejects_missing_provider_identity() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    switch_review_mode(state, ReviewMode.INTERNAL_FAKE, "fake-aif-v2")
+
+    with pytest.raises(ValueError, match="provider configuration"):
+        load_internal_review_into_state(
+            state,
+            snapshot=_internal_snapshot(),
+            transcript=sample.transcript,
+            context=sample.context,
+            provider_configuration_identity=" ",
+        )
 
 
 def test_default_review_form_round_trips_without_mutating_analysis(

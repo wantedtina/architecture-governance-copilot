@@ -15,13 +15,16 @@ from pathlib import Path
 import streamlit as st
 from pydantic import ValidationError
 
-from architecture_governance_copilot.extractors import (
-    DeterministicDemoExtractor,
-    DeterministicFixtureError,
-)
+from architecture_governance_copilot.extractors import DeterministicFixtureError
 from architecture_governance_copilot.governance_service import (
     GovernanceOutputs,
     GovernanceReviewService,
+    generate_governance_outputs,
+)
+from architecture_governance_copilot.integrations.aif import AifAnalysisError
+from architecture_governance_copilot.integrations.confluence import (
+    ConfluencePageSnapshot,
+    ConfluenceReadError,
 )
 from architecture_governance_copilot.minutes_generator import format_action_item_entry
 from architecture_governance_copilot.models import (
@@ -37,6 +40,12 @@ from architecture_governance_copilot.models import (
     SolutionIntentReviewContext,
     SourceEvidence,
 )
+from architecture_governance_copilot.runtime_dependencies import (
+    ReviewMode,
+    available_review_modes,
+    build_review_runtime,
+    review_mode_descriptor,
+)
 from architecture_governance_copilot.si_drafting import (
     DeterministicDemoDrafter,
     DeterministicDraftingFixtureError,
@@ -44,6 +53,7 @@ from architecture_governance_copilot.si_drafting import (
 )
 from architecture_governance_copilot.ui_support import (
     ANALYZED_RESULT_KEY,
+    CONFLUENCE_SNAPSHOT_KEY,
     CONTEXT_ADO_SELECTED_KEY,
     CONTEXT_KEY,
     CONTEXT_REPOSITORY_SELECTED_KEY,
@@ -73,6 +83,8 @@ from architecture_governance_copilot.ui_support import (
     PROJECT_CONTEXT_KEY,
     PROJECT_CONTEXT_REFRESHED_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
+    REVIEW_MODE_WIDGET_KEY,
+    REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
     REVIEW_STAGE,
     REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_KEY,
@@ -90,11 +102,13 @@ from architecture_governance_copilot.ui_support import (
     confirm_project_context_for_drafting,
     confirm_si_draft_for_review,
     current_analysis_invalidation,
+    current_input_fingerprint,
+    current_review_mode,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
     initialize_session_state,
-    input_fingerprint,
+    load_internal_review_into_state,
     load_sample_drafting_context,
     load_sample_into_state,
     load_sample_review,
@@ -103,6 +117,7 @@ from architecture_governance_copilot.ui_support import (
     prepare_analysis_attempt,
     preserve_review_widget_state,
     project_context_readiness,
+    record_internal_source_load_failure,
     refresh_project_context,
     reset_application_state,
     restore_review_widget_state,
@@ -110,6 +125,7 @@ from architecture_governance_copilot.ui_support import (
     store_analysis,
     store_outputs,
     store_si_draft,
+    switch_review_mode,
     update_review_inputs,
 )
 
@@ -279,6 +295,12 @@ def _switch_stage(stage: str, *, error: str | None = None) -> None:
 
 
 def _render_header() -> None:
+    review_mode = current_review_mode(st.session_state)
+    service_status = (
+        "● Internal fake · no network"
+        if review_mode is ReviewMode.INTERNAL_FAKE
+        else "● Offline demo ready"
+    )
     st.markdown(
         f"""
             <div class="agc-brandbar">
@@ -297,7 +319,7 @@ def _render_header() -> None:
                         <span class="agc-classification-dot"></span>
                         INTERNAL · HACKATHON PoC
                     </div>
-                    <div class="agc-service-status">● Offline demo ready</div>
+                    <div class="agc-service-status">{service_status}</div>
                 </div>
             </div>
         """,
@@ -923,11 +945,18 @@ def _render_sidebar(stage: str) -> None:
 
         st.divider()
         st.markdown("**System status**")
-        st.success("Offline demo services ready")
-        st.caption("● Synthetic data")
-        st.caption("● Local processing")
-        st.caption("● Azure DevOps payload previews")
-        st.caption("○ No external connections")
+        if current_review_mode(st.session_state) is ReviewMode.INTERNAL_FAKE:
+            st.warning("Internal fake mode · no network")
+            st.caption("● Synthetic Confluence snapshot")
+            st.caption("● Fake AIF analysis")
+            st.caption("● Azure DevOps payload previews")
+            st.caption("○ No live enterprise connections")
+        else:
+            st.success("Offline demo services ready")
+            st.caption("● Synthetic data")
+            st.caption("● Local processing")
+            st.caption("● Azure DevOps payload previews")
+            st.caption("○ No external connections")
 
 
 def _render_step_progress(stage: str) -> None:
@@ -1603,8 +1632,108 @@ def _generate_si_draft() -> bool:
     return True
 
 
+def _render_review_mode_control() -> None:
+    descriptors = available_review_modes()
+    available_values = [descriptor.mode.value for descriptor in descriptors]
+    current_mode = current_review_mode(st.session_state)
+    if current_mode.value not in available_values:
+        offline_descriptor = review_mode_descriptor(ReviewMode.OFFLINE)
+        switch_review_mode(
+            st.session_state,
+            ReviewMode.OFFLINE,
+            offline_descriptor.provider_configuration_identity,
+        )
+        current_mode = ReviewMode.OFFLINE
+    current_descriptor = next(
+        descriptor for descriptor in descriptors if descriptor.mode is current_mode
+    )
+    if (
+        st.session_state.get(REVIEW_PROVIDER_CONFIGURATION_ID_KEY)
+        != current_descriptor.provider_configuration_identity
+    ):
+        switch_review_mode(
+            st.session_state,
+            current_mode,
+            current_descriptor.provider_configuration_identity,
+        )
+
+    widget_value = st.session_state.get(REVIEW_MODE_WIDGET_KEY)
+    if widget_value not in available_values:
+        st.session_state[REVIEW_MODE_WIDGET_KEY] = current_mode.value
+
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">REVIEW MODE</p>',
+            unsafe_allow_html=True,
+        )
+        selected_value = st.segmented_control(
+            "Review source and analysis mode",
+            options=available_values,
+            format_func=lambda value: next(
+                descriptor.label for descriptor in descriptors if descriptor.mode.value == value
+            ),
+            key=REVIEW_MODE_WIDGET_KEY,
+            required=True,
+        )
+        selected_mode = ReviewMode(selected_value or current_mode.value)
+        if selected_mode is not current_mode:
+            selected_descriptor = next(
+                descriptor for descriptor in descriptors if descriptor.mode is selected_mode
+            )
+            switch_review_mode(
+                st.session_state,
+                selected_mode,
+                selected_descriptor.provider_configuration_identity,
+            )
+            st.rerun()
+        if current_mode is ReviewMode.INTERNAL_FAKE:
+            st.warning(
+                "Configured fake only · Confluence and AIF operations remain local and make no "
+                "network requests."
+            )
+        else:
+            st.caption(
+                "Zero-configuration deterministic mode · no credentials, network, or enterprise "
+                "connections."
+            )
+
+
+def _load_internal_review_source() -> bool:
+    """Invoke configured fake source dependencies only for an explicit load or refresh."""
+    try:
+        runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE)
+        if (
+            runtime.confluence_reader is None
+            or runtime.confluence_page_id is None
+            or runtime.review_transcript is None
+            or runtime.review_context is None
+        ):
+            raise ValueError("The fake internal review package is incomplete.")
+        snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
+        load_internal_review_into_state(
+            st.session_state,
+            snapshot=snapshot,
+            transcript=runtime.review_transcript,
+            context=runtime.review_context,
+            provider_configuration_identity=(runtime.descriptor.provider_configuration_identity),
+        )
+    except ConfluenceReadError as exc:
+        record_internal_source_load_failure(st.session_state)
+        st.session_state[ERROR_KEY] = f"Fake Confluence source load failed: {exc}"
+        return False
+    except (OSError, UnicodeError, ValidationError, ValueError):
+        record_internal_source_load_failure(st.session_state)
+        st.session_state[ERROR_KEY] = (
+            "Fake internal review configuration is invalid. No previous source remains eligible."
+        )
+        return False
+    return True
+
+
 def _render_input_stage() -> None:
     st.header("Stage 3 — Review Inputs")
+    _render_review_mode_control()
+    review_mode = current_review_mode(st.session_state)
     context = _current_context()
     current_solution_intent = st.session_state.get(
         SOLUTION_INTENT_WIDGET_KEY,
@@ -1629,31 +1758,54 @@ def _render_input_stage() -> None:
         and bool(current_transcript.strip())
         and isinstance(context, SolutionIntentReviewContext)
     )
+    if review_mode is ReviewMode.INTERNAL_FAKE:
+        review_inputs_ready = review_inputs_ready and isinstance(
+            st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
+            ConfluencePageSnapshot,
+        )
 
     with st.container(border=True):
         st.markdown(
             '<p class="agc-section-label">REVIEW ACTIONS</p>',
             unsafe_allow_html=True,
         )
-        load_column, companion_column = st.columns(
-            [1.3, 1.7],
-        )
-        load_clicked = load_column.button(
-            "Load Sample Review",
-            key="agc_load_sample",
-            use_container_width=True,
-        )
-        companions_clicked = companion_column.button(
-            "Load Sample Transcript & Metadata",
-            key="agc_load_review_companions",
-            use_container_width=True,
-        )
+        load_column, companion_column = st.columns([1.3, 1.7])
+        if review_mode is ReviewMode.INTERNAL_FAKE:
+            load_clicked = load_column.button(
+                "Load Fake Internal Review",
+                key="agc_load_internal_review",
+                width="stretch",
+            )
+            companions_clicked = False
+            refresh_clicked = companion_column.button(
+                "Refresh Fake Confluence Source",
+                key="agc_refresh_internal_source",
+                disabled=not isinstance(
+                    st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
+                    ConfluencePageSnapshot,
+                ),
+                width="stretch",
+            )
+        else:
+            load_clicked = load_column.button(
+                "Load Sample Review",
+                key="agc_load_sample",
+                use_container_width=True,
+            )
+            companions_clicked = companion_column.button(
+                "Load Sample Transcript & Metadata",
+                key="agc_load_review_companions",
+                use_container_width=True,
+            )
+            refresh_clicked = False
         analyze_column, reset_column, status_column = st.columns(
             [1.2, 1, 2],
             vertical_alignment="center",
         )
         analyze_clicked = analyze_column.button(
-            "Analyze Review",
+            "Analyze with Fake AIF"
+            if review_mode is ReviewMode.INTERNAL_FAKE
+            else "Analyze Review",
             key="agc_analyze",
             type="primary",
             disabled=not review_inputs_ready,
@@ -1670,6 +1822,8 @@ def _render_input_stage() -> None:
 
         if invalidation is not None:
             status_column.warning("Reanalysis required")
+        elif review_inputs_ready and review_mode is ReviewMode.INTERNAL_FAKE:
+            status_column.success("Fake Confluence source + transcript ready")
         elif review_inputs_ready and st.session_state[DRAFT_CONFIRMED_KEY]:
             status_column.success("Confirmed SI + review companions ready")
         elif review_inputs_ready:
@@ -1688,12 +1842,19 @@ def _render_input_stage() -> None:
         _switch_stage(CONTEXT_STAGE)
 
     if load_clicked:
-        try:
-            load_sample_into_state(st.session_state, load_sample_review())
-        except (OSError, UnicodeError, ValueError) as exc:
-            st.session_state[ERROR_KEY] = f"Unable to load the bundled sample: {exc}"
+        if review_mode is ReviewMode.INTERNAL_FAKE:
+            if _load_internal_review_source():
+                st.rerun()
         else:
-            st.rerun()
+            try:
+                load_sample_into_state(st.session_state, load_sample_review())
+            except (OSError, UnicodeError, ValueError) as exc:
+                st.session_state[ERROR_KEY] = f"Unable to load the bundled sample: {exc}"
+            else:
+                st.rerun()
+
+    if refresh_clicked and _load_internal_review_source():
+        st.rerun()
 
     if companions_clicked:
         try:
@@ -1720,9 +1881,19 @@ def _render_input_stage() -> None:
                     '<p class="agc-section-label">REVIEW CONTEXT</p>',
                     unsafe_allow_html=True,
                 )
-                st.caption("Load the sample to initialize review metadata.")
+                st.caption(
+                    "Load the fake internal review to initialize metadata."
+                    if review_mode is ReviewMode.INTERNAL_FAKE
+                    else "Load the sample to initialize review metadata."
+                )
 
     with sources_column:
+        snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
+        if review_mode is ReviewMode.INTERNAL_FAKE and isinstance(snapshot, ConfluencePageSnapshot):
+            st.caption(
+                f"Fake Confluence snapshot · {snapshot.space} · page {snapshot.page_id} · "
+                f"version {snapshot.version} · canonicalizer {snapshot.canonicalizer_version}"
+            )
         si_tab, transcript_tab = st.tabs(["Solution Intent", "Review Transcript"])
         st.session_state.setdefault(
             SOLUTION_INTENT_WIDGET_KEY,
@@ -1737,14 +1908,23 @@ def _render_input_stage() -> None:
                 "Solution Intent",
                 key=SOLUTION_INTENT_WIDGET_KEY,
                 height=315,
-                placeholder="Load the bundled review package to begin.",
+                placeholder=(
+                    "Load the fake Confluence source to begin."
+                    if review_mode is ReviewMode.INTERNAL_FAKE
+                    else "Load the bundled review package to begin."
+                ),
+                disabled=review_mode is ReviewMode.INTERNAL_FAKE,
             )
         with transcript_tab:
             transcript = st.text_area(
                 "Teams-style Review Transcript",
                 key=TRANSCRIPT_WIDGET_KEY,
                 height=315,
-                placeholder="Load the bundled review package to begin.",
+                placeholder=(
+                    "Load the separate synthetic transcript to begin."
+                    if review_mode is ReviewMode.INTERNAL_FAKE
+                    else "Load the bundled review package to begin."
+                ),
             )
     update_review_inputs(
         st.session_state,
@@ -1875,10 +2055,17 @@ def _render_analyzed_input_summary(result: GovernanceResult, *, valid: bool = Tr
             column.markdown(f"**{label}**")
             column.write(value)
         if valid:
-            st.caption(
-                "The bundled Solution Intent, review transcript, and metadata were analyzed "
-                "together. Return to Review Inputs to inspect or change the sources."
-            )
+            if current_review_mode(st.session_state) is ReviewMode.INTERNAL_FAKE:
+                st.caption(
+                    "Fake AIF analyzed the canonical fake Confluence snapshot together with "
+                    "the explicitly supplied synthetic transcript and metadata. No live "
+                    "enterprise call occurred."
+                )
+            else:
+                st.caption(
+                    "The bundled Solution Intent, review transcript, and metadata were analyzed "
+                    "together. Return to Review Inputs to inspect or change the sources."
+                )
         else:
             st.caption(
                 "This snapshot is retained for reference only and cannot be confirmed. "
@@ -1936,6 +2123,12 @@ def _analyze_current_inputs() -> bool:
             raise ValueError("Review transcript must not be blank.")
         if context is None:
             raise ValueError("Review metadata is missing. Load the sample review first.")
+        mode = current_review_mode(st.session_state)
+        if mode is ReviewMode.INTERNAL_FAKE and not isinstance(
+            st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
+            ConfluencePageSnapshot,
+        ):
+            raise ValueError("Load the fake Confluence source before analysis.")
         processing_overlay.markdown(
             _processing_overlay_markup(
                 "ANALYZE REVIEW",
@@ -1963,7 +2156,8 @@ def _analyze_current_inputs() -> bool:
                 ),
                 unsafe_allow_html=True,
             )
-            service = GovernanceReviewService(DeterministicDemoExtractor())
+            runtime = build_review_runtime(mode)
+            service = GovernanceReviewService(runtime.extractor)
             result = service.analyze_review(solution_intent, transcript, context)
             st.write("Governance decisions, findings, risks, and actions extracted")
             _demo_pause()
@@ -1981,7 +2175,7 @@ def _analyze_current_inputs() -> bool:
             store_analysis(
                 st.session_state,
                 result,
-                input_fingerprint(solution_intent, transcript, context),
+                current_input_fingerprint(st.session_state, context),
             )
             st.write("Human-review workspace prepared with source evidence")
             processing_status.update(
@@ -1990,7 +2184,12 @@ def _analyze_current_inputs() -> bool:
                 expanded=True,
             )
             _demo_pause()
-    except (DeterministicFixtureError, ValidationError, ValueError) as exc:
+    except (
+        AifAnalysisError,
+        DeterministicFixtureError,
+        ValidationError,
+        ValueError,
+    ) as exc:
         processing_overlay.empty()
         st.session_state[ERROR_KEY] = f"Analysis failed: {exc}"
         return False
@@ -2583,8 +2782,7 @@ def _generate_reviewed_outputs(
                 unsafe_allow_html=True,
             )
             st.write("Generating standardized meeting minutes")
-            service = GovernanceReviewService(DeterministicDemoExtractor())
-            outputs = service.generate_outputs(reviewed_result)
+            outputs = generate_governance_outputs(reviewed_result)
             _demo_pause()
 
             processing_overlay.markdown(
