@@ -17,9 +17,10 @@ from architecture_governance_copilot.integrations.aif import (
     FakeAifTransport,
 )
 from architecture_governance_copilot.integrations.confluence import (
-    ConfluencePagePayload,
+    ConfluenceApiResponse,
+    ConfluenceContentApiReader,
     ConfluenceReader,
-    FakeConfluenceReader,
+    FakeConfluenceContentTransport,
 )
 from architecture_governance_copilot.models import SolutionIntentReviewContext
 
@@ -114,22 +115,24 @@ def build_review_runtime(
         )
 
     samples_dir = Path(__file__).resolve().parents[2] / "samples"
-    solution_intent = (samples_dir / "internal_fake_solution_intent.md").read_text(encoding="utf-8")
     transcript = (samples_dir / "internal_fake_review_transcript.txt").read_text(encoding="utf-8")
     context = SolutionIntentReviewContext.model_validate_json(
         (samples_dir / "internal_fake_review_metadata.json").read_text(encoding="utf-8")
     )
     response = (samples_dir / "internal_fake_aif_result.json").read_text(encoding="utf-8")
-    page_payload = ConfluencePagePayload(
-        page_id=INTERNAL_FAKE_PAGE_ID,
-        title=context.si_title,
-        space="SYNTHETIC",
-        version=7,
-        url="https://example.invalid/wiki/pages/synthetic-page-204",
-        raw_body=solution_intent,
-        body_format="markdown",
+    confluence_response = (samples_dir / "internal_fake_confluence_page.json").read_text(
+        encoding="utf-8"
     )
-    reader = FakeConfluenceReader({INTERNAL_FAKE_PAGE_ID: page_payload})
+    confluence_transport = FakeConfluenceContentTransport(
+        {
+            INTERNAL_FAKE_PAGE_ID: ConfluenceApiResponse(
+                status_code=200,
+                content_type="application/json; charset=utf-8",
+                body=confluence_response,
+            )
+        }
+    )
+    reader = ConfluenceContentApiReader(confluence_transport)
     transport = FakeAifTransport([response])
     extractor = AifGovernanceExtractor(
         transport,

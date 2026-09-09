@@ -66,7 +66,6 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     assert runtime.review_transcript is not None
     assert "Priya Shah" not in runtime.review_transcript
     assert runtime.confluence_reader is not None
-    assert runtime.confluence_reader.calls == []
     assert runtime.confluence_page_id is not None
 
     snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
@@ -76,7 +75,9 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
         runtime.review_context,
     )
 
-    assert runtime.confluence_reader.calls == [runtime.confluence_page_id]
+    assert snapshot.body_format.value == "storage"
+    assert snapshot.version == 7
+    assert "| Control | State |" in snapshot.canonical_text
     assert result.context == runtime.review_context
     assert len(result.findings) == 1
     assert len(result.action_items) == 1

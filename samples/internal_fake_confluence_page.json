@@ -1,0 +1,41 @@
+{
+  "id": "synthetic-page-204",
+  "type": "page",
+  "status": "current",
+  "title": "Solution Intent - Synthetic Order Routing Service",
+  "space": {
+    "id": "synthetic-space-1",
+    "key": "SYNTHETIC",
+    "name": "Synthetic Architecture Space"
+  },
+  "version": {
+    "number": 7,
+    "message": "Synthetic review update",
+    "by": {
+      "displayName": "Synthetic User"
+    }
+  },
+  "body": {
+    "storage": {
+      "value": "<h1>Solution Intent - Synthetic Order Routing Service</h1><p>Synthetic fake-integration content. This document describes no real system.</p><h2>1. Resilience</h2><p>The service currently runs in a single availability zone.</p><h2>2. Operations</h2><p>Production support ownership has not been assigned.</p><h3>Review controls</h3><ul><li>Synthetic evidence only</li><li>Human confirmation required</li></ul><table><thead><tr><th>Control</th><th>State</th></tr></thead><tbody><tr><td>External publication</td><td>Disabled</td></tr></tbody></table>",
+      "representation": "storage",
+      "_expandable": {
+        "content": "/rest/api/content/synthetic-page-204"
+      }
+    }
+  },
+  "history": {
+    "latest": true,
+    "createdBy": {
+      "displayName": "Synthetic User"
+    }
+  },
+  "_links": {
+    "base": "https://example.invalid/wiki",
+    "webui": "/spaces/SYNTHETIC/pages/synthetic-page-204",
+    "self": "https://example.invalid/wiki/rest/api/content/synthetic-page-204"
+  },
+  "upstreamExtension": {
+    "ignored": true
+  }
+}
