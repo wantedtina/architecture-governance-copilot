@@ -127,7 +127,7 @@ controls, then click **Refresh Context** and **Confirm Context & Continue**.
   the human-review workspace.
 - Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
 - The browser navigates to `/human-review`.
-- The progress indicator advances to step 4.
+- The progress indicator advances to step 5.
 - **Stage 4 — Human Review** replaces the full input view.
 - A compact analyzed-input summary and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
@@ -157,15 +157,17 @@ controls, then click **Refresh Context** and **Confirm Context & Continue**.
 - Evidence remains visible and unchanged.
 - The record remains a human-reviewed draft, not a formal SI approval.
 
-### Step 8 — Exclude the Redis question
+### Step 8 — Exclude the production-support finding
 
-**Click:** Open **Questions · 1**, then clear **Include in reviewed record** for the Redis open
-question.
+**Click:** Open **Findings · 3**, then clear **Include in reviewed record** for **Undefined
+production support ownership**.
 
 **Expected state:**
 
-- The Redis evidence remains read-only in the current form.
-- The question is marked for omission from the reviewed result.
+- The finding's evidence remains read-only in the current form.
+- The finding is marked for omission from the reviewed result.
+- **Production support ownership is not specified** remains in Missing Information, so excluding
+  the proposed finding does not create a misleadingly clean record.
 
 ### Step 9 — Confirm the reviewed record
 
@@ -182,7 +184,8 @@ question.
 - A **Governance package ready** completion panel clearly marks the workflow as complete.
 - Summary cards show completion, outcome, one minutes artifact, and the work-item preview count.
 - **Start New Review** provides a deliberate reset for the next rehearsal.
-- The reviewed record excludes the Redis question.
+- The reviewed record excludes the production-support finding but retains the matching missing
+  information.
 - Two action work-item previews remain because no action was excluded.
 - Nothing is sent to an external service.
 
@@ -193,7 +196,10 @@ question.
 **Expected state:**
 
 - The generated record shows **Changes Requested** and the edited action owner.
-- Redis is absent.
+- The Human Review change summary shows the owner edit and the excluded production-support
+  finding.
+- The evidence-to-output comparison shows the original source quote beside the Taylor Kim action,
+  its actual minutes entry, and its matching ADO preview.
 - The accountability notice says the record must be reviewed before publication.
 
 ### Step 11 — Show the Azure DevOps work-item previews
@@ -231,7 +237,8 @@ question.
    includes both the document and the meeting.”
 5. “The machine proposes the record; the Domain Architect remains responsible for review and
    formal approval.”
-6. “I’ll change one action owner and exclude the unresolved Redis question.”
+6. “I’ll change one action owner and exclude the production-support finding; the underlying
+   missing information remains visible.”
 7. “Only the validated, human-reviewed state generates minutes and Azure DevOps work-item
    previews.”
 8. “There is no live Confluence, Teams, or Azure DevOps integration and no multi-round workflow
@@ -245,7 +252,7 @@ question.
 | 0:20–0:55 | Draft SI | Load context, generate, and confirm the synthetic SI draft. |
 | 0:55–1:10 | Review inputs | Load transcript and metadata; show the five-stage progression. |
 | 1:10–1:40 | Analyze | Show Changes Requested, counts, and read-only evidence. |
-| 1:40–2:15 | Human review | Edit one owner, exclude Redis, and emphasize human control. |
+| 1:40–2:15 | Human review | Edit one owner, exclude one finding, and emphasize human control. |
 | 2:15–3:15 | Confirm and generate | Show rendered/raw minutes and two ADO work-item previews. |
 | 3:15–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
 
@@ -267,6 +274,8 @@ or every output field.
 - Explicit human confirmation before output generation.
 - Generating deterministic structured output and minutes from the reviewed record.
 - Generating local JSON-ready mock ADO action work items.
+- Showing normalized human changes and tracing an action from immutable evidence into minutes and
+  its ADO preview.
 - Automated validation and transformation tests.
 
 ### Mocked or simulated
@@ -274,7 +283,8 @@ or every output field.
 - The SI resembles content normally held in Confluence but is loaded locally.
 - The transcript resembles Teams output but is loaded locally.
 - Deterministic analysis returns a curated fixture for the bundled pair.
-- ADO action work items are previews and are never submitted.
+- Offline ADO action work items are previews and are never submitted. An opt-in development mode
+  can send an exact separately confirmed request only to an in-memory fake gateway.
 - No identity, authorization, persistence, audit history, or production operations exist.
 - The `review_round` field does not implement multi-round tracking.
 
@@ -319,7 +329,8 @@ or every output field.
 - [ ] One confirmed decision is visible.
 - [ ] One risk is visible.
 - [ ] Two actions are visible.
-- [ ] The Redis question is visible before exclusion and absent from generated minutes.
+- [ ] The production-support finding is visible before exclusion and absent from generated
+  findings, while its Missing Information entry remains.
 - [ ] SI and transcript evidence are both demonstrated.
 - [ ] The human edit persists.
 - [ ] Outputs remain hidden until reviewed-record confirmation.
@@ -347,4 +358,4 @@ or every output field.
 - [ ] Narration states synthetic data, offline analysis, human control, and preview-only outputs.
 - [ ] Final video is shorter than four minutes.
 - [ ] Exported video is played through once before submission.
-- [ ] Submission requirements and 22 July 2026 deadline are confirmed.
+- [ ] Submission requirements and the 14 September 2026 deadline are confirmed.

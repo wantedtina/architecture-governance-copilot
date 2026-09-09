@@ -106,6 +106,7 @@ from architecture_governance_copilot.ui_support import (
     REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
     REVIEW_STAGE,
     REVIEWED_RESULT_KEY,
+    ROUTE_SOURCE_STAGE_KEY,
     SOLUTION_INTENT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
@@ -114,6 +115,7 @@ from architecture_governance_copilot.ui_support import (
     DraftingSampleContext,
     ReviewChangeSummary,
     ReviewFormData,
+    active_stage,
     build_review_change_summary,
     build_reviewed_result,
     clear_outputs,
@@ -238,8 +240,14 @@ def _render_drafting_page() -> None:
 
 
 def _render_input_page() -> None:
+    route_source = st.session_state.pop(ROUTE_SOURCE_STAGE_KEY, None)
+    restore_input_widgets = (
+        active_stage(st.session_state) != INPUT_STAGE
+        or isinstance(route_source, str)
+        and route_source != INPUT_STAGE
+    )
     _render_page_shell(INPUT_STAGE)
-    _render_input_stage()
+    _render_input_stage(restore_input_widgets=restore_input_widgets)
     _render_error()
 
 
@@ -311,6 +319,7 @@ def _switch_stage(stage: str, *, error: str | None = None) -> None:
     # longer rendered. Reassign review fields immediately before switching so
     # in-progress human edits remain durable across routed pages.
     preserve_review_widget_state(st.session_state)
+    st.session_state[ROUTE_SOURCE_STAGE_KEY] = active_stage(st.session_state)
     set_active_stage(st.session_state, stage)
     if error is not None:
         st.session_state[ERROR_KEY] = error
@@ -1753,11 +1762,14 @@ def _load_internal_review_source() -> bool:
     return True
 
 
-def _render_input_stage() -> None:
+def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
     st.header("Stage 3 — Review Inputs")
     _render_review_mode_control()
     review_mode = current_review_mode(st.session_state)
     context = _current_context()
+    if restore_input_widgets:
+        st.session_state[SOLUTION_INTENT_WIDGET_KEY] = st.session_state[SOLUTION_INTENT_KEY]
+        st.session_state[TRANSCRIPT_WIDGET_KEY] = st.session_state[TRANSCRIPT_KEY]
     current_solution_intent = st.session_state.get(
         SOLUTION_INTENT_WIDGET_KEY,
         st.session_state[SOLUTION_INTENT_KEY],

@@ -3,9 +3,9 @@
 ## Document purpose
 
 This document defines a hackathon proof of concept (PoC) for drafting and reviewing a Solution
-Intent (SI). The final deliverable is a video shorter than four minutes, due on 22 July 2026.
-The PoC proves one reliable, human-controlled drafting handoff and SI review round; it is not a
-production platform.
+Intent (SI). The current execution horizon is the repository and sub-four-minute video submission
+due on 14 September 2026. The PoC proves one reliable, human-controlled drafting handoff and SI
+review round; it is not a production platform.
 
 ## Domain context
 
@@ -19,8 +19,9 @@ a meeting, written feedback, required changes, risks, decisions, and open questi
 team updates the SI until the Domain Architect approves it, often while software development
 continues in parallel.
 
-This PoC models one such review round. Confluence, Teams, and ADO are future production
-integration targets; none is connected in the MVP.
+This PoC models one such review round. Confluence, Teams, AIF, and ADO are future production
+integration targets. No live service is connected; opt-in in-memory fakes exercise the bounded
+Confluence read, AIF analysis, and ADO Create contracts without network access.
 
 ## Problem statement
 
@@ -170,7 +171,10 @@ automatically carry findings between rounds.
 - Transcript evidence should show speaker and timestamp when available.
 - Missing-information evidence may be empty because a checklist or document inspection can
   identify absence without a direct quote.
-- Do not apply strict source-specific locator validation in the MVP.
+- Before Human Review, require each quote to occur in its declared source and validate every
+  supplied SI section, transcript speaker, and timestamp against the matching source span.
+- Assign trusted evidence references locally after validation and reject conflicting reuse of a
+  nonempty reference within one analyzed snapshot.
 
 ### Human review and confirmation
 
@@ -186,6 +190,9 @@ automatically carry findings between rounds.
 - State that formal governance decisions remain the Domain Architect's responsibility.
 - Generate outputs from the confirmed, edited state rather than the original provider response.
 - Invalidate reviewed outputs after reanalysis or subsequent input edits.
+- Show a normalized summary of human field changes and exclusions after confirmation without
+  treating evidence as an editable field.
+- Preserve routed form state during navigation; navigation alone must not invalidate analysis.
 
 ### Reviewed outputs
 
@@ -203,7 +210,13 @@ automatically carry findings between rounds.
   - evidence references.
 - Generate one mock ADO action work item per included reviewed action.
 - Allow mock work items to reference the parent ticket, SI section, and acceptance criteria.
-- Clearly state that no payload is sent to Azure DevOps.
+- In offline mode, clearly state that no payload is sent to Azure DevOps.
+- Show one evidence-to-output comparison using the reviewed action's stable collection index, its
+  actual minutes entry, and its matching ADO preview.
+- In opt-in internal fake mode only, allow a separately confirmed exact JSON Patch request to pass
+  through correlation lookup, at most one in-memory Create call, and GET verification.
+- Block stale previews, duplicate or ambiguous correlations, unconfirmed requests, and automatic
+  retry after an unknown Create result.
 
 ## Non-functional requirements
 
@@ -233,7 +246,8 @@ automatically carry findings between rounds.
 - The SI may contain headings and plain text rather than production Confluence markup.
 - The transcript contains synthetic speakers and timestamps or line references.
 - The Domain Architect reviews and owns the final outcome.
-- The ADO ticket identifier is metadata only.
+- The ADO ticket identifier is metadata in the offline workflow and a validated parent mapping in
+  the fake publication contract.
 - A single Streamlit session is sufficient; no durable state or concurrent use is required.
 - The optional LLM provider is not required for the primary demo.
 
@@ -295,6 +309,10 @@ The PoC is done when:
 - Analysis and confirmation change the browser route rather than appending the next stage below
   the previous one.
 - Generated outputs reflect the edited, confirmed record.
+- A normalized change summary identifies edited fields and excluded proposals while retaining the
+  provider evidence unchanged.
+- Source quotes and supported locators are validated before Human Review, and stale inputs cannot
+  regain output eligibility through navigation or edit-and-revert.
 - The structured record and minutes are clearly labeled, and ADO output is presented as
   preview-only with an explicit no-submission disclosure.
 - Reanalysis or input edits invalidate stale generated outputs.
@@ -333,13 +351,16 @@ Governance service
     |
     +--> GovernanceExtractor
     |       +--> DeterministicDemoExtractor (required)
-    |       \--> Optional real LLM provider (future)
+    |       +--> AifGovernanceExtractor + in-memory fake (opt-in)
+    |       \--> Real AIF transport (future internal work)
     |
-    +--> Pydantic one-round review models
+    +--> Source/reference validation + Pydantic one-round review models
     |
     +--> Review-record / minutes generator
     |
-    \--> Mock ADO action work-item generator
+    +--> Mock ADO action work-item generator
+    |
+    \--> Exact publication coordinator + in-memory ADO fake (opt-in)
 ```
 
 ### Module responsibilities
@@ -353,10 +374,16 @@ Governance service
 - `models.py`: strict Pydantic enums and models for one SI review round.
 - `si_drafting.py`: drafting-provider protocol, deterministic provider, and drafting service.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
+- `evidence_validation.py`: provider-neutral source-quote, locator, and reference validation.
 - `governance_service.py`: separately coordinates extractor analysis and output generation from
   a caller-supplied reviewed result; it does not approve records.
 - `minutes_generator.py`: pure deterministic transformation to review minutes.
 - `ado_generator.py`: pure deterministic transformation to mock ADO action-work-item payloads.
+- `runtime_dependencies.py`: explicit offline/fake mode dependency wiring and provider identity.
+- `integrations/`: strict Confluence, AIF, and Azure DevOps boundary contracts plus deterministic
+  in-memory fakes; no live transport implementation.
+- `publication.py`: exact-preview binding, separate confirmation, reconciliation, single-Create,
+  read-back verification, and observable failure-state coordination.
 - `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
 - `tests/`: validation and transformation tests independent of external services.
 
@@ -483,7 +510,8 @@ and multi-round history.
 | `si_section` | non-empty string or `None` | Optional SI-section context. |
 | `acceptance_criteria` | list of non-empty strings | Independent empty default. |
 
-This is a preview model only. Action-to-ADO conversion and API submission are future work.
+This remains the provider-neutral preview model. Conversion to an exact Create request is exercised
+only by the in-memory fake publication path; real API submission remains future internal work.
 
 ## Provider abstraction
 
@@ -512,8 +540,9 @@ GovernanceExtractor.extract(
 
 The governance service receives the provider explicitly. Provider-specific prompts, credentials,
 response parsing, and API errors stay behind this interface. Providers do not approve the SI or
-generate downstream outputs. `GovernanceExtractor` is a synchronous structural protocol; the
-fixture-backed `DeterministicDemoExtractor` is its only current implementation.
+generate downstream outputs. `GovernanceExtractor` is a synchronous structural protocol. The
+fixture-backed `DeterministicDemoExtractor` is the required offline implementation; the opt-in
+`AifGovernanceExtractor` is exercised only with an in-memory fake transport in this repository.
 
 The implemented service boundary deliberately keeps the human-review point between two calls:
 
@@ -560,7 +589,9 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | Fixture and model drift | Validate the complete expected result in automated tests. |
 | Streamlit reruns lose reviewed state | Define explicit state transitions and invalidate stale outputs. |
 | Generated outputs ignore human edits | Generate only from the validated reviewed model and test edited values. |
-| ADO previews look like live updates | Label them preview-only, show a no-submission disclosure, and perform no external request. |
+| ADO previews look like live updates | Keep offline previews explicitly local; label fake publication as in-memory/no-network and require a second exact-preview confirmation. |
+| Provider evidence is plausible but unsupported | Match exact quotes and supported locators against immutable source snapshots before Human Review. |
+| Create is duplicated or times out ambiguously | Reconcile by correlation before Create, never retry automatically, and retain `unknown_result` for manual reconciliation. |
 | Multi-round capability expands the MVP | Store only `review_round`; exclude history, comparison, and resolution logic. |
 | Video exceeds four minutes | Use one round, one key finding, one decision, one risk, two actions, and one open item. |
 | Network or LLM failure | Record in deterministic offline mode. |

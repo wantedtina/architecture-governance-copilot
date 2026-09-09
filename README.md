@@ -9,7 +9,7 @@ review metadata. Users who already have an SI can explicitly skip drafting.
 A human Domain Architect remains responsible for reviewing, editing, and making the formal
 governance decision. Only a validated, human-confirmed reviewed record generates standardized
 review minutes and mock Azure DevOps outputs.
-The final deliverable is a video shorter than four minutes, due on 22 July 2026.
+The submission baseline supports the video and repository deliverables due on 14 September 2026.
 
 ## Business problem
 
@@ -76,14 +76,16 @@ Confirmed SI + synthetic transcript + review metadata
         v                                 v
 Extractor provider                 Pydantic models
   - deterministic default            - review context
-  - optional LLM later               - findings and evidence
+  - opt-in internal fake              - findings and evidence
                                       - decisions, risks, actions
         |                                 |
         +----------------+----------------+
                          |
              +-----------+-----------+
              v                       v
-       Review minutes          Mock ADO outputs
+       Review minutes          Mock ADO previews
+                                      |
+                           guarded fake Create
 ```
 
 The deterministic extractor is the required offline demo path. It validates the bundled
@@ -96,8 +98,10 @@ editing between them. Explicit session state holds only the current one-round in
 reviewed record, generated outputs, stale-input fingerprint, and active route stage; there is no
 database.
 
-Confluence, Microsoft Teams, and Azure DevOps are production integration targets only. This PoC
-does not connect to them.
+An opt-in internal fake mode exercises Confluence read, AIF analysis, and guarded ADO Create
+contracts entirely in memory without network access. It is an integration-development aid, not
+evidence of live enterprise connectivity. Microsoft Teams ingestion and every real transport
+remain deferred.
 
 See [SPEC.md](SPEC.md) for the complete domain and technical design and [DEMO.md](DEMO.md) for
 the planned recording flow.
@@ -127,7 +131,14 @@ architecture-governance-copilot/
 │       ├── si_drafting.py
 │       ├── ui_support.py
 │       ├── minutes_generator.py
-│       └── ado_generator.py
+│       ├── ado_generator.py
+│       ├── evidence_validation.py
+│       ├── publication.py
+│       ├── runtime_dependencies.py
+│       └── integrations/
+│           ├── confluence.py
+│           ├── aif.py
+│           └── azure_devops.py
 ├── samples/
 │   ├── si_template.md
 │   ├── source_context.txt
@@ -145,7 +156,12 @@ architecture-governance-copilot/
     ├── test_ui_support.py
     ├── test_app.py
     ├── test_minutes_generator.py
-    └── test_ado_generator.py
+    ├── test_ado_generator.py
+    ├── test_evidence_validation.py
+    ├── test_confluence_integration.py
+    ├── test_aif_integration.py
+    ├── test_azure_devops_integration.py
+    └── test_publication.py
 ```
 
 The samples freeze one fully synthetic Digital Payment Notification Service review scenario.
@@ -181,6 +197,17 @@ AGC_DEMO_STEP_DELAY_SECONDS=0.6 uv run streamlit run app.py
 
 Use `AGC_DEMO_STEP_DELAY_SECONDS=0` to disable transition pauses.
 
+The deterministic offline path is the required submission path and needs no environment
+configuration. To exercise the explicitly labelled, no-network integration fakes during
+development:
+
+```bash
+AGC_INTERNAL_FAKE_ENABLED=1 uv run streamlit run app.py
+```
+
+This flag enables only in-memory fakes. It does not accept credentials or connect to Confluence,
+AIF, Microsoft Teams, or Azure DevOps.
+
 Run tests:
 
 ```bash
@@ -212,7 +239,7 @@ approved provider.
 
 ## Current implementation status
 
-**The deterministic routed PoC workflow is implemented and ready for demo hardening.**
+**The deterministic routed PoC workflow is the verified 14 September submission baseline.**
 
 Implemented:
 
@@ -242,33 +269,55 @@ Implemented:
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
 - one consistent five-stage route hierarchy, durable state, and
   stale-analysis protection;
-- editable human review with item exclusion and read-only evidence;
+- editable human review with item exclusion, a normalized change summary, and read-only evidence;
+- exact source-quote and supported-locator validation before Human Review;
+- unified input, mode, source-version, and provider-identity invalidation;
+- an evidence-to-output comparison joining source quotes, the confirmed action, its minutes entry,
+  and its generated ADO preview;
 - rendered/raw Markdown output and Azure DevOps work-item preview cards; and
 - an explicit completed-workflow panel with artifact counts and a safe **Start New Review**
   reset; and
-- pure UI-support tests plus Streamlit `AppTest` workflow coverage.
+- pure UI-support tests plus Streamlit `AppTest` workflow coverage;
+- fake-only Confluence, AIF, and ADO boundaries with recoverable error contracts; and
+- an exact ADO JSON Patch preview, separate confirmation, correlation lookup, single fake Create,
+  GET verification, duplicate protection, and unknown-result handling.
 
 Not yet implemented:
 
 - general-purpose drafting from arbitrary repositories or documents;
 - source repository cloning, scanning, or code execution;
-- real Confluence template retrieval or SI publication;
+- real Confluence retrieval or SI publication;
 - a production enterprise LLM drafting provider;
-- real LLM extraction;
+- real AIF/LLM extraction;
+- real ADO authentication or Create;
+- Microsoft Teams or Graph ingestion;
 - parent ADO governance-ticket update generation;
-- external integrations; or
+- Confluence review-page write-back; or
 - any multi-round workflow behavior.
 
 The deterministic drafting and review providers support only the bundled synthetic scenario;
-they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Mock ADO
-work items are local preview models and are never submitted to Azure DevOps. The UI confirms a
-draft for review handoff and later confirms a reviewed record for output generation; neither
-action formally approves the Solution Intent or replaces the Domain Architect. Real enterprise
-LLM providers remain optional, unimplemented later phases.
+they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Offline
+ADO work items remain local previews. Internal fake mode can submit one preview to an in-memory
+gateway only; it never reaches Azure DevOps. The UI confirms a draft for review handoff and later
+confirms a reviewed record for output generation; neither action formally approves the Solution
+Intent or replaces the Domain Architect.
+
+**Reset semantics:** Reset and Start New Review clear local workflow inputs, analysis,
+confirmation, previews, and outputs. Publication operations that may identify a remote result are
+retained for reconciliation within the current session. Restarting the process is not evidence
+that an attempted remote Create did not happen. The current fake gateway is in memory and is not a
+durable audit store.
+
+Release gates at freeze: G1 offline **passed**; G2 external preparation with fakes and documented
+adapter contracts **passed**; G3 internal live acceptance **not run**. Conditional I9 writes are
+therefore deferred and no secondary-write controls are exposed. See
+[`docs/INTERNAL_INTEGRATION_HANDOFF.md`](docs/INTERNAL_INTEGRATION_HANDOFF.md) for the bounded live
+acceptance sequence.
 
 ## PoC and data statement
 
 This is a hackathon PoC using synthetic data only. It must contain no real internal SI,
 confidential architecture information, meeting transcript, personal data, secret, or API
 credential. It is not production-ready and does not provide live Confluence, Microsoft Teams,
-or Azure DevOps connectivity.
+or Azure DevOps connectivity. The opt-in fakes make no network request and do not change this
+statement.

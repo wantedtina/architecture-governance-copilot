@@ -79,6 +79,7 @@ REVIEW_MODE_WIDGET_KEY = f"{STATE_PREFIX}review_mode_widget"
 REVIEW_PROVIDER_CONFIGURATION_ID_KEY = f"{STATE_PREFIX}review_provider_configuration_id"
 CONFLUENCE_SNAPSHOT_KEY = f"{STATE_PREFIX}confluence_snapshot"
 ACTIVE_STAGE_KEY = f"{STATE_PREFIX}active_stage"
+ROUTE_SOURCE_STAGE_KEY = f"{STATE_PREFIX}route_source_stage"
 
 CONTEXT_STAGE = "context"
 DRAFT_STAGE = "drafting"
@@ -308,6 +309,7 @@ def initial_state_values() -> dict[str, object]:
         REVIEW_PROVIDER_CONFIGURATION_ID_KEY: OFFLINE_PROVIDER_CONFIGURATION_ID,
         CONFLUENCE_SNAPSHOT_KEY: None,
         ACTIVE_STAGE_KEY: CONTEXT_STAGE,
+        ROUTE_SOURCE_STAGE_KEY: None,
     }
 
 

@@ -711,6 +711,23 @@ def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
     assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
 
 
+def test_returning_from_outputs_restores_sources_without_false_invalidation() -> None:
+    app = _analyzed_app()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+
+    app.button(key="agc_back_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
+    assert app.session_state[OUTPUTS_KEY] is not None
+    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value.startswith("# Solution Intent")
+    assert "[10:00] Priya Shah:" in app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
+    assert app.button(key="agc_return_to_review")
+
+
 def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice() -> None:
     app = _analyzed_app()
     app.button(key="agc_back_to_inputs").click().run()
