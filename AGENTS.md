@@ -32,6 +32,22 @@
 - Preserve the synthetic fixtures in `samples/` as the deterministic contract; update fixtures
   and their validation tests together.
 
+## Planning and change control
+
+- Determine current product truth from the checked-out revision, application code, tests, and
+  synchronized maintained documentation; do not infer it from plans alone.
+- Use `docs/POST_BASELINE_REFINEMENT_PLAN.md` as the active post-baseline requirements/change
+  register. A collected item is not implementation authorization.
+- Treat only the single execution plan named by that register as active implementation scope, and
+  only after explicit user approval. If its active-plan pointer is `NONE`, no post-baseline
+  implementation batch is active.
+- Keep batch implementation detail and progress in `docs/exec-plans/`, following its `README.md`;
+  keep requirement intent and lifecycle state in the refinement register.
+- Treat completed implementation plans, baseline records, completed execution plans, and
+  `docs/archive/` as historical decision/evidence, not current work instructions.
+- Do not introduce OpenSpec, Spec Kit, or another specification framework unless the user
+  explicitly approves that governance change.
+
 ## Streamlit structure
 
 - `app.py` owns the shared Streamlit shell and stage renderers.

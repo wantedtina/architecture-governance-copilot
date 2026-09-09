@@ -1,6 +1,16 @@
 # Final-stage implementation plan
 
-Updated: 2026-09-08
+Plan content updated: 2026-09-08
+
+Status boundary updated: 2026-09-10
+
+> **COMPLETED HISTORICAL PLAN — DO NOT EXECUTE AS CURRENT SCOPE**
+>
+> Document status: `COMPLETED_HISTORICAL_PLAN`. Execution authority: `NONE`. I1–I8 and I10 are
+> complete at `submission-2026-09-14-r1`; I9 is deferred and is not authorized. Future-tense
+> instructions below preserve the approved historical plan for traceability. New development may
+> begin only from an explicitly approved active execution plan referenced by
+> `POST_BASELINE_REFINEMENT_PLAN.md`.
 
 **Current execution horizon: the 14 September submission.** Prioritize the verified development
 version targeted for 11 September and the four required submission artifacts due 14 September. Prepare
@@ -14,8 +24,10 @@ as reference only, not active work or prerequisites for submission. Collecting b
 now is appropriate; it does not activate those activities. Apply relevant storytelling and business
 value guidance now only to the four-minute submission video and key-details write-up.
 
-Status: The split structure is confirmed; implementation details remain under review.
-Application development has not been authorized.
+Status: I1–I8 and I10 are complete and frozen at `submission-2026-09-14-r1`; I9 remains
+conditionally deferred. New user-testing findings are tracked separately in
+`POST_BASELINE_REFINEMENT_PLAN.md` and do not alter this completed baseline.
+This status update does not authorize post-baseline refinement implementation.
 
 ## 1. Objective and scope
 
@@ -118,7 +130,12 @@ registry, or general-purpose integration platform.
 
 ## 4. Implementation work packages
 
+Historical section: the work-package descriptions below record the completed baseline plan and do
+not define current implementation scope.
+
 ### Pre-implementation Codex setup checkpoint
+
+Historical status: `COMPLETED` for the frozen baseline.
 
 **Timing and authorization:** This records agreed preparation guidance for external development
 with Codex and GPT-6 Astra. Execute it only after the plan is finalized and the user asks Codex
@@ -196,6 +213,8 @@ Community workflow advice is supporting experience, not a required dependency or
 
 ### I1 — Baseline verification
 
+Historical status: `COMPLETED`.
+
 - **Objective:** Establish the comparison baseline.
 - **Files:** Existing tests/, samples/, and relevant README/SPEC implementation-status statements.
 - **Behavior:** After development is authorized, run Section 6 commands and inspect inputs,
@@ -211,6 +230,8 @@ Community workflow advice is supporting experience, not a required dependency or
 - **Out of scope:** Unrelated cleanup, new scenarios, and historical media changes.
 
 ### I2 — Normalized Human Review change summary
+
+Historical status: `COMPLETED`.
 
 - **Objective:** Explain which fields human confirmation changed and which items it excluded.
 - **Files:** ui_support.py, app.py, test_ui_support.py, and test_app.py.
@@ -228,6 +249,8 @@ Community workflow advice is supporting experience, not a required dependency or
 - **Out of scope:** Reviewer notes, identity, timestamps, exclusion reasons, audit records, and permanent item IDs.
 
 ### I3 — Unified invalidation state, notices, and route protection
+
+Historical status: `COMPLETED`.
 
 - **Objective:** Revoke old confirmation eligibility after real input changes and retain an explanation.
 - **Files:** ui_support.py, app.py, and corresponding state/AppTest tests.
@@ -247,6 +270,8 @@ Community workflow advice is supporting experience, not a required dependency or
 - **Out of scope:** Invalidation history, per-field fingerprints, and automatic reanalysis.
 
 ### I4 — Shared source and reference validation
+
+Historical status: `COMPLETED`.
 
 - **Objective:** Enforce source guarantees at a provider-neutral runtime boundary.
 - **Files:** New evidence_validation.py, a validation wrapper at the analysis boundary, and
@@ -269,6 +294,8 @@ Community workflow advice is supporting experience, not a required dependency or
 
 ### I5 — Evidence-to-output comparison view
 
+Historical status: `COMPLETED`.
+
 - **Objective:** Show source quotes, a reviewed action, its actual minutes entry, and its ADO
   preview in one view.
 - **Files:** app.py, a small shared entry-formatting function in minutes_generator.py, any necessary
@@ -290,6 +317,9 @@ Community workflow advice is supporting experience, not a required dependency or
 - **Out of scope:** Full UI redesign, lineage graphs, and invented fixture evidence.
 
 ### I6 — External Confluence/AIF boundaries and state wiring
+
+Historical status: `COMPLETED` for the external fake-preparation boundary; no live integration was
+performed.
 
 - **Objective:** Exercise the same review workflow using fakes and define bounded internal adapter work.
 - **Files:** New integrations/confluence.py, integrations/aif.py, a narrow dependency-wiring module,
@@ -323,6 +353,8 @@ Community workflow advice is supporting experience, not a required dependency or
   provider frameworks.
 
 ### I6.1 — Confluence read contract refined from internal API samples
+
+Historical status: `COMPLETED` as part of I6 using synthetic contract evidence.
 
 Evidence status: the user supplied two initial internal GET samples and a successful follow-up
 GET sample with expanded storage body, version, and space.
@@ -402,6 +434,9 @@ and [Atlassian page-content retrieval](https://support.atlassian.com/confluence/
 
 ### I7 — Single-item ADO Create publication contract
 
+Historical status: `COMPLETED` for the guarded in-memory fake path; no live ADO Create was
+performed.
+
 - **Objective:** Generate an exact preview deterministically and submit only the separately
   confirmed request.
 - **Files:** integrations/azure_devops.py, a small publication-coordination module, ui_support.py,
@@ -432,6 +467,8 @@ and [Atlassian page-content retrieval](https://support.atlassian.com/confluence/
 - **Out of scope:** Bulk publication, automatic Create retries, production projects, and rule bypass.
 
 ### I7.1 — ADO Create contract refined from internal API samples
+
+Historical status: `COMPLETED` as part of I7 using synthetic contract evidence.
 
 **Evidence:** The user reports successful ticket creation using an account-generated token.
 The supplied request uses POST to the work-items collection with a dollar-prefixed, URL-encoded
@@ -484,6 +521,9 @@ and [Microsoft PAT authentication](https://learn.microsoft.com/en-us/azure/devop
 
 ### I8 — Internal handoff and primary live-path acceptance
 
+Historical status: `COMPLETED` for the external handoff and fake-preparation gate. G3 live
+acceptance was not run and remains outside current scope.
+
 - **Objective:** Make company-specific implementation bounded adapter work with explicit inputs
   and acceptance checks.
 - **Files:** New docs/INTERNAL_INTEGRATION_HANDOFF.md; TODO(INTERNAL-AIF),
@@ -504,6 +544,8 @@ and [Microsoft PAT authentication](https://learn.microsoft.com/en-us/azure/devop
   external repository.
 
 ### Optional Teams transcript feasibility assessment
+
+Historical status: `DEFERRED`; this optional assessment is not authorized current work.
 
 - **Objective:** Assess whether a designated synthetic meeting transcript can be retrieved
   internally. Manual transcript input remains the baseline; this assessment is not a dependency
@@ -545,6 +587,8 @@ and [Microsoft transcript content retrieval](https://learn.microsoft.com/en-us/g
 
 ### I9 — Conditional secondary writes
 
+Historical status: `DEFERRED`; presence in this historical plan does not authorize implementation.
+
 - **Objective:** Retain gated ADO Update and dedicated Confluence review-page write-back.
 - **Files:** Internal adapters, existing publication coordination, and corresponding tests.
 - **Behavior:** Start only after Create is stable, the user specifies targets, and sufficient
@@ -561,6 +605,8 @@ and [Microsoft transcript content retrieval](https://learn.microsoft.com/en-us/g
   incomplete write controls when gates have not passed.
 
 ### I10 — Development verification, documentation, and code-freeze handoff
+
+Historical status: `COMPLETED`.
 
 - **Objective:** Deliver an identified frozen version and verified capabilities for materials preparation.
 - **Files:** tests/, README, SPEC, internal handoff, and this plan; application fixes stay within scope.
@@ -585,6 +631,8 @@ Add tests with each step rather than postponing them; I10 consolidates final res
 
 ### G1 — Offline gate
 
+Historical result: `PASSED` for `submission-2026-09-14-r1`.
+
 - Five stages and the shortcut work without credentials or network access.
 - Human field edits and finding exclusions reach the confirmed model, minutes, and ADO previews correctly.
 - The change summary is accurate, original evidence is unchanged, and source/output comparisons agree.
@@ -592,6 +640,8 @@ Add tests with each step rather than postponing them; I10 consolidates final res
 - Source/reference checks pass, no formal approval is implied, and focused/full checks pass.
 
 ### G2 — External-preparation gate
+
+Historical result: `PASSED` for `submission-2026-09-14-r1` using no-network fakes.
 
 - Fake Confluence/AIF/ADO workflows and failure branches are testable offline.
 - Mode/source/provider changes and version changes share invalidation logic.
@@ -602,6 +652,8 @@ Add tests with each step rather than postponing them; I10 consolidates final res
 - TODOs and internal handoff are complete, without company secrets, configuration, or transport.
 
 ### G3 — Internal live gate
+
+Historical result: `NOT RUN`; it is not current scope.
 
 - New synthetic sources pass through Confluence/AIF into shared Human Review, and invalid evidence
   is rejected.
@@ -651,6 +703,9 @@ Human Review, evidence validation, deterministic generation, invalidation, or so
 
 ## 6. Verification plan
 
+Historical section: these commands and gates describe how the frozen baseline was verified. Actual
+results are recorded in `SUBMISSION_BASELINE.md`; this section is not an active task list.
+
 Establish a baseline when development starts. After application changes, run tests and both
 Ruff checks. Before freeze, complete:
 
@@ -672,6 +727,9 @@ Check real browser Back/Forward and form navigation; AppTest's explicit switch_p
 replace those checks.
 
 ## 7. Internal inputs and pre-development decisions
+
+Historical section: unresolved live-environment inputs remain constraints, not current
+implementation authorization.
 
 - Before development: explicit user approval of implementation scope and authorization to develop.
   Splitting these documents is not development authorization.

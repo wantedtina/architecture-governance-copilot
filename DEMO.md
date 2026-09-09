@@ -1,5 +1,8 @@
 # Architecture Governance Copilot — Demo Plan
 
+Document role: `VERIFIED_BASELINE_DEMO_PROCEDURE`. This file demonstrates the checked-out baseline;
+it does not authorize application changes or define future implementation scope.
+
 ## Demo objective
 
 In less than four minutes, demonstrate one reliable end-to-end journey: generate a draft

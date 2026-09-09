@@ -1,5 +1,11 @@
 # Internal Integration Handoff
 
+Document status: `DEFERRED_REFERENCE`
+
+Execution authority: `NONE`. The sequence below is a safety-preserving future handoff, not an
+active implementation plan. It may enter scope only through explicit user approval and an active
+bounded execution plan referenced by the post-baseline refinement register.
+
 ## Purpose and status
 
 This handoff defines the bounded company-specific work needed to connect the already-tested
@@ -33,7 +39,7 @@ must continue to work with all internal connections disabled.
 | `TODO(INTERNAL-AIF)` | `AifTransport.analyze()` in `integrations/aif.py` | Approved endpoint/deployment, authentication scheme, API version, timeout, request envelope, structured-response envelope, provider configuration identity | Request/schema contract; context match; refusal/timeout/malformed response; source quote/context validation; local trusted reference assignment | Analyze a previously unbundled synthetic page and transcript; verify returned context exactly; reject one deliberately invalid quote; ensure only validated locally assigned references enter Human Review |
 | `TODO(INTERNAL-ADO)` | `AdoGateway` in `integrations/azure_devops.py` | Approved organization/project/type, field references, classification values, owner identities, parent ID, authentication scheme, API version, timeout | Encoded `$` work-item type; exact JSON Patch; correlation lookup; one Create; receipt mapping; GET field/relation verification; duplicate, stale, definite-failure, and unknown-result paths | Read the existing synthetic item first; confirm target/type/required fields/allowed classification/identity/parent mappings; then separately preview and confirm one designated Create; verify returned ID/revision/API URL/browser URL and every expected field/relation by GET |
 
-## Required implementation sequence
+## Deferred reference sequence — not active implementation scope
 
 1. **Confirm configuration outside Git.** Record the approved synthetic targets, minimum
    authentication method, deployed API versions, timeout policy, and operator authorization in the

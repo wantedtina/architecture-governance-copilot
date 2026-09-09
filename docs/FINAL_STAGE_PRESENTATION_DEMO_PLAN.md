@@ -1,6 +1,15 @@
 # Final-stage presentation and demo plan
 
-Updated: 2026-09-08
+Plan content updated: 2026-09-08
+
+Status boundary updated: 2026-09-10
+
+Document status: `SEPARATE_PRESENTATION_WORKSTREAM`
+
+Application implementation authority: `NONE`. This document does not define current application
+development scope. Its presentation, media, conference, and Shark Tank actions require their own
+explicit user direction; future Codex sessions must not derive refinement implementation from its
+work packages.
 
 **Current execution horizon: the 14 September submission.** Prioritize the verified development
 version targeted for 11 September and the four required submission artifacts due 14 September. Prepare
@@ -299,7 +308,7 @@ chain; it does not establish a requirement for a live Teams connector.
 This source discussion does not add automatic SI-body revision to the product. The planned core
 uses SI and transcript evidence for governance analysis, human review, and confirmed outputs.
 
-## 6. Presentation, demo, and materials work packages
+## 6. Separately authorized presentation, demo, and materials work packages
 
 ### P1 — Lock the story and demo values
 

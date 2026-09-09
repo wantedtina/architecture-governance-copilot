@@ -1,5 +1,9 @@
 # Architecture Governance Copilot
 
+Document role: `CURRENT_PRODUCT_DESCRIPTION`. Current behavior is determined by the checked-out Git
+revision, application code, tests, and synchronized maintained documentation. Roadmap language and
+historical records do not independently authorize implementation.
+
 Architecture Governance Copilot is a hackathon proof of concept for drafting and reviewing a
 Solution Intent (SI). Its first workflow stage turns a synthetic SI template, selected
 source-code context, and supporting notes into an editable SI draft. The confirmed draft then

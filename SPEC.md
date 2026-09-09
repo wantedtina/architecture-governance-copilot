@@ -1,5 +1,9 @@
 # Architecture Governance Copilot — Product and Technical Specification
 
+Document role: `CURRENT_PRODUCT_CONTRACT`. This specification describes the implemented baseline
+unless a section explicitly says future, optional, or historical. It does not independently define
+approved post-baseline implementation scope.
+
 ## Document purpose
 
 This document defines a hackathon proof of concept (PoC) for drafting and reviewing a Solution
@@ -597,21 +601,25 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | Network or LLM failure | Record in deterministic offline mode. |
 | Confidential data enters the demo | Use obviously fictional project, document, and people data only. |
 
-## Implementation plan
+## Historical implementation summary
+
+Document status: `HISTORICAL_SUMMARY`. This table is retained to explain how the current product was
+built. It is not an active execution plan; incomplete or optional entries require current change
+approval and a bounded execution plan.
 
 | Phase | Files | Expected outcome | Verification | Depends on |
 | --- | --- | --- | --- | --- |
 | 0. Optional deterministic SI drafting (complete) | `si_drafting.py`, drafting models, synthetic context, drafting route, tests | Generate, edit, confirm, and hand a known synthetic SI to existing Review Inputs. | Provider mismatch tests, state-handoff tests, Streamlit end-to-end test. | Existing review PoC. |
-| 1. SI domain models and tests | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
-| 2. Synthetic SI, transcript, metadata, and expected result | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
+| 1. SI domain models and tests (complete) | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
+| 2. Synthetic SI, transcript, metadata, and expected result (complete) | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
 | 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
-| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Navigate four peer-level stages, support a completed or skipped drafting path, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
+| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Navigate five peer-level stages, support a completed or skipped drafting path, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
 | 8. Editable human review (complete) | `app.py`, `ui_support.py`, focused tests | Edit/exclude items, validate a reconstructed result, and prevent stale generation. | Edit, exclusion, validation, mutation, reset, and stale-input tests. | Phase 7. |
-| 9. Optional real LLM provider | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
-| 10. Final hardening | Tests and docs | Clean setup, stable demo, aligned documentation, timed recording. | Full `uv` checks and two successful rehearsals. | Phases 1–8. |
+| 9. Optional real LLM provider (not implemented or authorized) | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
+| 10. Final hardening (complete for the frozen baseline) | Tests and docs | Clean setup, stable demo, and aligned implementation documentation. | Full `uv` checks and verified browser scenarios recorded in `docs/SUBMISSION_BASELINE.md`. | Phases 1–8. |
 
 Multi-round tracking, version comparison, and finding resolution are deliberately absent from
 this plan's MVP phases.

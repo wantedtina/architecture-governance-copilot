@@ -1,5 +1,10 @@
 # 14 September 2026 Submission Baseline
 
+Document status: `COMPLETED_BASELINE_EVIDENCE`
+
+Execution authority: `NONE`. This document records what was frozen and verified; it is not a source
+of current implementation tasks.
+
 ## Identified version
 
 - Branch: `codex/final-stage-i2-review-summary`

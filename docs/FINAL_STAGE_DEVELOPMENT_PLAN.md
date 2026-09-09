@@ -1,6 +1,12 @@
 # Final-stage planning index
 
-Updated: 2026-09-08
+Updated: 2026-09-10
+
+Document status: `ACTIVE_NAVIGATION_INDEX`
+
+This file routes readers to the document that owns each kind of repository state. It does not
+define an implementation scope. Start post-baseline work from the active change register and, only
+when explicitly approved, the single active execution plan referenced there.
 
 **Current execution horizon: the 14 September submission.** Prioritize the verified development
 version targeted for 11 September and the four required submission artifacts due 14 September. Prepare
@@ -20,8 +26,10 @@ acceptance criteria, or scheduling.
 
 | Plan | Responsibility |
 | --- | --- |
-| [Implementation Plan](FINAL_STAGE_IMPLEMENTATION_PLAN.md) | Development steps, product behavior, code/state/integration boundaries, tests, risks, release gates, and code freeze. |
+| [Implementation Plan](FINAL_STAGE_IMPLEMENTATION_PLAN.md) | Completed historical development steps, code/state/integration boundaries, tests, risks, release gates, and code freeze. |
 | [Presentation and Demo Plan](FINAL_STAGE_PRESENTATION_DEMO_PLAN.md) | Complete judge feedback, narrative, specific actions, materials, timing, rehearsal, fallbacks, and materials freeze. |
+| [Post-baseline Refinement Register](POST_BASELINE_REFINEMENT_PLAN.md) | Current change intent, lifecycle decisions, and the pointer to any explicitly approved active execution plan. |
+| [Execution-plan Convention](exec-plans/README.md) | Stable structure and recovery rules for bounded implementation batches; it does not define active scope. |
 
 The latest briefing sets 11 September 2026 as the readiness target, without a formal checkpoint,
 and accepts submission throughout 14 September: repository link, architecture diagram, demo video of at most four minutes, and key-details
@@ -32,9 +40,12 @@ any later conference revision separately; no resubmission is required. Finalists
 on 23 September, with Shark Tank on 24 September. See the two plans for gates, business-value requirements,
 and confirmed briefing details. SharePoint link will follow. The former 18 September freeze schedule is superseded.
 
-The user confirmed the split structure and authorized documentation updates. Implementation
-details remain under review; application development has not been authorized. The split does
-not approve specific demo values, live publication operations, or secondary integrations.
+The final-stage implementation baseline is complete and frozen at
+`submission-2026-09-14-r1`; see the implementation plan completion record and
+`SUBMISSION_BASELINE.md`. New findings from post-implementation user testing are collected in
+`POST_BASELINE_REFINEMENT_PLAN.md`. Recording an item there does not authorize implementation.
+Presentation/media work, live publication operations, and secondary integrations retain their
+separate approval and gate requirements.
 
 Use English for all files and deliverables; prefer Chinese only for communication with the user
 within the session. See the persistent language policy in AGENTS.md.
