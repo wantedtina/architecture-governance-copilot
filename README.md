@@ -191,6 +191,10 @@ Run the Streamlit application:
 uv run streamlit run app.py
 ```
 
+The PoC deliberately uses one project-level light theme. It remains light when the browser or
+operating system prefers Dark mode; there is no supported in-app theme switch. Dark-mode support
+may be reconsidered only as a separately approved future refinement.
+
 The local demo uses a 0.4-second pause for each visible processing phase, producing an
 approximately 0.8-second transition after SI confirmation and 1.2-second transitions after
 Analyze and reviewed-record confirmation. To rehearse with a different per-phase delay:
@@ -273,6 +277,7 @@ Implemented:
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
 - one consistent five-stage route hierarchy, durable state, and
   stale-analysis protection;
+- one deliberate project-level light theme for consistent native and branded surfaces;
 - editable human review with item exclusion, a normalized change summary, and read-only evidence;
 - exact source-quote and supported-locator validation before Human Review;
 - unified input, mode, source-version, and provider-identity invalidation;

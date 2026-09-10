@@ -4,7 +4,7 @@ Updated: 2026-09-10
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` while items remain `Collected`.
+Execution authority: `NONE`; no execution plan is active.
 
 Active execution plan: `NONE`
 
@@ -95,7 +95,7 @@ acceptance evidence.
 
 ### R1 — Production-shaped Project Context source acquisition and selection
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User testing after the 14 September baseline was completed.
 - **Observed behavior:** Opening the single demonstration workspace loads one frozen source
   package and presents four inclusion checkboxes. The required template and repository controls
@@ -145,7 +145,7 @@ Open decisions to resolve before moving R1 to `Ready`:
 
 ### R2 — Separate SI drafting and governance review into two workflows
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of the Review Inputs mode switch after the 14 September
   baseline was completed.
 - **Observed behavior:** The UI presents Project Context, Draft Solution Intent, Review Inputs,
@@ -208,7 +208,7 @@ Open decisions to resolve before moving R2 to `Ready`:
 
 ### R3 — Realistic synthetic scenario for the internal fake workflow
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of the Internal fake path after the 14 September baseline was
   completed.
 - **Observed behavior:** The primary offline fixture contains a 1,661-word SI and a 32-line review
@@ -262,7 +262,7 @@ Open decisions to resolve before moving R3 to `Ready`:
 
 ### R4 — Show pending human-review changes before confirmation
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of editable fields in Stage 4 after the 14 September baseline
   was completed.
 - **Observed behavior:** Stage 4 lets the reviewer edit the proposed outcome and item fields or
@@ -311,7 +311,7 @@ Open decisions to resolve before moving R4 to `Ready`:
 
 ### R5 — Authoritative SI and user-provided transcript intake for governance review
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing and product-boundary review of the Stage 3 inputs after the
   14 September baseline was completed.
 - **Observed behavior:** Offline Review Inputs exposes editable SI and transcript text areas and can
@@ -372,7 +372,7 @@ Open decisions to resolve before moving R5 to `Ready`:
 
 ### R6 — Purpose-driven Markdown presentation across the workflows
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of inconsistent rendered and source Markdown presentation
   after the 14 September baseline was completed.
 - **Observed behavior:** Stage 1 presents the SI template and supporting-document Markdown as raw
@@ -446,7 +446,7 @@ Open decisions to resolve before moving R6 to `Ready`:
 
 ### R7 — Separate governed Azure DevOps work-item delivery step
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of the mode-specific `Prepare exact Create preview` control
   after the 14 September baseline was completed.
 - **Observed behavior:** Stage 5 always shows provider-neutral Azure DevOps work-item previews and
@@ -580,7 +580,7 @@ Open decisions to resolve before moving R7 to `Ready`:
 
 ### R8 — Order-independent Review Inputs acquisition and visible readiness feedback
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance testing of the `Use Existing Solution Intent` shortcut followed by
   `Load Sample Transcript & Metadata` after the 14 September baseline was completed.
 - **Observed behavior:** `Use Existing Solution Intent` in Stage 1 changes the active route to
@@ -648,7 +648,7 @@ Open decisions to resolve before moving R8 to `Ready`:
 
 ### R9 — Deployment-controlled visibility for synthetic review modes
 
-- **State:** `Collected`
+- **State:** `Accepted`
 - **Origin:** User acceptance discussion about the role of Offline and Internal fake after live
   enterprise integration is complete.
 - **Observed behavior:** The current application always exposes `Offline demo` as the safe default
@@ -714,7 +714,7 @@ Open decisions to resolve before moving R9 to `Ready`:
 
 ### R10 — Deliberate light-only application theme
 
-- **State:** `Collected`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of the application while the browser or operating system is
   using Dark mode.
 - **Observed behavior:** The application has no project-level Streamlit theme configuration, so its
@@ -754,18 +754,38 @@ Confirmed direction to preserve during refinement:
    support only as a separately approved future refinement if the application moves beyond the PoC;
    do not imply that Dark mode is permanently prohibited.
 
-Open decisions to resolve before moving R10 to `Ready`:
+Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 
-- The final Light theme color tokens and whether the current action-red treatment remains part of
-  the approved visual language.
-- Whether Streamlit's settings menu needs any additional operator-facing explanation after its
-  theme choice is removed, subject to what the installed Streamlit version exposes natively.
-- The minimum rendered visual test matrix and evidence format for desktop viewport, operating-system
-  preference, and critical control states.
-- Whether later UI restructuring under R2 should precede the final full-page visual acceptance pass
-  so the same screens are not reviewed twice.
+- Retain the existing action-red treatment as the native primary action color, while using the
+  current light neutral, navy, blue, green, and border palette as the basis for exact theme tokens.
+- Rely on the single `[theme]` configuration to remove the unsupported mode choice; add no separate
+  settings-menu explanation unless rendered verification reveals misleading behavior.
+- Verify the current routed workflow at a desktop viewport under both light and dark host color
+  preferences, covering the initial context screen, drafting controls and editor, Review Inputs,
+  Human Review including validation states, Generated Outputs, and the guarded fake delivery flow.
+- Complete R10 against the current UI rather than blocking it on R2. Every later UI batch must rerun
+  its own light-theme regression checks, so future restructuring cannot rely only on Batch 01
+  evidence.
 
-## 6. Register maintenance and execution handoff
+## 6. Accepted intake and dependency sequencing
+
+The user accepted R1-R10 as subsequent implementation intent on 2026-09-10. Acceptance does not
+resolve the open decisions recorded above, make every item ready, or authorize application changes.
+The following sequence is the smallest currently coherent grouping assessment. Only Batch 01 has
+an execution-plan file or active-plan status; later rows are candidates that require a new explicit
+decision and plan after the active pointer is cleared.
+
+| Sequence | Refinements | Rationale and readiness |
+| --- | --- | --- |
+| Batch 01 | R10 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_01.md`. |
+| Candidate 02 | R2, R5, R8 | One inseparable workflow-entry, authoritative review-input manifest, order-independent acquisition, routing, state, and invalidation contract. Open interaction and provenance decisions remain. |
+| Candidate 03 | R4, R6 | Human-review change awareness and purpose-driven document presentation should target the post-R2/R5/R8 screens instead of being rebuilt twice. Open presentation decisions remain. |
+| Candidate 04 | R1 | Drafting-source discovery and manifest work is bounded to the drafting workflow after R2 establishes its independent navigation and reset model. Source-type and metadata decisions remain. |
+| Candidate 05 | R3 | The realistic Internal fake fixture must align with the authoritative review-source contract and revised review workflow from Candidate 02. Scenario-content decisions remain. |
+| Candidate 06 | R7 | Governed work-item delivery depends on the review workflow, authoritative source manifest, confirmed actions, and the rendered-versus-exact presentation policy. Delivery queue, mapping, and recovery decisions remain. |
+| Readiness-gated | R9 | Deployment policy remains accepted but cannot become ready until separately approved live capabilities and their release authority exist; no live connector is authorized by this intake. |
+
+## 7. Register maintenance and execution handoff
 
 During the current user-testing period:
 
@@ -779,9 +799,11 @@ During the current user-testing period:
    items `Accepted`.
 5. Promote an item to `Ready` only when its material product decisions and dependencies are
    sufficiently resolved for execution planning.
-6. After explicit batch approval, create the smallest coherent execution plan using
-   `docs/exec-plans/README.md`, set the active-plan pointer at the top of this register, and move the
-   included items to `In progress` only when implementation actually starts.
+6. After accepted-scope planning is authorized, create the smallest coherent execution plan using
+   `docs/exec-plans/README.md` and set the active-plan pointer at the top of this register. Keep the
+   plan in `PROPOSED_AWAITING_USER_APPROVAL` and its items no higher than `Ready` until the user
+   explicitly approves the plan; move included items to `In progress` only when implementation
+   actually starts.
 7. Keep component details, implementation steps, detailed tests, progress, discoveries, and
    verification evidence in that execution plan rather than this register.
 8. On successful completion, mark the plan `COMPLETED_VERIFIED`, update the included items to

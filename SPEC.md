@@ -242,6 +242,9 @@ automatically carry findings between rounds.
 - **Dependency management:** use `pyproject.toml`, `uv`, and the generated `uv.lock`; do not use
   `requirements.txt`.
 - **Accessibility:** use clear labels and do not rely on color alone to communicate state.
+- **Theme:** use one project-level native Streamlit light theme for the PoC. The application remains
+  light under a Dark host preference and exposes no unsupported in-app theme choice. Dark-mode
+  support requires a separately approved future refinement.
 
 ## Assumptions
 
