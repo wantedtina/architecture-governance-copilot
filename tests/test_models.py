@@ -1,6 +1,6 @@
 """Tests for structured governance data models."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from pydantic import ValidationError
@@ -17,6 +17,7 @@ from architecture_governance_copilot.models import (
     MockAdoWorkItem,
     OpenQuestion,
     ReviewFinding,
+    ReviewInputManifest,
     ReviewOutcome,
     Risk,
     RiskSeverity,
@@ -24,6 +25,42 @@ from architecture_governance_copilot.models import (
     SolutionIntentStatus,
     SourceEvidence,
 )
+
+
+def review_input_manifest_payload(**overrides: object) -> dict[str, object]:
+    """Build a complete traceable review-input manifest."""
+    payload: dict[str, object] = {
+        "source_page_id": "synthetic-page-12658902",
+        "source_space": "SYNTHETIC-ARCH",
+        "source_url": "https://example.invalid/wiki/pages/12658902",
+        "source_version": 12,
+        "source_retrieved_at": datetime(2026, 7, 18, 9, 0, tzinfo=UTC),
+        "source_canonicalizer_version": "plain-text-v1",
+        "source_content_fingerprint": "source-fingerprint",
+        "transcript_fingerprint": "transcript-fingerprint",
+        "transcript_provenance": "synthetic_sample",
+        "transcript_edited": False,
+        "metadata_fingerprint": "metadata-fingerprint",
+        "metadata_provenance": "synthetic_sample",
+        "metadata_edited": False,
+        "review_mode": "offline",
+        "provider_configuration_identity": "deterministic-offline-v1",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_review_input_manifest_requires_timezone_aware_source_time() -> None:
+    manifest = ReviewInputManifest.model_validate(review_input_manifest_payload())
+
+    assert manifest.source_retrieved_at.tzinfo is UTC
+
+    with pytest.raises(ValidationError, match="must include a timezone"):
+        ReviewInputManifest.model_validate(
+            review_input_manifest_payload(
+                source_retrieved_at=datetime(2026, 7, 18, 9, 0),
+            )
+        )
 
 
 def evidence_payload(**overrides: object) -> dict[str, object]:

@@ -45,8 +45,8 @@ def _initial_app() -> AppTest:
 
 def _review_inputs_app() -> AppTest:
     app = _initial_app()
-    app.button(key="agc_use_existing_si").click().run()
-    assert [item.value for item in app.header] == ["Stage 3 — Review Inputs"]
+    app.button(key="agc_start_review_workflow").click().run()
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
     # AppTest does not persist a programmatic route selection between later
     # interactions, so explicitly select the routed page.
     app.switch_page("pages/review_inputs.py").run()
@@ -55,12 +55,15 @@ def _review_inputs_app() -> AppTest:
 
 def _analyzed_app() -> AppTest:
     app = _review_inputs_app()
-    app.button(key="agc_load_sample").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    app.button(key="agc_load_review_metadata").click().run()
+    app.button(key="agc_load_review_source").click().run()
+    app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
     # AppTest does not persist a programmatic route selection between later
     # interactions, so explicitly select the routed page after asserting the
     # navigation triggered by Analyze Review.
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     app.switch_page("pages/human_review.py").run()
     return app
 
@@ -70,7 +73,8 @@ def _assert_active_step(app: AppTest, label: str) -> None:
         item.value for item in app.markdown if item.value.startswith('<div class="agc-stepper">')
     )
     assert "\n" not in stepper_markup
-    assert stepper_markup.count('<div class="agc-step ') == 5
+    expected_count = 2 if label in {"Project Context", "Draft Solution Intent"} else 3
+    assert stepper_markup.count('<div class="agc-step ') == expected_count
     assert "agc-step--active" in stepper_markup
     assert f"<strong>{label}</strong><span>In progress</span>" in stepper_markup
 
@@ -81,8 +85,10 @@ def _assert_completed_workflow(app: AppTest) -> None:
     )
     assert "agc-step--active" not in stepper_markup
     assert stepper_markup.count("agc-step--complete") == 3
-    assert "<strong>Project Context</strong><span>Skipped</span>" in stepper_markup
-    assert "<strong>Draft Solution Intent</strong><span>Skipped</span>" in stepper_markup
+    assert "Project Context" not in stepper_markup
+    assert "Draft Solution Intent" not in stepper_markup
+    assert "<strong>Review Inputs</strong><span>Complete</span>" in stepper_markup
+    assert "<strong>Human Review</strong><span>Complete</span>" in stepper_markup
     assert "<strong>Generated Outputs</strong><span>Complete</span>" in stepper_markup
 
 
@@ -108,8 +114,7 @@ def test_review_mode_is_offline_only_without_internal_configuration(
     control = app.segmented_control(key="agc_review_mode_widget")
     assert control.value == "offline"
     assert control.options == ["Offline demo"]
-    assert app.button(key="agc_load_sample")
-    assert all(item.key != "agc_load_internal_review" for item in app.button)
+    assert app.button(key="agc_load_review_source")
     assert all(item.key != "agc_prepare_ado_publication" for item in app.button)
     assert any("Zero-configuration deterministic mode" in item.value for item in app.caption)
 
@@ -126,12 +131,13 @@ def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
     control.set_value("internal_fake").run()
 
     assert app.button(key="agc_analyze").disabled
-    assert app.button(key="agc_refresh_internal_source").disabled
-    assert all(item.key != "agc_load_sample" for item in app.button)
+    assert not app.button(key="agc_load_review_source").disabled
     assert any("Configured fake only" in item.value for item in app.warning)
     assert any("Internal fake · no network" in item.value for item in app.markdown)
 
-    app.button(key="agc_load_internal_review").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    app.button(key="agc_load_review_metadata").click().run()
+    app.button(key="agc_load_review_source").click().run()
 
     solution_intent = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY)
     transcript = app.text_area(key=TRANSCRIPT_WIDGET_KEY)
@@ -139,19 +145,23 @@ def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
     assert "Synthetic Order Routing Service" in solution_intent.value
     assert "Morgan Lee" in transcript.value
     assert "Priya Shah" not in transcript.value
+    assert app.button(key="agc_analyze").disabled
+    assert not app.button(key="agc_confirm_review_inputs").disabled
+
+    app.button(key="agc_confirm_review_inputs").click().run()
+
     assert not app.button(key="agc_analyze").disabled
-    assert not app.button(key="agc_refresh_internal_source").disabled
 
     app.button(key="agc_analyze").click().run()
 
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     assert any("No outputs were generated automatically" in item.value for item in app.success)
     app.switch_page("pages/human_review.py").run()
     assert any("Fake AIF" in item.value for item in app.caption)
 
     app.button(key="agc_confirm_review").click().run()
 
-    assert [item.value for item in app.header] == ["Stage 5 — Generated Outputs"]
+    assert [item.value for item in app.header] == ["Review step 3 — Generated Outputs"]
     assert any(item.value == "Generated Review Record" for item in app.subheader)
     app.switch_page("pages/generated_outputs.py").run()
     assert app.button(key="agc_prepare_ado_publication")
@@ -338,28 +348,24 @@ def test_initial_page_has_required_controls_and_no_generated_outputs() -> None:
     assert "Architecture Governance Copilot" in brand_markup
     assert "INTERNAL · HACKATHON PoC" in brand_markup
     assert any("synthetic data" in item.value.lower() for item in app.info)
-    assert any("Domain Architect" in item.value for item in app.info)
     assert {button.label for button in app.button} >= {
-        "Open Demonstration Project",
-        "Use Existing Solution Intent",
-        "Reset Workspace",
+        "Draft a Solution Intent",
+        "Review a Solution Intent",
+        "Reset all local demo state",
     }
-    assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
-    _assert_active_step(app, "Project Context")
-    assert app.button(key="agc_refresh_project_context").disabled
+    assert [item.value for item in app.header] == ["Choose a governance workflow"]
+    assert all(not item.value.startswith('<div class="agc-stepper">') for item in app.markdown)
     assert all("Generated Outputs" not in item.value for item in app.header)
     assert not app.text_area
 
 
-def test_drafted_si_can_be_confirmed_and_handed_to_existing_review_stage() -> None:
+def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     app = _initial_app()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
-    assert {button.label for button in app.button} >= {
-        "Open Demonstration Project",
-        "Use Existing Solution Intent",
-    }
+    app.button(key="agc_start_drafting_workflow").click().run()
+    assert [item.value for item in app.header] == ["Drafting step 1 — Project Context"]
+    app.switch_page("pages/project_context.py").run()
     _assert_active_step(app, "Project Context")
 
     app.button(key="agc_open_demonstration_project").click().run()
@@ -380,7 +386,7 @@ def test_drafted_si_can_be_confirmed_and_handed_to_existing_review_stage() -> No
     assert "55390-19-payment-notification-service · main" in project_snapshot
 
     app.button(key="agc_confirm_project_context").click().run()
-    assert [item.value for item in app.header] == ["Stage 2 — Draft Solution Intent"]
+    assert [item.value for item in app.header] == ["Drafting step 2 — Draft Solution Intent"]
     app.switch_page("pages/solution_intent_drafting.py").run()
 
     _assert_active_step(app, "Draft Solution Intent")
@@ -407,39 +413,46 @@ def test_drafted_si_can_be_confirmed_and_handed_to_existing_review_stage() -> No
     assert "Managed PostgreSQL" in generated
     assert app.button(key="agc_generate_si_draft").label == "Regenerate SI Draft"
     assert any(item.label == "View drafting sources" for item in app.expander)
-    assert any("Solution Intent draft generated" in item.value for item in app.success)
+    assert app.button(key="agc_confirm_si_draft")
 
     app.button(key="agc_confirm_si_draft").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 3 — Review Inputs"]
-    stepper_markup = next(
-        item.value for item in app.markdown if item.value.startswith('<div class="agc-stepper">')
-    )
-    assert "<strong>Project Context</strong><span>Complete</span>" in stepper_markup
-    assert "<strong>Draft Solution Intent</strong><span>Complete</span>" in stepper_markup
-    assert "<strong>Review Inputs</strong><span>In progress</span>" in stepper_markup
-    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == generated.strip()
+    assert [item.value for item in app.header] == ["Drafting step 2 — Draft Solution Intent"]
+    assert app.text_area(key=DRAFT_CONTENT_WIDGET_KEY).disabled
+    assert app.download_button(key="agc_download_confirmed_si")
+    assert any("not been published" in item.value for item in app.success)
+    assert all(item.key != SOLUTION_INTENT_WIDGET_KEY for item in app.text_area)
+
+    app.button(key="agc_start_separate_review").click().run()
+
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
+    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == ""
     assert app.text_area(key=TRANSCRIPT_WIDGET_KEY).value == ""
-    assert any("Confirmed SI ready" in item.value for item in app.info)
 
 
-def test_existing_si_can_load_review_companions_and_analyze() -> None:
+def test_review_components_load_in_any_order_and_require_confirmation() -> None:
     app = _review_inputs_app()
-    generated = (REPOSITORY_ROOT / "samples" / "solution_intent.md").read_text(encoding="utf-8")
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(generated).run()
 
     assert app.button(key="agc_analyze").disabled
-    app.button(key="agc_load_review_companions").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    assert app.button(key="agc_analyze").disabled
+    app.button(key="agc_load_review_metadata").click().run()
+    assert app.button(key="agc_analyze").disabled
+    app.button(key="agc_load_review_source").click().run()
 
-    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == generated.strip()
+    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value.startswith("# Solution Intent")
     assert "[10:00] Priya Shah:" in app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
+    assert app.button(key="agc_analyze").disabled
+    assert not app.button(key="agc_confirm_review_inputs").disabled
+
+    app.button(key="agc_confirm_review_inputs").click().run()
     assert not app.button(key="agc_analyze").disabled
 
     app.button(key="agc_analyze").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
 
 
 @pytest.mark.parametrize(
@@ -464,7 +477,7 @@ def test_deep_links_redirect_to_review_inputs_when_prerequisites_are_missing(
     app.switch_page(page_path).run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 3 — Review Inputs"]
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
     assert any(item.value == message for item in app.error)
 
 
@@ -474,7 +487,7 @@ def test_drafting_deep_link_requires_confirmed_project_context() -> None:
     app.switch_page("pages/solution_intent_drafting.py").run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
+    assert [item.value for item in app.header] == ["Drafting step 1 — Project Context"]
     assert any(
         item.value == "Confirm a Project Context package before drafting a Solution Intent."
         for item in app.error
@@ -484,18 +497,22 @@ def test_drafting_deep_link_requires_confirmed_project_context() -> None:
 def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None:
     app = _review_inputs_app()
 
-    app.button(key="agc_load_sample").click().run()
+    app.button(key="agc_load_review_source").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    app.button(key="agc_load_review_metadata").click().run()
 
     assert not app.exception
-    assert not app.button(key="agc_analyze").disabled
+    assert app.button(key="agc_analyze").disabled
     assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value.startswith("# Solution Intent")
     assert "[10:00] Priya Shah:" in app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
-    assert any("Review package loaded" in item.value for item in app.success)
+    assert any("Synthetic review metadata loaded" in item.value for item in app.success)
 
+    app.button(key="agc_confirm_review_inputs").click().run()
+    assert not app.button(key="agc_analyze").disabled
     app.button(key="agc_analyze").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     _assert_active_step(app, "Human Review")
     assert all(item.key != SOLUTION_INTENT_WIDGET_KEY for item in app.text_area)
     assert all(item.key != TRANSCRIPT_WIDGET_KEY for item in app.text_area)
@@ -520,7 +537,7 @@ def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None
     assert any(
         "no outputs were generated automatically" in item.value.lower() for item in app.success
     )
-    assert all("Stage 5" not in item.value for item in app.header)
+    assert all("Review step 3" not in item.value for item in app.header)
 
 
 def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
@@ -531,7 +548,7 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 5 — Generated Outputs"]
+    assert [item.value for item in app.header] == ["Review step 3 — Generated Outputs"]
     _assert_completed_workflow(app)
     assert app.button(key="agc_back_to_review")
     assert app.button(key="agc_start_new_review")
@@ -642,7 +659,7 @@ def test_no_change_confirmation_shows_explicit_review_summary_state() -> None:
     assert any("No changes were made during human review" in item.value for item in app.info)
 
 
-def test_start_new_review_clears_completed_workflow_and_returns_to_drafting() -> None:
+def test_start_new_review_clears_completed_workflow_and_returns_to_inputs() -> None:
     app = _analyzed_app()
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
@@ -650,8 +667,9 @@ def test_start_new_review_clears_completed_workflow_and_returns_to_drafting() ->
     app.button(key="agc_start_new_review").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
-    assert not app.text_area
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
+    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == ""
+    assert app.text_area(key=TRANSCRIPT_WIDGET_KEY).value == ""
     assert app.session_state[OUTPUTS_KEY] is None
 
 
@@ -663,7 +681,7 @@ def test_invalid_review_date_shows_error_without_stale_outputs() -> None:
 
     assert not app.exception
     assert any("Use YYYY-MM-DD" in item.value for item in app.error)
-    assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
+    assert all(item.value != "Review step 3 — Generated Outputs" for item in app.header)
 
 
 def test_generation_failure_clears_previous_review_change_summary() -> None:
@@ -685,16 +703,14 @@ def test_generation_failure_clears_previous_review_change_summary() -> None:
 def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
     app = _analyzed_app()
     app.button(key="agc_confirm_review").click().run()
-    assert any(item.value == "Stage 5 — Generated Outputs" for item in app.header)
+    assert any(item.value == "Review step 3 — Generated Outputs" for item in app.header)
 
     app.button(key="agc_back_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
-    solution_intent = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(
-        f"{solution_intent}\nEdited after analysis"
-    ).run()
+    transcript = app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(f"{transcript}\nEdited after analysis").run()
 
     assert not app.exception
     assert any(
@@ -708,7 +724,7 @@ def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
     assert app.session_state[ANALYSIS_SUCCESS_KEY] is False
     assert app.session_state[ANALYZED_RESULT_KEY] is not None
     assert all("Review analysis completed" not in item.value for item in app.success)
-    assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
+    assert all(item.value != "Review step 3 — Generated Outputs" for item in app.header)
 
 
 def test_returning_from_outputs_restores_sources_without_false_invalidation() -> None:
@@ -732,16 +748,17 @@ def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice() -> None:
     app = _analyzed_app()
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
-    original = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value
+    original = app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
 
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nEdited").run()
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(original).run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(f"{original}\nEdited").run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(original).run()
 
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
     assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
     assert all(item.key != "agc_return_to_review" for item in app.button)
 
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nUnsupported edit").run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(f"{original}\nUnsupported edit").run()
+    app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
 
     assert not app.exception
@@ -755,14 +772,17 @@ def test_sample_reload_requires_and_successful_reanalysis_restores_review() -> N
     app = _analyzed_app()
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
-    original = app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value
-    app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).input(f"{original}\nEdited").run()
+    original = app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(f"{original}\nEdited").run()
 
-    app.button(key="agc_load_sample").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    app.button(key="agc_load_review_metadata").click().run()
+    app.button(key="agc_load_review_source").click().run()
 
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
     assert all(item.key != "agc_return_to_review" for item in app.button)
 
+    app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
     app.switch_page("pages/human_review.py").run()
 
@@ -780,7 +800,7 @@ def test_missing_metadata_and_output_deep_link_route_to_invalid_review_snapshot(
     app.switch_page("pages/generated_outputs.py").run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
     assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
     assert any("Previous Analysis Snapshot" in item.value for item in app.markdown)
@@ -811,14 +831,14 @@ def test_routed_back_navigation_preserves_pending_review_edits() -> None:
 
     app.button(key="agc_back_to_inputs").click().run()
 
-    assert [item.value for item in app.header] == ["Stage 3 — Review Inputs"]
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
     app.switch_page("pages/review_inputs.py").run()
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
     assert app.button(key="agc_return_to_review")
 
     app.button(key="agc_return_to_review").click().run()
 
-    assert [item.value for item in app.header] == ["Stage 4 — Human Review"]
+    assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     app.switch_page("pages/human_review.py").run()
     assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Kim"
     assert [(item.label, item.value) for item in app.metric][0] == (
@@ -835,7 +855,10 @@ def test_routed_back_navigation_preserves_pending_review_edits() -> None:
 def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> None:
     app = _review_inputs_app()
     assert app.button(key="agc_analyze").disabled
-    app.button(key="agc_load_sample").click().run()
+    app.button(key="agc_load_review_source").click().run()
+    app.button(key="agc_load_review_transcript").click().run()
+    app.button(key="agc_load_review_metadata").click().run()
+    app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
     app.switch_page("pages/human_review.py").run()
     app.button(key="agc_confirm_review").click().run()
@@ -843,7 +866,7 @@ def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> 
     app.button(key="agc_reset_from_outputs").click().run()
 
     assert not app.exception
-    assert [item.value for item in app.header] == ["Stage 1 — Project Context"]
-    assert not app.text_area
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
+    assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == ""
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
-    assert all(item.value != "Stage 5 — Generated Outputs" for item in app.header)
+    assert all(item.value != "Review step 3 — Generated Outputs" for item in app.header)

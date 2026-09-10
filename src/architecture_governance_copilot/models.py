@@ -2,11 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from enum import StrEnum
 from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
@@ -83,6 +90,14 @@ class DraftInputType(StrEnum):
     SUPPORTING_DOCUMENTS = "supporting_documents"
 
 
+class ReviewInputProvenance(StrEnum):
+    """Truthful origins supported by the review-input manifest."""
+
+    SYNTHETIC_SAMPLE = "synthetic_sample"
+    USER_ENTERED = "user_entered"
+    INTERNAL_FAKE = "internal_fake"
+
+
 class _GovernanceModel(BaseModel):
     """Common strict configuration for governance models."""
 
@@ -130,6 +145,34 @@ class SolutionIntentReviewContext(_GovernanceModel):
     ado_ticket_id: NonEmptyString | None = None
     domain_architect: NonEmptyString | None = None
     review_date: date | None = None
+
+
+class ReviewInputManifest(_GovernanceModel):
+    """Exact confirmed source package eligible for one governance analysis."""
+
+    source_page_id: NonEmptyString
+    source_space: NonEmptyString
+    source_url: NonEmptyString
+    source_version: int = Field(ge=1)
+    source_retrieved_at: datetime
+    source_canonicalizer_version: NonEmptyString
+    source_content_fingerprint: NonEmptyString
+    transcript_fingerprint: NonEmptyString
+    transcript_provenance: ReviewInputProvenance
+    transcript_edited: bool
+    metadata_fingerprint: NonEmptyString
+    metadata_provenance: ReviewInputProvenance
+    metadata_edited: bool
+    review_mode: NonEmptyString
+    provider_configuration_identity: NonEmptyString
+
+    @field_validator("source_retrieved_at")
+    @classmethod
+    def require_aware_retrieval_time(cls, value: datetime) -> datetime:
+        """Keep source freshness evidence unambiguous across environments."""
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("source_retrieved_at must include a timezone")
+        return value
 
 
 class ReviewFinding(_GovernanceModel):

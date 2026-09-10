@@ -1,4 +1,4 @@
-"""Tests for deterministic Solution Intent drafting and review handoff."""
+"""Tests for deterministic Solution Intent drafting and workflow isolation."""
 
 from __future__ import annotations
 
@@ -19,7 +19,6 @@ from architecture_governance_copilot.si_drafting import (
     SolutionIntentDraftingService,
 )
 from architecture_governance_copilot.ui_support import (
-    ANALYSIS_INVALIDATION_KEY,
     ANALYZED_RESULT_KEY,
     CONTEXT_KEY,
     DRAFT_CONFIRMED_KEY,
@@ -28,15 +27,14 @@ from architecture_governance_copilot.ui_support import (
     DRAFT_PROJECT_KEY,
     DRAFT_RESULT_KEY,
     DRAFT_SOURCE_CODE_KEY,
+    DRAFT_STAGE,
     DRAFT_SUPPORTING_DOCS_KEY,
     DRAFT_TEMPLATE_KEY,
-    INPUT_STAGE,
     OUTPUTS_KEY,
     SOLUTION_INTENT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
-    AnalysisInvalidation,
     clear_stale_si_draft,
     confirm_si_draft_for_review,
     drafting_input_fingerprint,
@@ -147,7 +145,7 @@ def test_drafting_service_returns_independent_drafts() -> None:
     assert "Edited" not in second.assumptions
 
 
-def test_drafting_state_load_generate_confirm_and_companion_handoff() -> None:
+def test_drafting_state_load_generate_and_confirm_stays_isolated() -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
     sample_context = load_sample_drafting_context()
@@ -178,33 +176,28 @@ def test_drafting_state_load_generate_confirm_and_companion_handoff() -> None:
     confirmed_content = f"{draft.content}\n\nHuman-reviewed drafting note."
     confirm_si_draft_for_review(state, confirmed_content)
 
-    assert state[SOLUTION_INTENT_KEY] == confirmed_content
-    assert state[SOLUTION_INTENT_WIDGET_KEY] == confirmed_content
+    assert state[DRAFT_CONTENT_WIDGET_KEY] == confirmed_content
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert SOLUTION_INTENT_WIDGET_KEY not in state
     assert state[TRANSCRIPT_KEY] == ""
     assert state[CONTEXT_KEY] is None
     assert state[ANALYZED_RESULT_KEY] is not None
-    assert state[OUTPUTS_KEY] is None
-    assert isinstance(state[ANALYSIS_INVALIDATION_KEY], AnalysisInvalidation)
+    assert state[OUTPUTS_KEY] is not None
     assert state[DRAFT_CONFIRMED_KEY] is True
-    assert state["agc_active_stage"] == INPUT_STAGE
-
-    sample_review = load_sample_review()
-    load_sample_review_companions_into_state(state, sample_review)
-
-    assert state[SOLUTION_INTENT_KEY] == confirmed_content
-    assert state[SOLUTION_INTENT_WIDGET_KEY] == confirmed_content
-    assert state[TRANSCRIPT_KEY] == sample_review.transcript
-    assert state[TRANSCRIPT_WIDGET_KEY] == sample_review.transcript
-    assert state[CONTEXT_KEY] == sample_review.context
-    assert state[DRAFT_CONFIRMED_KEY] is True
+    assert state["agc_active_stage"] == DRAFT_STAGE
 
 
-def test_review_companions_require_an_existing_solution_intent() -> None:
+def test_review_companions_load_independently_before_solution_intent() -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
+    sample = load_sample_review()
 
-    with pytest.raises(ValueError, match="Confirm or enter a Solution Intent"):
-        load_sample_review_companions_into_state(state, load_sample_review())
+    load_sample_review_companions_into_state(state, sample)
+
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert state[TRANSCRIPT_KEY] == sample.transcript.strip()
+    assert state[TRANSCRIPT_WIDGET_KEY] == sample.transcript.strip()
+    assert state[CONTEXT_KEY] == sample.context
 
 
 def test_clearing_stale_draft_preserves_source_context() -> None:

@@ -36,6 +36,7 @@ from architecture_governance_copilot.models import (
     FindingSeverity,
     FindingStatus,
     GovernanceResult,
+    ReviewInputProvenance,
     ReviewOutcome,
     RiskSeverity,
     SolutionIntentDraft,
@@ -93,7 +94,13 @@ from architecture_governance_copilot.ui_support import (
     DRAFT_TEMPLATE_KEY,
     DRAFT_TEMPLATE_WIDGET_KEY,
     ERROR_KEY,
+    HOME_STAGE,
     INPUT_STAGE,
+    METADATA_ARCHITECT_WIDGET_KEY,
+    METADATA_PROVENANCE_KEY,
+    METADATA_REVIEW_DATE_WIDGET_KEY,
+    METADATA_REVIEW_ROUND_WIDGET_KEY,
+    METADATA_TICKET_WIDGET_KEY,
     OUTPUT_ACTION_SELECTION_KEY,
     OUTPUT_STAGE,
     OUTPUT_SUCCESS_KEY,
@@ -102,6 +109,7 @@ from architecture_governance_copilot.ui_support import (
     PROJECT_CONTEXT_KEY,
     PROJECT_CONTEXT_REFRESHED_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
+    REVIEW_INPUT_FEEDBACK_KEY,
     REVIEW_MODE_WIDGET_KEY,
     REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
     REVIEW_STAGE,
@@ -110,31 +118,36 @@ from architecture_governance_copilot.ui_support import (
     SOLUTION_INTENT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
+    TRANSCRIPT_PROVENANCE_KEY,
     TRANSCRIPT_WIDGET_KEY,
     AnalysisInvalidation,
     DraftingSampleContext,
     ReviewChangeSummary,
     ReviewFormData,
+    ReviewInputReadiness,
+    Workflow,
     active_stage,
     build_review_change_summary,
     build_reviewed_result,
+    build_sample_review_snapshot,
     clear_outputs,
     clear_publication_preview,
     clear_stale_si_draft,
     confirm_project_context_for_drafting,
+    confirm_review_input_manifest,
     confirm_si_draft_for_review,
     current_analysis_invalidation,
     current_input_fingerprint,
+    current_review_input_manifest,
     current_review_mode,
+    current_workflow,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
     initialize_session_state,
     load_internal_review_into_state,
     load_sample_drafting_context,
-    load_sample_into_state,
     load_sample_review,
-    load_sample_review_companions_into_state,
     open_demonstration_project_into_state,
     prepare_analysis_attempt,
     preserve_review_widget_state,
@@ -143,15 +156,21 @@ from architecture_governance_copilot.ui_support import (
     record_publication_operation,
     refresh_project_context,
     reset_application_state,
+    reset_drafting_workflow,
+    reset_review_workflow,
     restore_review_widget_state,
+    review_input_readiness,
     set_active_stage,
+    start_workflow,
     store_analysis,
+    store_metadata_component,
     store_outputs,
     store_publication_confirmation,
     store_publication_preview,
+    store_review_source_snapshot,
     store_si_draft,
+    store_transcript_component,
     switch_review_mode,
-    update_review_inputs,
 )
 
 _BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
@@ -159,6 +178,7 @@ _BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
 ).decode("ascii")
 
 _ROUTE_FILES = {
+    HOME_STAGE: "pages/workflow_home.py",
     CONTEXT_STAGE: "pages/project_context.py",
     DRAFT_STAGE: "pages/solution_intent_drafting.py",
     INPUT_STAGE: "pages/review_inputs.py",
@@ -171,7 +191,7 @@ _MAX_DEMO_STEP_DELAY_SECONDS = 1.5
 
 
 def main() -> None:
-    """Configure and run the deterministic routed review workflow."""
+    """Configure and run the two independent deterministic workflows."""
     st.set_page_config(
         page_title="Architecture Governance Copilot",
         page_icon="🏛️",
@@ -180,12 +200,19 @@ def main() -> None:
     _apply_visual_theme()
     initialize_session_state(st.session_state)
 
+    home_page = st.Page(
+        _ROUTE_FILES[HOME_STAGE],
+        title="Choose workflow",
+        icon=":material/home:",
+        url_path="home",
+        default=True,
+        visibility="hidden",
+    )
     context_page = st.Page(
         _ROUTE_FILES[CONTEXT_STAGE],
         title="Project Context",
         icon=":material/folder_managed:",
         url_path="project-context",
-        default=True,
         visibility="hidden",
     )
     drafting_page = st.Page(
@@ -216,10 +243,61 @@ def main() -> None:
         visibility="hidden",
     )
     selected_page = st.navigation(
-        [context_page, drafting_page, input_page, review_page, output_page],
+        [home_page, context_page, drafting_page, input_page, review_page, output_page],
         position="hidden",
     )
     selected_page.run()
+
+
+def _render_home_page() -> None:
+    _render_page_shell(HOME_STAGE)
+    st.header("Choose a governance workflow")
+    st.caption(
+        "Drafting and governance review are separate human-controlled activities. "
+        "Choose the task you want to perform."
+    )
+    draft_column, review_column = st.columns(2, gap="large")
+    with draft_column.container(border=True, height="stretch"):
+        st.subheader("Draft a Solution Intent")
+        st.write(
+            "Prepare and human-confirm a draft from a deterministic synthetic Project Context "
+            "package. The result is not published to Confluence."
+        )
+        if st.button(
+            "Draft a Solution Intent",
+            key="agc_start_drafting_workflow",
+            type="primary",
+            icon=":material/edit_document:",
+            width="stretch",
+        ):
+            start_workflow(st.session_state, Workflow.DRAFT)
+            _switch_stage(active_stage(st.session_state))
+    with review_column.container(border=True, height="stretch"):
+        st.subheader("Review a Solution Intent")
+        st.write(
+            "Review an explicitly selected authoritative SI snapshot together with a transcript "
+            "and review metadata."
+        )
+        if st.button(
+            "Review a Solution Intent",
+            key="agc_start_review_workflow",
+            type="primary",
+            icon=":material/fact_check:",
+            width="stretch",
+        ):
+            start_workflow(st.session_state, Workflow.REVIEW)
+            _switch_stage(INPUT_STAGE)
+    if st.button(
+        "Reset all local demo state",
+        key="agc_reset_all_state",
+        icon=":material/restart_alt:",
+    ):
+        reset_application_state(st.session_state)
+        _switch_stage(HOME_STAGE)
+    st.info(
+        "Synthetic data · No external connections · Human confirmation remains mandatory in "
+        "both workflows."
+    )
 
 
 def _render_context_page() -> None:
@@ -263,7 +341,7 @@ def _render_review_page() -> None:
     invalidation = current_analysis_invalidation(st.session_state)
 
     _render_page_shell(REVIEW_STAGE)
-    st.header("Stage 4 — Human Review")
+    st.header("Review step 2 — Human Review")
     _render_review_navigation(analysis_invalid=invalidation is not None)
     if invalidation is not None:
         _render_invalidation_notice(invalidation)
@@ -302,7 +380,7 @@ def _render_output_page() -> None:
         )
 
     _render_page_shell(OUTPUT_STAGE)
-    st.header("Stage 5 — Generated Outputs")
+    st.header("Review step 3 — Generated Outputs")
     _render_output_navigation()
     _render_output_stage(outputs, change_summary)
 
@@ -311,7 +389,8 @@ def _render_page_shell(stage: str) -> None:
     set_active_stage(st.session_state, stage)
     _render_sidebar(stage)
     _render_header()
-    _render_step_progress(stage)
+    if stage != HOME_STAGE:
+        _render_step_progress(stage)
 
 
 def _switch_stage(stage: str, *, error: str | None = None) -> None:
@@ -875,6 +954,7 @@ def _apply_visual_theme() -> None:
 
 def _render_sidebar(stage: str) -> None:
     stage_labels = {
+        HOME_STAGE: "Choose workflow",
         CONTEXT_STAGE: "Project Context",
         DRAFT_STAGE: "Draft Solution Intent",
         INPUT_STAGE: "Review Inputs",
@@ -889,8 +969,20 @@ def _render_sidebar(stage: str) -> None:
 
         context = _current_context()
         project_context = st.session_state[PROJECT_CONTEXT_KEY]
-        if stage in {CONTEXT_STAGE, DRAFT_STAGE}:
+        workflow = current_workflow(st.session_state)
+        if workflow is Workflow.NONE:
+            st.markdown("**Workflow**")
+            st.caption("Choose drafting or governance review to begin.")
+        elif workflow is Workflow.DRAFT:
+            st.markdown("**Workflow**")
+            st.write("Draft a Solution Intent")
             st.markdown("**Drafting context**")
+        else:
+            st.markdown("**Workflow**")
+            st.write("Review a Solution Intent")
+            st.markdown("**Review context**")
+
+        if workflow is Workflow.DRAFT:
             if isinstance(project_context, DraftingSampleContext):
                 st.write(project_context.project_name)
                 if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True:
@@ -899,8 +991,7 @@ def _render_sidebar(stage: str) -> None:
                     st.caption("Workspace opened · confirmation required")
             else:
                 st.caption("Open a demonstration project workspace to begin.")
-        else:
-            st.markdown("**Review context**")
+        elif workflow is Workflow.REVIEW:
             if context is None:
                 st.caption("Load or prepare a review package to initialize the review.")
             else:
@@ -927,33 +1018,33 @@ def _render_sidebar(stage: str) -> None:
 
 
 def _render_step_progress(stage: str) -> None:
-    stages = [
-        (CONTEXT_STAGE, "Project Context"),
-        (DRAFT_STAGE, "Draft Solution Intent"),
-        (INPUT_STAGE, "Review Inputs"),
-        (REVIEW_STAGE, "Human Review"),
-        (OUTPUT_STAGE, "Generated Outputs"),
-    ]
+    workflow = current_workflow(st.session_state)
+    stages = (
+        [(CONTEXT_STAGE, "Project Context"), (DRAFT_STAGE, "Draft Solution Intent")]
+        if workflow is Workflow.DRAFT
+        else [
+            (INPUT_STAGE, "Review Inputs"),
+            (REVIEW_STAGE, "Human Review"),
+            (OUTPUT_STAGE, "Generated Outputs"),
+        ]
+    )
     current_index = next(
         index for index, (stage_name, _) in enumerate(stages) if stage_name == stage
     )
     workflow_complete = stage == OUTPUT_STAGE and st.session_state[OUTPUT_SUCCESS_KEY] is True
     step_cards: list[str] = []
     for index, (_, label) in enumerate(stages):
-        context_skipped = (
-            index == 0
-            and current_index > 0
-            and st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is not True
+        context_complete = (
+            workflow is Workflow.DRAFT
+            and index == 0
+            and st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
         )
-        context_complete = index == 0 and st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
-        draft_skipped = (
-            index == 1 and current_index > 1 and st.session_state[DRAFT_CONFIRMED_KEY] is not True
+        draft_complete = (
+            workflow is Workflow.DRAFT
+            and index == 1
+            and st.session_state[DRAFT_CONFIRMED_KEY] is True
         )
-        draft_complete = index == 1 and st.session_state[DRAFT_CONFIRMED_KEY] is True
-        if context_skipped or draft_skipped:
-            status_class = "agc-step--skipped"
-            status = "Skipped"
-        elif (
+        if (
             context_complete
             or draft_complete
             or index < current_index
@@ -980,7 +1071,7 @@ def _render_step_progress(stage: str) -> None:
 
 
 def _render_project_context_stage() -> None:
-    st.header("Stage 1 — Project Context")
+    st.header("Drafting step 1 — Project Context")
     st.caption(
         "Open a project workspace, inspect the available source package, and explicitly "
         "confirm what may be used for Solution Intent drafting."
@@ -997,34 +1088,34 @@ def _render_project_context_stage() -> None:
             key="agc_project_workspace_selector",
             help="The PoC includes one frozen synthetic workspace for reliable demonstration.",
         )
-        open_column, refresh_column, existing_column, reset_column = st.columns([1.25, 1, 1.2, 0.9])
+        open_column, refresh_column, home_column, reset_column = st.columns([1.25, 1, 1.2, 1])
         open_clicked = open_column.button(
             "Open Demonstration Project",
             key="agc_open_demonstration_project",
             type="primary",
-            use_container_width=True,
+            width="stretch",
         )
         refresh_clicked = refresh_column.button(
             "Refresh Context",
             key="agc_refresh_project_context",
             disabled=not isinstance(project_context, DraftingSampleContext),
-            use_container_width=True,
+            width="stretch",
         )
-        use_existing_clicked = existing_column.button(
-            "Use Existing Solution Intent",
-            key="agc_use_existing_si",
-            use_container_width=True,
+        home_clicked = home_column.button(
+            "Choose another workflow",
+            key="agc_choose_workflow_from_context",
+            width="stretch",
         )
         reset_clicked = reset_column.button(
-            "Reset Workspace",
+            "Reset drafting",
             key="agc_reset_project_context",
-            use_container_width=True,
+            width="stretch",
         )
 
-    if use_existing_clicked:
-        _switch_stage(INPUT_STAGE)
+    if home_clicked:
+        _switch_stage(HOME_STAGE)
     if reset_clicked:
-        reset_application_state(st.session_state)
+        reset_drafting_workflow(st.session_state)
         _switch_stage(CONTEXT_STAGE)
     if open_clicked:
         try:
@@ -1124,7 +1215,7 @@ def _render_project_context_stage() -> None:
             key="agc_confirm_project_context",
             type="primary",
             disabled=bool(blockers),
-            use_container_width=True,
+            width="stretch",
         )
 
     if confirm_context and _confirm_project_context():
@@ -1162,7 +1253,7 @@ def _render_project_context_summary(project_context: DraftingSampleContext) -> N
 
 
 def _render_drafting_stage() -> None:
-    st.header("Stage 2 — Draft Solution Intent")
+    st.header("Drafting step 2 — Draft Solution Intent")
     st.caption("Generate an editable SI draft from the human-confirmed Project Context package.")
     draft_available = isinstance(st.session_state[DRAFT_RESULT_KEY], SolutionIntentDraft)
     drafting_context_ready = all(
@@ -1179,7 +1270,7 @@ def _render_drafting_stage() -> None:
             '<p class="agc-section-label">DRAFTING ACTIONS</p>',
             unsafe_allow_html=True,
         )
-        generate_column, existing_column, context_column, reset_column = st.columns(
+        generate_column, home_column, context_column, reset_column = st.columns(
             [1.2, 1.25, 1.15, 1],
         )
         generate_clicked = generate_column.button(
@@ -1191,30 +1282,30 @@ def _render_drafting_stage() -> None:
                 "Provide a project name, SI template, and source-code context before "
                 "generating a draft."
             ),
-            use_container_width=True,
+            width="stretch",
         )
-        use_existing_clicked = existing_column.button(
-            "Use Existing Solution Intent",
-            key="agc_use_existing_si",
-            use_container_width=True,
+        home_clicked = home_column.button(
+            "Choose another workflow",
+            key="agc_choose_workflow_from_drafting",
+            width="stretch",
         )
         back_clicked = context_column.button(
             "Back to Project Context",
             key="agc_back_to_project_context",
-            use_container_width=True,
+            width="stretch",
         )
         reset_clicked = reset_column.button(
-            "Reset Workspace",
+            "Reset drafting",
             key="agc_reset_drafting",
-            use_container_width=True,
+            width="stretch",
         )
 
-    if use_existing_clicked:
-        _switch_stage(INPUT_STAGE)
+    if home_clicked:
+        _switch_stage(HOME_STAGE)
     if back_clicked:
         _switch_stage(CONTEXT_STAGE)
     if reset_clicked:
-        reset_application_state(st.session_state)
+        reset_drafting_workflow(st.session_state)
         _switch_stage(CONTEXT_STAGE)
 
     st.session_state.setdefault(
@@ -1319,36 +1410,69 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
             unsafe_allow_html=True,
         )
         st.markdown("### Proposed Solution Intent")
-        with st.form("agc_si_draft_review_form", clear_on_submit=False):
-            submitted = st.form_submit_button(
-                "Confirm SI Draft & Continue to Review",
-                key="agc_confirm_si_draft",
-                type="primary",
-                use_container_width=True,
-            )
+        draft_confirmed = st.session_state[DRAFT_CONFIRMED_KEY] is True
+        if not draft_confirmed:
+            with st.form("agc_si_draft_review_form", clear_on_submit=False):
+                reviewed_content = st.text_area(
+                    "Human-reviewed SI draft",
+                    key=DRAFT_CONTENT_WIDGET_KEY,
+                    height=500,
+                )
+                submitted = st.form_submit_button(
+                    "Confirm SI draft",
+                    key="agc_confirm_si_draft",
+                    type="primary",
+                    width="stretch",
+                )
+            if submitted and _confirm_si_draft(reviewed_content):
+                st.rerun()
+        else:
             reviewed_content = st.text_area(
-                "Human-reviewed SI draft",
+                "Confirmed SI draft",
                 key=DRAFT_CONTENT_WIDGET_KEY,
                 height=500,
+                disabled=True,
             )
-            st.success(
-                "Solution Intent draft generated. Review and edit it before handing it to "
-                "governance."
+            st.success("Draft confirmed by the user. It has not been published to Confluence.")
+            provenance = {
+                "project": draft.project_name,
+                "provider": draft.provider_name,
+                "source_package_fingerprint": st.session_state[DRAFT_FINGERPRINT_KEY],
+                "publication_status": "not_published",
+            }
+            with st.expander("Draft provenance", expanded=True):
+                st.json(provenance)
+            action_column, review_column = st.columns(2)
+            action_column.download_button(
+                "Download confirmed Markdown",
+                data=reviewed_content,
+                file_name="confirmed-solution-intent.md",
+                mime="text/markdown",
+                key="agc_download_confirmed_si",
+                icon=":material/download:",
+                width="stretch",
             )
-            st.caption(
-                f"Provider: {draft.provider_name}. Generation is a drafting aid, not "
-                "architecture approval or publication."
+            if review_column.button(
+                "Start a separate review",
+                key="agc_start_separate_review",
+                icon=":material/fact_check:",
+                width="stretch",
+            ):
+                reset_review_workflow(st.session_state)
+                _switch_stage(INPUT_STAGE)
+
+        st.caption(
+            f"Provider: {draft.provider_name}. Generation is a drafting aid, not architecture "
+            "approval or publication."
+        )
+        if not draft_confirmed:
+            st.info(
+                "Review and edit the draft before confirming it for manual transfer. Governance "
+                "review starts separately from an authoritative SI snapshot."
             )
-            st.warning(
-                "You may edit this draft and the handoff will preserve your changes. For this "
-                "demo, keep the generated content unchanged: the offline review analyzer "
-                "supports the bundled SI only."
-            )
-            with st.expander("Draft assumptions and safeguards"):
-                for assumption in draft.assumptions:
-                    st.write(f"- {assumption}")
-        if submitted and _confirm_si_draft(reviewed_content):
-            _switch_stage(INPUT_STAGE)
+        with st.expander("Draft assumptions and safeguards"):
+            for assumption in draft.assumptions:
+                st.write(f"- {assumption}")
 
     with st.expander("View drafting sources"):
         st.text_input(
@@ -1494,7 +1618,7 @@ def _confirm_si_draft(reviewed_content: str) -> bool:
             _processing_overlay_markup(
                 "CONFIRM SOLUTION INTENT",
                 "Validating reviewed draft",
-                "Checking the human-reviewed Solution Intent before handoff.",
+                "Checking the human-reviewed Solution Intent before manual transfer.",
                 step=1,
                 total_steps=2,
             ),
@@ -1506,17 +1630,21 @@ def _confirm_si_draft(reviewed_content: str) -> bool:
             processing_overlay.markdown(
                 _processing_overlay_markup(
                     "CONFIRM SOLUTION INTENT",
-                    "Preparing governance review",
-                    "Preserving the confirmed SI and initializing Review Inputs.",
+                    "Preparing confirmed artifact",
+                    "Preserving the draft and its local provenance without publishing it.",
                     step=2,
                     total_steps=2,
                 ),
                 unsafe_allow_html=True,
             )
-            confirm_si_draft_for_review(st.session_state, reviewed_content)
-            st.write("Confirmed SI preserved for the governance review")
+            confirm_si_draft_for_review(
+                st.session_state,
+                reviewed_content,
+                sync_widget=False,
+            )
+            st.write("Confirmed draft preserved for manual transfer")
             status.update(
-                label="SI confirmed — opening Review Inputs",
+                label="SI draft confirmed — not published",
                 state="complete",
                 expanded=True,
             )
@@ -1698,211 +1826,185 @@ def _load_internal_review_source() -> bool:
 
 
 def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
-    st.header("Stage 3 — Review Inputs")
+    st.header("Review step 1 — Review Inputs")
+    st.caption(
+        "Prepare an authoritative SI snapshot, a transcript, and review metadata in any order. "
+        "Confirm the exact package before analysis."
+    )
     _render_review_mode_control()
     review_mode = current_review_mode(st.session_state)
-    context = _current_context()
+    source_loaded = isinstance(
+        st.session_state.get(CONFLUENCE_SNAPSHOT_KEY), ConfluencePageSnapshot
+    )
     if restore_input_widgets:
         st.session_state[SOLUTION_INTENT_WIDGET_KEY] = st.session_state[SOLUTION_INTENT_KEY]
         st.session_state[TRANSCRIPT_WIDGET_KEY] = st.session_state[TRANSCRIPT_KEY]
-    current_solution_intent = st.session_state.get(
-        SOLUTION_INTENT_WIDGET_KEY,
-        st.session_state[SOLUTION_INTENT_KEY],
-    )
-    current_transcript = st.session_state.get(
-        TRANSCRIPT_WIDGET_KEY,
-        st.session_state[TRANSCRIPT_KEY],
-    )
-    if isinstance(current_solution_intent, str) and isinstance(current_transcript, str):
-        update_review_inputs(
-            st.session_state,
-            solution_intent=current_solution_intent,
-            transcript=current_transcript,
-            context=context,
-        )
-    invalidation = current_analysis_invalidation(st.session_state)
-    review_inputs_ready = (
-        isinstance(current_solution_intent, str)
-        and bool(current_solution_intent.strip())
-        and isinstance(current_transcript, str)
-        and bool(current_transcript.strip())
-        and isinstance(context, SolutionIntentReviewContext)
-    )
-    if review_mode is ReviewMode.INTERNAL_FAKE:
-        review_inputs_ready = review_inputs_ready and isinstance(
-            st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
-            ConfluencePageSnapshot,
-        )
 
     with st.container(border=True):
         st.markdown(
-            '<p class="agc-section-label">REVIEW ACTIONS</p>',
+            '<p class="agc-section-label">ACQUIRE REVIEW INPUTS</p>',
             unsafe_allow_html=True,
         )
-        load_column, companion_column = st.columns([1.3, 1.7])
-        if review_mode is ReviewMode.INTERNAL_FAKE:
-            load_clicked = load_column.button(
-                "Load Fake Internal Review",
-                key="agc_load_internal_review",
-                width="stretch",
-            )
-            companions_clicked = False
-            refresh_clicked = companion_column.button(
-                "Refresh Fake Confluence Source",
-                key="agc_refresh_internal_source",
-                disabled=not isinstance(
-                    st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
-                    ConfluencePageSnapshot,
-                ),
-                width="stretch",
-            )
-        else:
-            load_clicked = load_column.button(
-                "Load Sample Review",
-                key="agc_load_sample",
-                use_container_width=True,
-            )
-            companions_clicked = companion_column.button(
-                "Load Sample Transcript & Metadata",
-                key="agc_load_review_companions",
-                use_container_width=True,
-            )
-            refresh_clicked = False
-        analyze_column, reset_column, status_column = st.columns(
-            [1.2, 1, 2],
-            vertical_alignment="center",
-        )
-        analyze_clicked = analyze_column.button(
-            "Analyze with Fake AIF"
+        source_column, transcript_column, metadata_column = st.columns(3)
+        source_clicked = source_column.button(
+            ("Refresh fake Confluence SI" if source_loaded else "Load fake Confluence SI")
             if review_mode is ReviewMode.INTERNAL_FAKE
-            else "Analyze Review",
-            key="agc_analyze",
-            type="primary",
-            disabled=not review_inputs_ready,
-            help=(
-                "Provide a Solution Intent, review transcript, and review metadata before analysis."
+            else (
+                "Refresh authoritative SI snapshot"
+                if source_loaded
+                else "Load authoritative SI snapshot"
             ),
-            use_container_width=True,
+            key="agc_load_review_source",
+            icon=":material/article:",
+            width="stretch",
+        )
+        transcript_clicked = transcript_column.button(
+            "Load synthetic transcript",
+            key="agc_load_review_transcript",
+            icon=":material/notes:",
+            width="stretch",
+        )
+        metadata_clicked = metadata_column.button(
+            "Load synthetic metadata",
+            key="agc_load_review_metadata",
+            icon=":material/dataset:",
+            width="stretch",
+        )
+        utility_column, reset_column = st.columns(2)
+        home_clicked = utility_column.button(
+            "Choose another workflow",
+            key="agc_choose_workflow_from_review",
+            width="stretch",
         )
         reset_clicked = reset_column.button(
-            "Reset Demo",
-            key="agc_reset",
-            use_container_width=True,
+            "Reset review",
+            key="agc_reset_review",
+            width="stretch",
         )
 
-        if invalidation is not None:
-            status_column.warning("Reanalysis required")
-        elif review_inputs_ready and review_mode is ReviewMode.INTERNAL_FAKE:
-            status_column.success("Fake Confluence source + transcript ready")
-        elif review_inputs_ready and st.session_state[DRAFT_CONFIRMED_KEY]:
-            status_column.success("Confirmed SI + review companions ready")
-        elif review_inputs_ready:
-            status_column.success("Review package loaded · Inputs are editable")
-        elif st.session_state[DRAFT_CONFIRMED_KEY]:
-            status_column.info("Confirmed SI ready · Add transcript and metadata")
-        elif context is not None:
-            status_column.info("Review package incomplete · Add SI and transcript")
-        else:
-            status_column.info("Waiting for a review package")
+        if source_clicked and _load_review_source_component(review_mode):
+            st.rerun()
+        if transcript_clicked and _load_review_transcript_component(review_mode):
+            st.rerun()
+        if metadata_clicked and _load_review_metadata_component(review_mode):
+            st.rerun()
+        if home_clicked:
+            _switch_stage(HOME_STAGE)
+        if reset_clicked:
+            reset_review_workflow(st.session_state)
+            _switch_stage(INPUT_STAGE)
+        feedback = st.session_state.get(REVIEW_INPUT_FEEDBACK_KEY)
+        if isinstance(feedback, str) and feedback:
+            st.success(feedback)
 
-    processing_placeholder = st.empty()
+    snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
+    context = _current_context()
+    st.session_state.setdefault(
+        SOLUTION_INTENT_WIDGET_KEY,
+        st.session_state[SOLUTION_INTENT_KEY],
+    )
+    st.session_state.setdefault(
+        TRANSCRIPT_WIDGET_KEY,
+        st.session_state[TRANSCRIPT_KEY],
+    )
+    si_tab, transcript_tab, metadata_tab = st.tabs(
+        ["Authoritative SI", "Review transcript", "Review metadata"]
+    )
+    with si_tab:
+        st.selectbox(
+            "Authorized synthetic SI source",
+            (
+                "Synthetic Order Routing Service · fake Confluence"
+                if review_mode is ReviewMode.INTERNAL_FAKE
+                else "Digital Payment Notification Service · authoritative snapshot",
+            ),
+            disabled=True,
+        )
+        if isinstance(snapshot, ConfluencePageSnapshot):
+            st.caption(
+                f"Validated · {snapshot.space} · page {snapshot.page_id} · version "
+                f"{snapshot.version} · retrieved {snapshot.retrieved_at.isoformat()}"
+            )
+            st.caption(
+                f"Canonicalizer {snapshot.canonicalizer_version} · content fingerprint "
+                f"{snapshot.content_fingerprint}"
+            )
+        st.text_area(
+            "Authoritative Solution Intent snapshot",
+            key=SOLUTION_INTENT_WIDGET_KEY,
+            height=315,
+            placeholder="Load the authorized synthetic SI snapshot to begin.",
+            disabled=True,
+        )
+    with transcript_tab:
+        st.caption(
+            "Paste user-provided content or load the bundled synthetic transcript. Recommended "
+            "format: [timestamp] Speaker: text. Missing locators are never invented."
+        )
+        transcript = st.text_area(
+            "User-provided review transcript",
+            key=TRANSCRIPT_WIDGET_KEY,
+            height=315,
+            placeholder="Paste a review transcript or load the synthetic example.",
+        )
+    with metadata_tab:
+        _render_review_metadata_editor(context)
 
-    if reset_clicked:
-        reset_application_state(st.session_state)
-        _switch_stage(CONTEXT_STAGE)
-
-    if load_clicked:
-        if review_mode is ReviewMode.INTERNAL_FAKE:
-            if _load_internal_review_source():
-                st.rerun()
-        else:
-            try:
-                load_sample_into_state(st.session_state, load_sample_review())
-            except (OSError, UnicodeError, ValueError) as exc:
-                st.session_state[ERROR_KEY] = f"Unable to load the bundled sample: {exc}"
-            else:
-                st.rerun()
-
-    if refresh_clicked and _load_internal_review_source():
+    stored_transcript = st.session_state.get(TRANSCRIPT_KEY)
+    if isinstance(transcript, str) and transcript != stored_transcript:
+        existing_provenance = st.session_state.get(TRANSCRIPT_PROVENANCE_KEY)
+        establish_baseline = existing_provenance is None and bool(transcript.strip())
+        provenance = (
+            ReviewInputProvenance.USER_ENTERED
+            if existing_provenance is None
+            else ReviewInputProvenance(existing_provenance)
+        )
+        store_transcript_component(
+            st.session_state,
+            transcript,
+            provenance,
+            establish_baseline=establish_baseline,
+            sync_widget=False,
+            feedback=(
+                "User-provided transcript stored; review package confirmation is required."
+                if establish_baseline
+                else "Transcript edited after load; review package confirmation was revoked."
+            ),
+        )
         st.rerun()
 
-    if companions_clicked:
+    readiness = review_input_readiness(st.session_state)
+    _render_review_input_readiness(readiness)
+    action_column, analyze_column = st.columns(2)
+    confirm_clicked = action_column.button(
+        "Confirm review input manifest",
+        key="agc_confirm_review_inputs",
+        type="primary" if not readiness.confirmed else "secondary",
+        disabled=not readiness.ready_to_confirm or readiness.confirmed,
+        help="Complete all three review-input components before confirmation.",
+        width="stretch",
+    )
+    analyze_clicked = analyze_column.button(
+        "Analyze with Fake AIF" if review_mode is ReviewMode.INTERNAL_FAKE else "Analyze review",
+        key="agc_analyze",
+        type="primary",
+        disabled=not readiness.ready_to_analyze,
+        help=(
+            "Confirm the exact complete review input manifest before analysis."
+            if not readiness.ready_to_analyze
+            else None
+        ),
+        width="stretch",
+    )
+    if confirm_clicked:
         try:
-            load_sample_review_companions_into_state(
-                st.session_state,
-                load_sample_review(),
-            )
-        except (OSError, UnicodeError, ValueError) as exc:
-            st.session_state[ERROR_KEY] = f"Unable to load review companions: {exc}"
+            confirm_review_input_manifest(st.session_state)
+        except (ValidationError, ValueError) as exc:
+            st.session_state[ERROR_KEY] = f"Unable to confirm review inputs: {exc}"
         else:
             st.rerun()
 
-    context_column, sources_column = st.columns(
-        [1, 2.35],
-        gap="medium",
-        vertical_alignment="top",
-    )
-    with context_column:
-        if context is not None:
-            _render_context(context)
-        else:
-            with st.container(border=True):
-                st.markdown(
-                    '<p class="agc-section-label">REVIEW CONTEXT</p>',
-                    unsafe_allow_html=True,
-                )
-                st.caption(
-                    "Load the fake internal review to initialize metadata."
-                    if review_mode is ReviewMode.INTERNAL_FAKE
-                    else "Load the sample to initialize review metadata."
-                )
-
-    with sources_column:
-        snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
-        if review_mode is ReviewMode.INTERNAL_FAKE and isinstance(snapshot, ConfluencePageSnapshot):
-            st.caption(
-                f"Fake Confluence snapshot · {snapshot.space} · page {snapshot.page_id} · "
-                f"version {snapshot.version} · canonicalizer {snapshot.canonicalizer_version}"
-            )
-        si_tab, transcript_tab = st.tabs(["Solution Intent", "Review Transcript"])
-        st.session_state.setdefault(
-            SOLUTION_INTENT_WIDGET_KEY,
-            st.session_state[SOLUTION_INTENT_KEY],
-        )
-        st.session_state.setdefault(
-            TRANSCRIPT_WIDGET_KEY,
-            st.session_state[TRANSCRIPT_KEY],
-        )
-        with si_tab:
-            solution_intent = st.text_area(
-                "Solution Intent",
-                key=SOLUTION_INTENT_WIDGET_KEY,
-                height=315,
-                placeholder=(
-                    "Load the fake Confluence source to begin."
-                    if review_mode is ReviewMode.INTERNAL_FAKE
-                    else "Load the bundled review package to begin."
-                ),
-                disabled=review_mode is ReviewMode.INTERNAL_FAKE,
-            )
-        with transcript_tab:
-            transcript = st.text_area(
-                "Teams-style Review Transcript",
-                key=TRANSCRIPT_WIDGET_KEY,
-                height=315,
-                placeholder=(
-                    "Load the separate synthetic transcript to begin."
-                    if review_mode is ReviewMode.INTERNAL_FAKE
-                    else "Load the bundled review package to begin."
-                ),
-            )
-    update_review_inputs(
-        st.session_state,
-        solution_intent=solution_intent,
-        transcript=transcript,
-        context=context,
-    )
-
+    processing_placeholder = st.empty()
     if analyze_clicked:
         with processing_placeholder.container():
             if _analyze_current_inputs():
@@ -1916,9 +2018,170 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
         elif st.button(
             "Return to Human Review",
             key="agc_return_to_review",
-            use_container_width=True,
+            width="stretch",
         ):
             _switch_stage(REVIEW_STAGE)
+
+
+def _load_review_source_component(mode: ReviewMode) -> bool:
+    """Load only the authoritative SI component for the selected review mode."""
+    try:
+        if mode is ReviewMode.INTERNAL_FAKE:
+            runtime = build_review_runtime(mode)
+            if runtime.confluence_reader is None or runtime.confluence_page_id is None:
+                raise ValueError("The fake Confluence source is not configured.")
+            snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
+            st.session_state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = (
+                runtime.descriptor.provider_configuration_identity
+            )
+            feedback = "Fake Confluence SI snapshot loaded; transcript and metadata are unchanged."
+        else:
+            sample = load_sample_review()
+            snapshot = build_sample_review_snapshot(sample)
+            feedback = (
+                "Authoritative synthetic SI snapshot loaded; transcript and metadata are unchanged."
+            )
+        store_review_source_snapshot(st.session_state, snapshot, feedback=feedback)
+    except ConfluenceReadError as exc:
+        record_internal_source_load_failure(st.session_state)
+        st.session_state[ERROR_KEY] = f"Unable to load the authoritative SI source: {exc}"
+        return False
+    except (OSError, UnicodeError, ValidationError, ValueError) as exc:
+        st.session_state[ERROR_KEY] = f"Unable to load the authoritative SI source: {exc}"
+        return False
+    return True
+
+
+def _load_review_transcript_component(mode: ReviewMode) -> bool:
+    """Load only the synthetic transcript component for the selected mode."""
+    try:
+        if mode is ReviewMode.INTERNAL_FAKE:
+            runtime = build_review_runtime(mode)
+            transcript = runtime.review_transcript
+            provenance = ReviewInputProvenance.INTERNAL_FAKE
+        else:
+            transcript = load_sample_review().transcript
+            provenance = ReviewInputProvenance.SYNTHETIC_SAMPLE
+        if not isinstance(transcript, str) or not transcript.strip():
+            raise ValueError("The configured synthetic transcript is empty.")
+        store_transcript_component(
+            st.session_state,
+            transcript,
+            provenance,
+            establish_baseline=True,
+            feedback="Synthetic transcript loaded; SI source and metadata are unchanged.",
+        )
+    except (OSError, UnicodeError, ValidationError, ValueError) as exc:
+        st.session_state[ERROR_KEY] = f"Unable to load the review transcript: {exc}"
+        return False
+    return True
+
+
+def _load_review_metadata_component(mode: ReviewMode) -> bool:
+    """Load only validated synthetic review metadata for the selected mode."""
+    try:
+        if mode is ReviewMode.INTERNAL_FAKE:
+            runtime = build_review_runtime(mode)
+            context = runtime.review_context
+            provenance = ReviewInputProvenance.INTERNAL_FAKE
+        else:
+            context = load_sample_review().context
+            provenance = ReviewInputProvenance.SYNTHETIC_SAMPLE
+        if not isinstance(context, SolutionIntentReviewContext):
+            raise ValueError("The configured review metadata is missing.")
+        store_metadata_component(
+            st.session_state,
+            context,
+            provenance,
+            establish_baseline=True,
+            feedback="Synthetic review metadata loaded; SI source and transcript are unchanged.",
+        )
+    except (OSError, UnicodeError, ValidationError, ValueError) as exc:
+        st.session_state[ERROR_KEY] = f"Unable to load review metadata: {exc}"
+        return False
+    return True
+
+
+def _render_review_metadata_editor(
+    context: SolutionIntentReviewContext | None,
+) -> None:
+    """Render source-controlled identity separately from editable round metadata."""
+    if context is None:
+        st.info("Load synthetic metadata in any order to initialize the review round.")
+        return
+    st.caption(
+        f"Source-controlled · {context.project_name} · {context.si_title} · SI "
+        f"{context.si_version} · {humanize(context.current_si_status.value)}"
+    )
+    st.session_state.setdefault(METADATA_REVIEW_ROUND_WIDGET_KEY, context.review_round)
+    st.session_state.setdefault(METADATA_REVIEW_DATE_WIDGET_KEY, context.review_date)
+    st.session_state.setdefault(METADATA_ARCHITECT_WIDGET_KEY, context.domain_architect or "")
+    st.session_state.setdefault(METADATA_TICKET_WIDGET_KEY, context.ado_ticket_id or "")
+    st.number_input(
+        "Review round",
+        min_value=1,
+        step=1,
+        key=METADATA_REVIEW_ROUND_WIDGET_KEY,
+    )
+    st.date_input(
+        "Review date",
+        key=METADATA_REVIEW_DATE_WIDGET_KEY,
+    )
+    st.text_input("Domain Architect", key=METADATA_ARCHITECT_WIDGET_KEY)
+    st.text_input("Governance ticket", key=METADATA_TICKET_WIDGET_KEY)
+    try:
+        edited_context = context.model_copy(
+            update={
+                "review_round": st.session_state[METADATA_REVIEW_ROUND_WIDGET_KEY],
+                "review_date": st.session_state[METADATA_REVIEW_DATE_WIDGET_KEY],
+                "domain_architect": (
+                    st.session_state[METADATA_ARCHITECT_WIDGET_KEY].strip() or None
+                ),
+                "ado_ticket_id": st.session_state[METADATA_TICKET_WIDGET_KEY].strip() or None,
+            }
+        )
+        edited_context = SolutionIntentReviewContext.model_validate(edited_context.model_dump())
+    except (AttributeError, ValidationError, ValueError) as exc:
+        st.error(f"Review metadata is invalid: {exc}")
+        return
+    if edited_context != context:
+        existing = st.session_state.get(METADATA_PROVENANCE_KEY)
+        provenance = (
+            ReviewInputProvenance.USER_ENTERED
+            if existing is None
+            else ReviewInputProvenance(existing)
+        )
+        store_metadata_component(
+            st.session_state,
+            edited_context,
+            provenance,
+            establish_baseline=existing is None,
+            sync_widgets=False,
+            feedback="Review metadata edited; review package confirmation was revoked.",
+        )
+        st.rerun()
+
+
+def _render_review_input_readiness(readiness: ReviewInputReadiness) -> None:
+    """Render component states next to the confirmation and Analyze actions."""
+    with st.container(border=True):
+        st.markdown(
+            '<p class="agc-section-label">REVIEW INPUT READINESS</p>',
+            unsafe_allow_html=True,
+        )
+        si_column, transcript_column, metadata_column = st.columns(3)
+        si_column.metric("Authoritative SI", readiness.solution_intent.value)
+        transcript_column.metric("Transcript", readiness.transcript.value)
+        metadata_column.metric("Metadata", readiness.metadata.value)
+        if readiness.confirmed:
+            manifest = current_review_input_manifest(st.session_state)
+            st.success(
+                "Confirmed exact manifest · "
+                f"{manifest.source_page_id} v{manifest.source_version} · "
+                f"{manifest.provider_configuration_identity}"
+            )
+        elif readiness.blockers:
+            st.info("Next: " + " ".join(readiness.blockers))
 
 
 def _render_context(context: SolutionIntentReviewContext) -> None:
@@ -1960,7 +2223,7 @@ def _render_review_navigation(*, analysis_invalid: bool) -> None:
     if back_column.button(
         "← Back to Review Inputs",
         key="agc_back_to_inputs",
-        use_container_width=True,
+        width="stretch",
     ):
         _switch_stage(INPUT_STAGE)
 
@@ -1971,17 +2234,17 @@ def _render_review_navigation(*, analysis_invalid: bool) -> None:
         "View Generated Outputs →",
         key="agc_view_outputs",
         disabled=not outputs_available,
-        use_container_width=True,
+        width="stretch",
     ):
         _switch_stage(OUTPUT_STAGE)
 
     if reset_column.button(
-        "Reset Demo",
+        "Reset review",
         key="agc_reset_from_review",
-        use_container_width=True,
+        width="stretch",
     ):
-        reset_application_state(st.session_state)
-        _switch_stage(CONTEXT_STAGE)
+        reset_review_workflow(st.session_state)
+        _switch_stage(INPUT_STAGE)
 
 
 def _render_output_navigation() -> None:
@@ -1989,17 +2252,17 @@ def _render_output_navigation() -> None:
     if back_column.button(
         "← Back to Human Review",
         key="agc_back_to_review",
-        use_container_width=True,
+        width="stretch",
     ):
         _switch_stage(REVIEW_STAGE)
 
     if reset_column.button(
-        "Reset Demo",
+        "Reset review",
         key="agc_reset_from_outputs",
-        use_container_width=True,
+        width="stretch",
     ):
-        reset_application_state(st.session_state)
-        _switch_stage(CONTEXT_STAGE)
+        reset_review_workflow(st.session_state)
+        _switch_stage(INPUT_STAGE)
 
 
 def _render_analyzed_input_summary(result: GovernanceResult, *, valid: bool = True) -> None:
@@ -2802,8 +3065,8 @@ def _render_output_stage(
             type="primary",
             width="stretch",
         ):
-            reset_application_state(st.session_state)
-            _switch_stage(CONTEXT_STAGE)
+            reset_review_workflow(st.session_state)
+            _switch_stage(INPUT_STAGE)
 
         if st.session_state[OUTPUT_SUCCESS_KEY]:
             st.caption(

@@ -14,7 +14,10 @@ from architecture_governance_copilot.integrations.confluence import (
     ConfluencePagePayload,
     build_confluence_snapshot,
 )
-from architecture_governance_copilot.models import GovernanceResult
+from architecture_governance_copilot.models import (
+    GovernanceResult,
+    ReviewInputProvenance,
+)
 from architecture_governance_copilot.publication import (
     AdoPublicationOperation,
     PublicationStatus,
@@ -25,6 +28,7 @@ from architecture_governance_copilot.runtime_dependencies import (
 )
 from architecture_governance_copilot.ui_support import (
     ACTIVE_STAGE_KEY,
+    ACTIVE_WORKFLOW_KEY,
     ADO_FAKE_GATEWAY_KEY,
     ADO_PUBLICATION_CONFIRMATION_KEY,
     ADO_PUBLICATION_HISTORY_KEY,
@@ -39,8 +43,10 @@ from architecture_governance_copilot.ui_support import (
     CONTEXT_STAGE,
     CONTEXT_SUPPORTING_SELECTED_KEY,
     CONTEXT_TEMPLATE_SELECTED_KEY,
+    DRAFT_RESULT_KEY,
     DRAFT_STAGE,
     ERROR_KEY,
+    HOME_STAGE,
     INPUT_STAGE,
     LOADED_KEY,
     OUTPUT_ACTION_SELECTION_KEY,
@@ -59,18 +65,24 @@ from architecture_governance_copilot.ui_support import (
     REVIEWED_RESULT_KEY,
     SOLUTION_INTENT_KEY,
     SOLUTION_INTENT_WIDGET_KEY,
+    STATE_SCHEMA_VERSION_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
     AnalysisInvalidation,
+    InputReadiness,
+    Workflow,
     active_stage,
     analysis_is_stale,
     build_review_change_summary,
     build_reviewed_result,
+    build_sample_review_snapshot,
     clear_outputs,
     confirm_project_context_for_drafting,
+    confirm_review_input_manifest,
     current_analysis_invalidation,
     current_input_fingerprint,
     current_review_mode,
+    current_workflow,
     default_review_form_data,
     humanize,
     initialize_session_state,
@@ -87,11 +99,17 @@ from architecture_governance_copilot.ui_support import (
     project_context_readiness,
     record_internal_source_load_failure,
     reset_application_state,
+    reset_drafting_workflow,
+    reset_review_workflow,
     restore_review_widget_state,
+    review_input_readiness,
     sample_paths,
     set_active_stage,
     store_analysis,
+    store_metadata_component,
     store_outputs,
+    store_review_source_snapshot,
+    store_transcript_component,
     switch_review_mode,
     update_review_inputs,
 )
@@ -222,8 +240,8 @@ def test_loading_sample_invalidates_previous_outputs_and_review_widgets(
 
     load_sample_into_state(state, sample)
 
-    assert state[SOLUTION_INTENT_KEY] == sample.solution_intent
-    assert state[TRANSCRIPT_KEY] == sample.transcript
+    assert state[SOLUTION_INTENT_KEY] == sample.solution_intent.strip()
+    assert state[TRANSCRIPT_KEY] == sample.transcript.strip()
     assert state[CONTEXT_KEY] == sample.context
     assert state[CONTEXT_KEY] is not sample.context
     assert state[ANALYZED_RESULT_KEY] is sample_result
@@ -232,12 +250,12 @@ def test_loading_sample_invalidates_previous_outputs_and_review_widgets(
     invalidation = state[ANALYSIS_INVALIDATION_KEY]
     assert isinstance(invalidation, AnalysisInvalidation)
     assert invalidation.outputs_invalidated is True
-    assert invalidation.reason == "The sample review package changed the review inputs."
+    assert invalidation.reason == "The authoritative Solution Intent source changed."
     assert state[ANALYSIS_SUCCESS_KEY] is False
     assert state[LOADED_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
-    assert state[SOLUTION_INTENT_WIDGET_KEY] == sample.solution_intent
-    assert state[TRANSCRIPT_WIDGET_KEY] == sample.transcript
+    assert state[SOLUTION_INTENT_WIDGET_KEY] == sample.solution_intent.strip()
+    assert state[TRANSCRIPT_WIDGET_KEY] == sample.transcript.strip()
     assert f"{REVIEW_WIDGET_PREFIX}finding_0_title" not in state
 
 
@@ -248,10 +266,11 @@ def test_real_input_change_without_outputs_invalidates_only_analysis(
     initialize_session_state(state)
     sample = load_sample_review()
     load_sample_into_state(state, sample)
+    confirm_review_input_manifest(state)
     store_analysis(
         state,
         sample_result,
-        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+        current_input_fingerprint(state, sample.context),
     )
     state[f"{REVIEW_WIDGET_PREFIX}action_0_owner"] = "Taylor Kim"
 
@@ -285,17 +304,18 @@ def test_noop_input_update_does_not_invalidate_analysis(
     initialize_session_state(state)
     sample = load_sample_review()
     load_sample_into_state(state, sample)
+    confirm_review_input_manifest(state)
     store_analysis(
         state,
         sample_result,
-        input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
+        current_input_fingerprint(state, sample.context),
     )
 
     changed = update_review_inputs(
         state,
-        solution_intent=sample.solution_intent,
-        transcript=sample.transcript,
-        context=sample.context,
+        solution_intent=state[SOLUTION_INTENT_KEY],
+        transcript=state[TRANSCRIPT_KEY],
+        context=state[CONTEXT_KEY],
     )
 
     assert changed is False
@@ -310,7 +330,8 @@ def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
     initialize_session_state(state)
     sample = load_sample_review()
     load_sample_into_state(state, sample)
-    fingerprint = input_fingerprint(sample.solution_intent, sample.transcript, sample.context)
+    confirm_review_input_manifest(state)
+    fingerprint = current_input_fingerprint(state, sample.context)
     store_analysis(state, sample_result, fingerprint)
 
     update_review_inputs(
@@ -333,8 +354,8 @@ def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
 
     store_analysis(state, sample_result, fingerprint)
 
-    assert current_analysis_invalidation(state) is None
-    assert state[ANALYSIS_SUCCESS_KEY] is True
+    assert isinstance(current_analysis_invalidation(state), AnalysisInvalidation)
+    assert state[ANALYSIS_SUCCESS_KEY] is False
 
 
 def test_missing_metadata_invalidates_an_existing_analysis(
@@ -381,8 +402,9 @@ def test_storing_analysis_creates_independent_draft_and_clears_outputs(
 
 def test_review_widget_values_are_preserved_across_routed_pages() -> None:
     widget_key = f"{REVIEW_WIDGET_PREFIX}action_0_owner"
-    state: dict[str, object] = {widget_key: "Taylor Kim"}
+    state: dict[str, object] = {}
     initialize_session_state(state)
+    state[widget_key] = "Taylor Kim"
 
     preserve_review_widget_state(state)
     del state[widget_key]
@@ -390,6 +412,116 @@ def test_review_widget_values_are_preserved_across_routed_pages() -> None:
 
     assert state[REVIEW_WIDGET_VALUES_KEY] == {widget_key: "Taylor Kim"}
     assert state[widget_key] == "Taylor Kim"
+
+
+@pytest.mark.parametrize(
+    "order",
+    [
+        ("source", "transcript", "metadata"),
+        ("transcript", "metadata", "source"),
+        ("metadata", "source", "transcript"),
+    ],
+)
+def test_review_components_are_order_independent_and_require_exact_confirmation(
+    order: tuple[str, str, str],
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    sample = load_sample_review()
+    snapshot = build_sample_review_snapshot(sample)
+    actions = {
+        "source": lambda: store_review_source_snapshot(
+            state,
+            snapshot,
+            feedback="Source loaded.",
+        ),
+        "transcript": lambda: store_transcript_component(
+            state,
+            sample.transcript,
+            ReviewInputProvenance.SYNTHETIC_SAMPLE,
+            establish_baseline=True,
+        ),
+        "metadata": lambda: store_metadata_component(
+            state,
+            sample.context,
+            ReviewInputProvenance.SYNTHETIC_SAMPLE,
+            establish_baseline=True,
+        ),
+    }
+
+    for component in order:
+        actions[component]()
+
+    readiness = review_input_readiness(state)
+    assert readiness.ready_to_confirm
+    assert not readiness.ready_to_analyze
+    assert readiness.solution_intent is InputReadiness.LOADED
+    assert readiness.transcript is InputReadiness.LOADED
+    assert readiness.metadata is InputReadiness.LOADED
+
+    confirm_review_input_manifest(state)
+
+    readiness = review_input_readiness(state)
+    assert readiness.ready_to_analyze
+    assert readiness.solution_intent is InputReadiness.CONFIRMED
+    assert readiness.transcript is InputReadiness.CONFIRMED
+    assert readiness.metadata is InputReadiness.CONFIRMED
+
+
+def test_workflow_scoped_resets_preserve_peer_state_and_remote_reconciliation() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    state[PROJECT_CONTEXT_KEY] = object()
+    state[DRAFT_RESULT_KEY] = object()
+    state[SOLUTION_INTENT_KEY] = "review source"
+    operation = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="agc-scoped-reset",
+        request_binding_fingerprint="binding",
+        message="Manual reconciliation is required.",
+    )
+    state[ADO_PUBLICATION_OPERATION_KEY] = operation
+
+    reset_drafting_workflow(state)
+
+    assert state[PROJECT_CONTEXT_KEY] is None
+    assert state[DRAFT_RESULT_KEY] is None
+    assert state[SOLUTION_INTENT_KEY] == "review source"
+    assert current_workflow(state) is Workflow.DRAFT
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+
+    state[PROJECT_CONTEXT_KEY] = "draft context"
+    reset_review_workflow(state)
+
+    assert state[PROJECT_CONTEXT_KEY] == "draft context"
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert current_workflow(state) is Workflow.REVIEW
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+
+
+def test_schema_migration_clears_obsolete_workflow_state_but_preserves_reconciliation() -> None:
+    operation = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="agc-schema-migration",
+        request_binding_fingerprint="binding",
+        message="Manual reconciliation is required.",
+    )
+    state: dict[str, object] = {
+        STATE_SCHEMA_VERSION_KEY: 1,
+        ACTIVE_STAGE_KEY: OUTPUT_STAGE,
+        ACTIVE_WORKFLOW_KEY: Workflow.REVIEW.value,
+        SOLUTION_INTENT_KEY: "obsolete source",
+        ADO_PUBLICATION_OPERATION_KEY: operation,
+        ADO_PUBLICATION_HISTORY_KEY: {operation.correlation_id: operation},
+    }
+
+    initialize_session_state(state)
+
+    assert active_stage(state) == HOME_STAGE
+    assert current_workflow(state) is Workflow.NONE
+    assert state[SOLUTION_INTENT_KEY] == ""
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+    assert state[ADO_PUBLICATION_HISTORY_KEY] == {operation.correlation_id: operation}
 
 
 def test_reset_removes_application_state_and_restores_initial_values() -> None:
@@ -421,7 +553,7 @@ def test_reset_removes_application_state_and_restores_initial_values() -> None:
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[OUTPUTS_KEY] is None
     assert state[ANALYSIS_INVALIDATION_KEY] is None
-    assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
+    assert state[ACTIVE_STAGE_KEY] == HOME_STAGE
     assert f"{REVIEW_WIDGET_PREFIX}action_0_owner" not in state
     assert state[ADO_PUBLICATION_PREVIEW_KEY] is None
     assert state[ADO_PUBLICATION_CONFIRMATION_KEY] is None
@@ -435,14 +567,14 @@ def test_active_stage_navigation_accepts_only_known_route_stages() -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
 
-    assert active_stage(state) == CONTEXT_STAGE
+    assert active_stage(state) == HOME_STAGE
     set_active_stage(state, REVIEW_STAGE)
     assert active_stage(state) == REVIEW_STAGE
     set_active_stage(state, OUTPUT_STAGE)
     assert active_stage(state) == OUTPUT_STAGE
 
     state[ACTIVE_STAGE_KEY] = "corrupt"
-    assert active_stage(state) == CONTEXT_STAGE
+    assert active_stage(state) == HOME_STAGE
     with pytest.raises(ValueError, match="Unknown application stage"):
         set_active_stage(state, "later_phase")
 
@@ -600,6 +732,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
         context=sample.context,
         provider_configuration_identity="fake-aif-v2",
     )
+    confirm_review_input_manifest(state)
     store_analysis(state, sample_result, current_input_fingerprint(state, sample.context))
 
     load_internal_review_into_state(
@@ -612,7 +745,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
         provider_configuration_identity="fake-aif-v2",
     )
 
-    assert current_analysis_invalidation(state) is None
+    assert current_analysis_invalidation(state) is not None
     assert state[ANALYZED_RESULT_KEY] == sample_result
 
     load_internal_review_into_state(
@@ -625,7 +758,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
 
     invalidation = current_analysis_invalidation(state)
     assert invalidation is not None
-    assert invalidation.reason == "The Confluence source snapshot changed."
+    assert invalidation.reason == "Review inputs changed."
 
 
 def test_internal_source_load_and_failure_preserve_explicit_eligibility_rules(
@@ -648,23 +781,17 @@ def test_internal_source_load_and_failure_preserve_explicit_eligibility_rules(
     assert state[CONFLUENCE_SNAPSHOT_KEY] == snapshot
     assert state[SOLUTION_INTENT_KEY] == snapshot.canonical_text
     assert state[TRANSCRIPT_KEY] == sample.transcript.strip()
+    confirm_review_input_manifest(state)
     fingerprint = current_input_fingerprint(state, sample.context)
-    assert not analysis_is_stale(
-        snapshot.canonical_text,
-        sample.transcript.strip(),
-        sample.context,
-        fingerprint,
-        mode=ReviewMode.INTERNAL_FAKE,
-        source_snapshot=snapshot,
-        provider_configuration_identity="fake-aif-v2",
-    )
+    assert fingerprint == current_input_fingerprint(state, sample.context)
     store_analysis(state, sample_result, fingerprint)
 
     record_internal_source_load_failure(state)
 
     assert state[CONFLUENCE_SNAPSHOT_KEY] is None
     assert state[SOLUTION_INTENT_KEY] == ""
-    assert state[CONTEXT_KEY] is None
+    assert state[CONTEXT_KEY] == sample.context
+    assert state[TRANSCRIPT_KEY] == sample.transcript.strip()
     assert state[ANALYSIS_INVALIDATION_KEY] is not None
 
 

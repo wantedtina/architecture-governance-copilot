@@ -4,7 +4,7 @@ Updated: 2026-09-10
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`; no execution plan is active.
+Execution authority: `NONE`.
 
 Active execution plan: `NONE`
 
@@ -145,7 +145,7 @@ Open decisions to resolve before moving R1 to `Ready`:
 
 ### R2 — Separate SI drafting and governance review into two workflows
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of the Review Inputs mode switch after the 14 September
   baseline was completed.
 - **Observed behavior:** The UI presents Project Context, Draft Solution Intent, Review Inputs,
@@ -311,7 +311,7 @@ Open decisions to resolve before moving R4 to `Ready`:
 
 ### R5 — Authoritative SI and user-provided transcript intake for governance review
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing and product-boundary review of the Stage 3 inputs after the
   14 September baseline was completed.
 - **Observed behavior:** Offline Review Inputs exposes editable SI and transcript text areas and can
@@ -580,7 +580,7 @@ Open decisions to resolve before moving R7 to `Ready`:
 
 ### R8 — Order-independent Review Inputs acquisition and visible readiness feedback
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of the `Use Existing Solution Intent` shortcut followed by
   `Load Sample Transcript & Metadata` after the 14 September baseline was completed.
 - **Observed behavior:** `Use Existing Solution Intent` in Stage 1 changes the active route to
@@ -771,14 +771,14 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 
 The user accepted R1-R10 as subsequent implementation intent on 2026-09-10. Acceptance does not
 resolve the open decisions recorded above, make every item ready, or authorize application changes.
-The following sequence is the smallest currently coherent grouping assessment. Only Batch 01 has
-an execution-plan file or active-plan status; later rows are candidates that require a new explicit
-decision and plan after the active pointer is cleared.
+The following sequence is the smallest currently coherent grouping assessment. Completed batches
+retain their execution plans as verification evidence; later rows remain candidates that require a
+new explicit decision and sole active plan.
 
 | Sequence | Refinements | Rationale and readiness |
 | --- | --- | --- |
 | Batch 01 | R10 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_01.md`. |
-| Candidate 02 | R2, R5, R8 | One inseparable workflow-entry, authoritative review-input manifest, order-independent acquisition, routing, state, and invalidation contract. Open interaction and provenance decisions remain. |
+| Batch 02 | R2, R5, R8 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_02.md`. |
 | Candidate 03 | R4, R6 | Human-review change awareness and purpose-driven document presentation should target the post-R2/R5/R8 screens instead of being rebuilt twice. Open presentation decisions remain. |
 | Candidate 04 | R1 | Drafting-source discovery and manifest work is bounded to the drafting workflow after R2 establishes its independent navigation and reset model. Source-type and metadata decisions remain. |
 | Candidate 05 | R3 | The realistic Internal fake fixture must align with the authoritative review-source contract and revised review workflow from Candidate 02. Scenario-content decisions remain. |

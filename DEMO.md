@@ -5,18 +5,18 @@ it does not authorize application changes or define future implementation scope.
 
 ## Demo objective
 
-In less than four minutes, demonstrate one reliable end-to-end journey: generate a draft
-Solution Intent from synthetic context, confirm it, add a synthetic review transcript, produce a
-source-backed governance proposal, let a human reviewer edit and confirm the record, and generate
-review minutes plus Azure DevOps work-item previews. Formal governance decisions remain with the
-Domain Architect.
+In less than four minutes, demonstrate the independent governance-review workflow: acquire a
+versioned authoritative synthetic Solution Intent, transcript, and metadata; confirm their exact
+manifest; produce a source-backed governance proposal; let a human reviewer edit and confirm the
+record; and generate review minutes plus Azure DevOps work-item previews. Briefly show that SI
+drafting is a separate peer workflow. Formal governance decisions remain with the Domain Architect.
 
 The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
 not show a second review round.
 
-The five-stage header remains visible throughout: **Project Context → Draft Solution Intent →
-Review Inputs → Human Review → Generated Outputs**. The recording follows the drafting path.
-**Use Existing Solution Intent** is mentioned only as an alternative and is not clicked.
+The landing page exposes **Draft a Solution Intent** and **Review a Solution Intent** as peer
+tasks. The recording follows the three-step review path: **Review Inputs → Human Review → Generated
+Outputs**. Drafting has its own two-step path and never supplies an authoritative review source.
 
 ## Synthetic scenario
 
@@ -79,46 +79,44 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
 - **Architecture Governance Copilot** and the Solution Intent review subtitle are visible.
 - A single global disclosure states **Demo Mode · Synthetic Data · No External Connections**.
-- **Stage 1 — Project Context** is active.
-- No project workspace is open.
+- The workflow landing page is active.
+- Both peer workflow choices are visible.
 - No analysis or outputs are displayed.
 
-### Step 2 — Open and confirm Project Context
+### Step 2 — Enter the governance-review workflow
 
-**Click:** **Open Demonstration Project**, inspect the four source cards and source-selection
-controls, then click **Refresh Context** and **Confirm Context & Continue**.
-
-**Expected state:**
-
-- The project, governance reference, SI template, repository, and branch are shown.
-- Required template and repository sources are selected; supporting evidence is optional.
-- Refresh reports a deterministic local validation with no external connection.
-- The browser navigates to **Stage 2 — Draft Solution Intent**.
-- Project Context is marked **Complete** in the five-stage header.
-
-### Step 3 — Generate the SI draft
-
-**Click:** Briefly identify the three read-only context tabs, then click **Generate SI Draft**.
+**Action:** Point out **Draft a Solution Intent**, then click **Review a Solution Intent**.
 
 **Expected state:**
 
-- The confirmed template, selected code context, and supporting notes are visibly synthetic.
-- A short deterministic processing overlay ends on an editable SI draft.
-- **Confirm SI Draft & Continue to Review** remains fixed at the bottom of the viewport.
-- The draft is clearly labeled as a drafting aid, not approval or Confluence publication.
+- The browser navigates to **Review step 1 — Review Inputs**.
+- Review progress contains only Review Inputs, Human Review, and Generated Outputs.
+- Offline demo mode is selected and no source is implied to be loaded.
+- Analyze is disabled.
 
-### Step 4 — Confirm the SI and prepare review inputs
+### Step 3 — Acquire the review package in independent parts
 
-**Click:** **Confirm SI Draft & Continue to Review**, then **Load Sample Transcript & Metadata**.
+**Click:** **Load synthetic transcript**, then **Load synthetic metadata**, then **Load authoritative
+SI snapshot**.
 
 **Expected state:**
 
-- A short two-phase transition validates the reviewed draft and prepares the governance handoff.
-- The browser navigates to **Stage 3 — Review Inputs**.
-- Draft Solution Intent is marked **Complete** in the five-stage header.
-- The confirmed SI is preserved and the matching transcript and review metadata are loaded.
-- Review metadata identifies SI version 1.2, round 2, and ticket `ARCH-POC-1024`.
-- **Analyze Review** becomes enabled.
+- Component loading works in any order and does not clear already valid inputs.
+- The SI is read-only and exposes synthetic page identity, version, retrieval time, canonicalizer,
+  and content fingerprint.
+- Transcript and metadata remain separately editable.
+- Readiness shows all three components as loaded, while Analyze remains disabled.
+
+### Step 4 — Confirm the exact review-input manifest
+
+**Click:** **Confirm review input manifest**.
+
+**Expected state:**
+
+- SI, transcript, and metadata each show **Confirmed**.
+- The exact source, transcript, metadata, mode, and provider identity are fingerprint-bound.
+- **Analyze review** becomes enabled only after confirmation.
+- No output is generated and no source is published.
 
 ### Step 5 — Analyze the review
 
@@ -130,8 +128,8 @@ controls, then click **Refresh Context** and **Confirm Context & Continue**.
   the human-review workspace.
 - Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
 - The browser navigates to `/human-review`.
-- The progress indicator advances to step 5.
-- **Stage 4 — Human Review** replaces the full input view.
+- The progress indicator advances to review step 2.
+- **Review step 2 — Human Review** replaces the full input view.
 - A compact analyzed-input summary and **Draft Structured Review** appear.
 - Outcome shows **Changes Requested**.
 - Metrics show one decision, three findings, one risk, two actions, one open question, and two
@@ -182,8 +180,8 @@ production support ownership**.
   two Azure DevOps work-item previews.
 - The UI confirms output generation without claiming formal SI approval.
 - The browser navigates to `/generated-outputs`.
-- The progress indicator advances to step 4.
-- **Stage 5 — Generated Outputs** replaces the edit form.
+- The progress indicator advances to review step 3.
+- **Review step 3 — Generated Outputs** replaces the edit form.
 - A **Governance package ready** completion panel clearly marks the workflow as complete.
 - Summary cards show completion, outcome, one minutes artifact, and the work-item preview count.
 - **Start New Review** provides a deliberate reset for the next rehearsal.
@@ -233,9 +231,10 @@ production support ownership**.
 
 1. “A Solution Intent is the project's detailed architecture design. This PoC starts by drafting
    one from a synthetic template, selected code context, and supporting notes.”
-2. “A human confirms the draft before it moves into governance review; nothing is published.”
-3. “We then add the synthetic transcript and metadata, and deterministic offline analysis
-   combines both review sources into a structured proposal.”
+2. “Drafting and review are separate tasks. Review starts from its own authoritative, read-only SI
+   snapshot rather than a locally generated draft.”
+3. “We can acquire the transcript, metadata, and SI in any order, but analysis stays disabled until
+   a human confirms the exact manifest.”
 4. “This finding maps back to the SI's Availability and Resilience section, and its evidence
    includes both the document and the meeting.”
 5. “The machine proposes the record; the Domain Architect remains responsible for review and
@@ -252,8 +251,8 @@ production support ownership**.
 | Time | Segment | Focus |
 | --- | --- | --- |
 | 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
-| 0:20–0:55 | Draft SI | Load context, generate, and confirm the synthetic SI draft. |
-| 0:55–1:10 | Review inputs | Load transcript and metadata; show the five-stage progression. |
+| 0:20–0:35 | Choose workflow | Show the two peer tasks and enter Review. |
+| 0:35–1:10 | Review inputs | Load three components independently and confirm the manifest. |
 | 1:10–1:40 | Analyze | Show Changes Requested, counts, and read-only evidence. |
 | 1:40–2:15 | Human review | Edit one owner, exclude one finding, and emphasize human control. |
 | 2:15–3:15 | Confirm and generate | Show rendered/raw minutes and two ADO work-item previews. |
@@ -273,7 +272,7 @@ or every output field.
 - Mapping findings to SI sections where supported.
 - Showing findings, decisions, risks, actions, questions, and missing information.
 - Editing and removing proposed review items in the session.
-- Guided one-stage-at-a-time navigation with visible progress.
+- Guided one-stage-at-a-time navigation with workflow-local progress.
 - Explicit human confirmation before output generation.
 - Generating deterministic structured output and minutes from the reviewed record.
 - Generating local JSON-ready mock ADO action work items.
@@ -307,7 +306,7 @@ or every output field.
 | Failure | Response |
 | --- | --- |
 | App is not running | Restart with the documented `uv` command and begin a new take. |
-| SI or transcript does not load | Refresh once, reload both samples, and restart the take if needed. |
+| SI or transcript does not load | Reload the affected component and restart the take if needed. |
 | Deterministic input mismatch | Reload both bundled inputs without editing them before Analyze. |
 | Analysis fixture fails validation | Stop; align models and fixture before recording. |
 | An edit is lost | Stop; repair session-state behavior before making the human-review claim. |
@@ -324,9 +323,11 @@ or every output field.
 
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
 - [ ] Only one review round—round 2—is shown.
-- [ ] The five-stage header begins at **Project Context**.
-- [ ] SI draft generation and explicit human confirmation are shown.
-- [ ] **Load Sample Transcript & Metadata** preserves the confirmed SI.
+- [ ] The landing page shows the two peer workflows.
+- [ ] Review progress contains exactly three local steps.
+- [ ] Transcript, metadata, and SI are loaded independently.
+- [ ] The authoritative SI is read-only and versioned.
+- [ ] Analyze stays disabled until the exact manifest is confirmed.
 - [ ] Changes Requested is shown.
 - [ ] At least one finding maps to an SI section.
 - [ ] One confirmed decision is visible.

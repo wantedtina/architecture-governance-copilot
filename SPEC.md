@@ -52,9 +52,9 @@ Formal approval remains the responsibility of the human Domain Architect.
 ## Product goal
 
 Given a synthetic SI template, selected synthetic source-code context, and supporting notes,
-produce an editable SI draft for human confirmation. Given that confirmed SI, a synthetic
-Teams-style review transcript, and basic review metadata, produce a structured proposal
-containing:
+produce an editable SI draft for human confirmation and manual transfer. Independently, given an
+authoritative synthetic SI snapshot, a synthetic Teams-style review transcript, and explicit
+review metadata, confirm their exact manifest and produce a structured proposal containing:
 
 - the current review-round outcome;
 - review findings mapped to SI sections where possible;
@@ -71,35 +71,39 @@ After human review and confirmation of the reviewed record, generate:
 2. standardized review meeting minutes; and
 3. mock ADO action work items linked to the governance ticket where available.
 
-Success means the deterministic demo completes this one-round workflow reliably. It does not
+Success means the deterministic demo completes these bounded tasks reliably. It does not
 mean that the PoC can govern arbitrary projects or replace Domain Architect judgment.
 
-## Core end-to-end user journey
+## Core user journeys
 
-1. Start in the first-class Project Context stage.
+The drafting journey is:
+
+1. Choose **Draft a Solution Intent** from the landing page.
 2. Open the bundled synthetic project workspace and inspect its available source package.
 3. Explicitly include or exclude the SI template, repository context, supporting evidence, and
    governance metadata, then confirm the context package.
 4. Generate a deterministic SI draft behind the drafting-provider interface.
-5. Let a project-team reviewer edit and confirm the draft.
-6. Hand the confirmed SI directly to Review Inputs.
-7. Alternatively, explicitly choose **Use Existing Solution Intent** and skip context selection
-   and drafting.
-8. Load the synthetic review transcript and metadata without replacing a confirmed SI, or load
-   the complete bundled SI, transcript, and metadata review package.
-9. Analyze the review using the SI, transcript, and review metadata.
-10. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
+5. Let a project-team reviewer edit and confirm the draft, inspect its provenance, and download the
+   unpublished Markdown artifact for manual transfer.
+
+The governance-review journey is independent:
+
+1. Choose **Review a Solution Intent** from the landing page.
+2. Load a named, versioned, authoritative synthetic SI snapshot, a transcript, and review metadata
+   in any order.
+3. Inspect component provenance and readiness, then explicitly confirm the exact input manifest.
+4. Analyze the review using the confirmed SI snapshot, transcript, and review metadata.
+5. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
    information.
-11. Show supporting SI or transcript evidence for each extracted claim.
-12. Allow human review, editing, and removal of proposed items.
-13. Let the Domain Architect explicitly confirm the reviewed record for output generation.
-14. Generate the structured review record, review minutes, and mock ADO outputs from the
+6. Show supporting SI or transcript evidence for each extracted claim.
+7. Allow human review, editing, and removal of proposed items.
+8. Let the Domain Architect explicitly confirm the reviewed record for output generation.
+9. Generate the structured review record, review minutes, and mock ADO outputs from the
    human-confirmed state.
 
-The implemented UI uses five peer-level routed stages: Project Context, Draft Solution Intent,
-Review Inputs, Human Review, and Generated Outputs. Project Context is the default start. The
-progress header marks context selection and drafting **Complete** after confirmation or
-**Skipped** when the user chooses the existing-SI path.
+The implemented UI has a workflow landing page and two local routed progress models: Project
+Context → Draft Solution Intent, and Review Inputs → Human Review → Generated Outputs. Neither
+workflow represents the other as skipped, required, or completed.
 
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
 record for future tracking, but the application will not compare versions, persist history, or
@@ -109,33 +113,34 @@ automatically carry findings between rounds.
 
 ### Pre-review SI drafting
 
-- Present Project Context as Stage 1 and Draft Solution Intent as Stage 2, at the same navigation
-  level as Review Inputs.
+- Enter drafting explicitly from the workflow landing page and present a local two-step progress
+  model for Project Context and Draft Solution Intent.
 - Provide a project workspace selector and production-shaped source cards for the bundled
   synthetic template, repository, supporting evidence, and governance metadata.
 - Require explicit confirmation of the required template and repository sources before drafting.
 - Clearly label source statuses as simulated and make no external synchronization or API calls.
-- Provide **Use Existing Solution Intent** as an explicit drafting bypass.
 - Accept project name, SI template, selected source-code context, and optional supporting notes.
 - Treat source code as pasted or pre-normalized text; do not clone, scan, or execute repositories.
 - Hide draft generation behind a `SolutionIntentDrafter` provider interface.
 - Use a deterministic offline provider for the bundled synthetic scenario.
 - Produce a validated `SolutionIntentDraft` with explicit assumptions.
 - Allow a human to edit the draft before confirmation.
-- Require **Confirm SI Draft & Continue to Review** before handoff.
-- Populate the existing Solution Intent review input with the confirmed content.
-- Allow transcript and review metadata to load without replacing that SI.
-- Preserve human edits during handoff, while clearly stating that the deterministic review
-  extractor accepts only the unchanged bundled SI.
+- Require **Confirm SI draft** before offering provenance and Markdown download.
+- Do not populate Review Inputs from a local drafting artifact. A separate review begins empty and
+  must acquire its own authoritative source.
 - Do not publish to Confluence or claim architecture approval.
 
 ### Inputs
 
-- Provide a **Load Sample Review** action.
-- Load synthetic SI content from `samples/solution_intent.md`.
-- Display the SI in a readable multiline area.
-- Load a synthetic Teams-style Domain Architecture review transcript.
-- Display the transcript in a separate multiline area.
+- Enter review explicitly from the workflow landing page.
+- Load a validated, read-only synthetic SI snapshot with page identity, space, URL, version,
+  retrieval time, canonicalizer version, and content fingerprint.
+- Load or paste a synthetic Teams-style Domain Architecture review transcript independently.
+- Load and edit review metadata independently.
+- Permit SI, transcript, and metadata acquisition in any order without clearing unrelated valid
+  components.
+- Show `Missing`, `Loaded`, `Edited`, `Invalid`, and `Confirmed` readiness where applicable.
+- Require explicit confirmation of the exact complete manifest before enabling Analyze.
 - Collect or preload basic metadata:
   - project name;
   - SI title and version;
@@ -144,7 +149,7 @@ automatically carry findings between rounds.
   - optional ADO governance-ticket ID;
   - optional Domain Architect; and
   - optional review date.
-- Reject missing required input with clear feedback.
+- Reject missing or invalid required input with localized readiness guidance.
 - Clearly label all content as synthetic.
 
 ### Analysis
@@ -297,10 +302,11 @@ The PoC is done when:
 - The bundled drafting template, source context, and supporting notes load together.
 - SI draft generation works deterministically without network access or credentials.
 - The draft is editable and requires explicit human confirmation.
-- The five-stage progress header truthfully distinguishes completed and skipped context and
-  drafting stages.
-- The confirmed SI appears in existing Review Inputs.
-- Loading transcript and metadata preserves the confirmed SI.
+- The landing page exposes two independent workflows with truthful local progress and scoped reset.
+- A confirmed draft remains an unpublished downloadable artifact and never becomes a review SI.
+- Review Inputs uses a read-only authoritative SI snapshot plus independently acquired transcript
+  and metadata.
+- Analyze remains unavailable until the exact complete manifest is explicitly confirmed.
 - `uv sync` creates a working Python 3.12 environment.
 - `uv run pytest`, `uv run ruff check .`, and `uv run ruff format --check .` pass.
 - The sample SI, matching review transcript, and metadata load together.
@@ -346,13 +352,13 @@ SolutionIntentDraftingService
     +--> SolutionIntentDraftRequest / SolutionIntentDraft
     |
     \--> Human confirmation
-             |
-             v
-        Review Inputs
-             |
-    |-- synthetic SI content
+             \--> Human-confirmed Markdown artifact (not published)
+
+Review Inputs
+    |-- authoritative synthetic SI snapshot
     |-- synthetic review transcript
     |-- SolutionIntentReviewContext
+    |-- explicit confirmed manifest
     v
 Governance service
     |
@@ -375,10 +381,11 @@ Governance service
 - `app.py`: common application shell, route configuration, SI-drafting controls, input loading,
   review widgets, read-only evidence, explicit confirmations, output rendering, and state
   transitions.
-- `pages/`: thin file-backed route entry points for SI Drafting, Review Inputs, Human Review,
-  and Generated Outputs.
-- `ui_support.py`: pure sample, state, fingerprint, optional-field, and reviewed-result helpers.
-- `models.py`: strict Pydantic enums and models for one SI review round.
+- `pages/`: thin file-backed route entry points for the landing page, Project Context, SI Drafting,
+  Review Inputs, Human Review, and Generated Outputs.
+- `ui_support.py`: workflow identity, schema migration, scoped reset, provenance, readiness,
+  manifest fingerprint, sample, optional-field, and reviewed-result helpers.
+- `models.py`: strict Pydantic enums and models for review-input manifests and one SI review round.
 - `si_drafting.py`: drafting-provider protocol, deterministic provider, and drafting service.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
 - `evidence_validation.py`: provider-neutral source-quote, locator, and reference validation.
@@ -589,7 +596,7 @@ analysis. It requires no network, credential, model SDK, Confluence page, Teams 
 | --- | --- |
 | Draft generation overstates what source code proves | Use selected synthetic excerpts, preserve explicit gaps, show assumptions, and require human review. |
 | Sensitive repositories or documents are uploaded | Do not clone, scan, or execute repositories in the PoC; use synthetic pasted context only. |
-| A generated SI appears published or approved | Label it as a draft and require separate human confirmation before governance review. |
+| A generated SI appears published, authoritative, or approved | Label it as an unpublished draft, require human confirmation, and keep authoritative review-source acquisition separate. |
 | Findings are not traceable to the SI | Require typed evidence and map findings to SI sections where supported. |
 | Transcript is treated as the reviewed object | Keep SI content visually primary and require both documents as analysis inputs. |
 | The tool appears to approve architecture autonomously | Label the action as reviewed-record confirmation and state that formal decisions remain with the Domain Architect. |
@@ -612,14 +619,14 @@ approval and a bounded execution plan.
 
 | Phase | Files | Expected outcome | Verification | Depends on |
 | --- | --- | --- | --- | --- |
-| 0. Optional deterministic SI drafting (complete) | `si_drafting.py`, drafting models, synthetic context, drafting route, tests | Generate, edit, confirm, and hand a known synthetic SI to existing Review Inputs. | Provider mismatch tests, state-handoff tests, Streamlit end-to-end test. | Existing review PoC. |
+| 0. Optional deterministic SI drafting (complete) | `si_drafting.py`, drafting models, synthetic context, drafting route, tests | Generate, edit, confirm, and download a known synthetic SI without treating it as an authoritative review source. | Provider mismatch tests, state-isolation tests, Streamlit end-to-end test. | Existing review PoC. |
 | 1. SI domain models and tests (complete) | `models.py`, `test_models.py` | Strict models for one SI review round, findings, and dual-source evidence. | Model tests, Ruff. | Planning. |
 | 2. Synthetic SI, transcript, metadata, and expected result (complete) | `samples/`, `test_sample_data.py` | One internally consistent fictional review-round fixture. | Validate JSON, models, scenario counts, safety, and every evidence quote. | Phase 1. |
 | 3. Deterministic provider (complete) | `extractors.py`, `test_extractors.py` | Match both sources and return the known validated result offline. | Match, mismatch, repeatability, and corrupt-fixture tests. | Phases 1–2. |
 | 4. Review minutes generator (complete) | `minutes_generator.py`, generator tests | Stable minutes covering context, findings, and evidence. | Deterministic content assertions. | Phases 1–2. |
 | 5. Mock ADO action generator (complete) | `ado_generator.py`, generator tests | One typed mock work item per action; parent-ticket update remains future work. | Mapping, counts, nulls, SI section, and criteria tests. | Phases 1–2. |
 | 6. Governance service (complete) | `governance_service.py`, service tests | Keep extractor analysis separate from generation using a caller-supplied reviewed result. | Delegation, separation, edit-preservation, exception, and independence tests. | Phases 3–5. |
-| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Navigate five peer-level stages, support a completed or skipped drafting path, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
+| 7. Streamlit UI (complete) | `app.py`, `pages/`, `ui_support.py`, UI tests | Choose between independent drafting and review workflows, confirm an exact review-input manifest, show seven editable sections with evidence, and display reviewed outputs. | Streamlit `AppTest`, route-guard tests, pure support tests, and headless startup. | Phase 6. |
 | 8. Editable human review (complete) | `app.py`, `ui_support.py`, focused tests | Edit/exclude items, validate a reconstructed result, and prevent stale generation. | Edit, exclusion, validation, mutation, reset, and stale-input tests. | Phase 7. |
 | 9. Optional real LLM provider (not implemented or authorized) | Provider module/tests, dependency only if justified | Analyze arbitrary synthetic SI reviews without changing deterministic mode. | Mocked API tests and one synthetic trial. | Phases 1–8; optional. |
 | 10. Final hardening (complete for the frozen baseline) | Tests and docs | Clean setup, stable demo, and aligned implementation documentation. | Full `uv` checks and verified browser scenarios recorded in `docs/SUBMISSION_BASELINE.md`. | Phases 1–8. |

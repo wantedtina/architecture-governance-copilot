@@ -4,11 +4,11 @@ Document role: `CURRENT_PRODUCT_DESCRIPTION`. Current behavior is determined by 
 revision, application code, tests, and synchronized maintained documentation. Roadmap language and
 historical records do not independently authorize implementation.
 
-Architecture Governance Copilot is a hackathon proof of concept for drafting and reviewing a
-Solution Intent (SI). Its first workflow stage turns a synthetic SI template, selected
-source-code context, and supporting notes into an editable SI draft. The confirmed draft then
-enters the review workflow with a synthetic Domain Architecture review transcript and basic
-review metadata. Users who already have an SI can explicitly skip drafting.
+Architecture Governance Copilot is a hackathon proof of concept with two independent tasks for
+drafting and reviewing a Solution Intent (SI). The drafting workflow turns a synthetic SI template,
+selected source-code context, and supporting notes into a human-confirmed Markdown artifact for
+manual transfer. The review workflow starts separately from an authoritative, read-only synthetic
+SI snapshot, a transcript, and explicit review metadata.
 
 A human Domain Architect remains responsible for reviewing, editing, and making the formal
 governance decision. Only a validated, human-confirmed reviewed record generates standardized
@@ -32,10 +32,11 @@ The implemented deterministic Solution Intent Copilot can:
 1. open a synthetic project workspace and let the user inspect and select its SI template,
    repository context, supporting evidence, and governance metadata;
 2. confirm that source package and generate a known SI draft behind a provider interface;
-3. let a human edit and confirm that draft before it enters governance review;
-4. load review transcript and metadata without replacing the confirmed SI;
-5. alternatively load one complete bundled synthetic review package;
-6. analyze both review sources with the deterministic fixture-backed extractor;
+3. let a human edit, confirm, inspect provenance for, and download that unpublished draft;
+4. independently load a versioned authoritative SI snapshot, transcript, and review metadata in
+   any order;
+5. show component provenance and readiness, then require confirmation of the exact input manifest;
+6. analyze the confirmed review package with the deterministic fixture-backed extractor;
 7. display the outcome, findings, decisions, risks, actions, open questions, and missing
    information;
 8. identify supporting evidence as either SI or transcript evidence;
@@ -44,10 +45,11 @@ The implemented deterministic Solution Intent Copilot can:
 11. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
-The UI presents one consistent five-stage route hierarchy: **Project Context → Draft Solution
-Intent → Review Inputs → Human Review → Generated Outputs**. Project Context is the default
-starting page. **Use Existing Solution Intent** moves directly to Review Inputs and marks both
-context selection and drafting as skipped.
+The landing page presents two peer workflows. **Draft a Solution Intent** uses **Project Context →
+Draft Solution Intent**. **Review a Solution Intent** uses **Review Inputs → Human Review →
+Generated Outputs**. Each workflow has local progress and reset semantics; neither reports the
+other as skipped or complete. A confirmed draft is never silently promoted to an authoritative
+review source.
 Analysis navigates to `/human-review`, and review confirmation navigates to
 `/generated-outputs`. Browser history and Back actions therefore behave like page navigation
 while shared session state preserves the current draft and review.
@@ -64,10 +66,12 @@ Synthetic template + source context + supporting notes
              SI drafting provider/service
                          |
                          v
-              Editable SI draft → Human confirm
+              Editable SI draft → Human confirm → Markdown download
+
+Authoritative synthetic SI snapshot + transcript + review metadata
                          |
                          v
-Confirmed SI + synthetic transcript + review metadata
+             Confirmed review-input manifest
                          |
                          v
                     Streamlit UI
@@ -234,15 +238,17 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The primary guided flow is: **Open Demonstration Project → inspect/select sources → Confirm
-Context & Continue → Generate SI Draft → human edit/confirm → Load Sample Transcript & Metadata
-→ Analyze Review → edit or exclude items → Confirm Reviewed Record & Generate Outputs**.
+The drafting flow is: **Draft a Solution Intent → Open Demonstration Project → inspect/select
+sources → Confirm Context & Continue → Generate SI Draft → human edit/confirm → inspect provenance
+or download Markdown**.
 
-The existing-SI shortcut is: **Use Existing Solution Intent → Load Sample Review → Analyze
-Review**.
+The review flow is: **Review a Solution Intent → load the authoritative SI, transcript, and metadata
+in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
+Reviewed Record & Generate Outputs**.
 The application is fixture-backed and supports only the bundled synthetic drafting and review
-scenario. Human edits are preserved into Stage 2, but the current deterministic review extractor
-can analyze only the unchanged bundled SI; arbitrary edited SI analysis requires a future
+scenario. Human draft edits are preserved in the drafting workflow, but the current deterministic
+review extractor can analyze only the unchanged bundled authoritative SI snapshot; arbitrary SI
+analysis requires a future
 approved provider.
 
 ## Current implementation status
@@ -257,8 +263,11 @@ Implemented:
 - a production-shaped Project Context stage with explicit source selection and simulated local
   source statuses;
 - a first-class routed drafting stage with editable human confirmation;
-- direct handoff of the confirmed SI to Review Inputs;
-- transcript-and-metadata loading that preserves the confirmed SI;
+- independent drafting and review workflow entry points with local progress and scoped reset;
+- a human-confirmed, downloadable draft with provenance and no review-source handoff;
+- a read-only, named, versioned authoritative synthetic SI snapshot;
+- order-independent transcript and metadata intake with per-component provenance and readiness;
+- exact review-input manifest confirmation before analysis;
 - strict Pydantic models for one SI review round;
 - SI lifecycle and review outcome enums;
 - typed SI/transcript evidence;
@@ -275,8 +284,7 @@ Implemented:
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
-- one consistent five-stage route hierarchy, durable state, and
-  stale-analysis protection;
+- two bounded route hierarchies, versioned session state, and stale-analysis protection;
 - one deliberate project-level light theme for consistent native and branded surfaces;
 - editable human review with item exclusion, a normalized change summary, and read-only evidence;
 - exact source-quote and supported-locator validation before Human Review;
@@ -304,15 +312,16 @@ Not yet implemented:
 - Confluence review-page write-back; or
 - any multi-round workflow behavior.
 
-The deterministic drafting and review providers support only the bundled synthetic scenario;
+The deterministic drafting and review providers support only the bundled synthetic scenarios;
 they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Offline
 ADO work items remain local previews. Internal fake mode can submit one preview to an in-memory
-gateway only; it never reaches Azure DevOps. The UI confirms a draft for review handoff and later
-confirms a reviewed record for output generation; neither action formally approves the Solution
-Intent or replaces the Domain Architect.
+gateway only; it never reaches Azure DevOps. Draft confirmation creates an unpublished artifact;
+review-input confirmation binds the exact analysis package; reviewed-record confirmation controls
+output generation. None formally approves the Solution Intent or replaces the Domain Architect.
 
-**Reset semantics:** Reset and Start New Review clear local workflow inputs, analysis,
-confirmation, previews, and outputs. Publication operations that may identify a remote result are
+**Reset semantics:** Each workflow reset clears only its local state. **Reset all local demo state**
+clears both workflows. **Start New Review** clears review inputs, analysis, confirmation, previews,
+and outputs. Publication operations that may identify a remote result are
 retained for reconciliation within the current session. Restarting the process is not evidence
 that an attempted remote Create did not happen. The current fake gateway is in memory and is not a
 durable audit store.
