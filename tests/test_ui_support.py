@@ -73,6 +73,7 @@ from architecture_governance_copilot.ui_support import (
     Workflow,
     active_stage,
     analysis_is_stale,
+    build_pending_review_changes,
     build_review_change_summary,
     build_reviewed_result,
     build_sample_review_snapshot,
@@ -81,6 +82,7 @@ from architecture_governance_copilot.ui_support import (
     confirm_review_input_manifest,
     current_analysis_invalidation,
     current_input_fingerprint,
+    current_review_form_data,
     current_review_mode,
     current_workflow,
     default_review_form_data,
@@ -1079,6 +1081,78 @@ def test_review_change_summary_distinguishes_duplicate_titles_by_original_positi
     assert [change.item_index for change in owner_changes] == [0, 1]
     assert [change.item_name for change in owner_changes] == [duplicate_title, duplicate_title]
     assert [change.after for change in owner_changes] == ["First Owner", "Second Owner"]
+
+
+def test_pending_review_changes_are_tolerant_reversible_and_match_confirmation(
+    sample_result: GovernanceResult,
+) -> None:
+    defaults = default_review_form_data(sample_result)
+    assert not build_pending_review_changes(sample_result, defaults).has_changes
+
+    actions = _editable_mappings(defaults.action_items)
+    findings = _editable_mappings(defaults.findings)
+    risks = _editable_mappings(defaults.risks)
+    actions[0]["owner"] = "  Taylor Kim  "
+    actions[0]["due_date"] = " 2026-07-24 "
+    actions[1]["priority"] = "low"
+    findings[0]["include"] = False
+    risks[0]["owner"] = "   "
+    edited = replace(
+        defaults,
+        action_items=tuple(actions),
+        findings=tuple(findings),
+        risks=tuple(risks),
+    )
+    pending = build_pending_review_changes(sample_result, edited)
+
+    assert len(pending.field_changes) == 2
+    assert pending.field_changes[0].after == "Taylor Kim"
+    assert pending.field_changes[1].field == "Priority"
+    assert pending.field_changes[1].after == "low"
+    assert len(pending.excluded_items) == 1
+    assert pending.pending_item_count("Action item") == 2
+    assert pending.item_state("Finding", 0) == (0, True, 0)
+    reviewed = build_reviewed_result(sample_result, edited)
+    confirmed = build_review_change_summary(sample_result, reviewed, edited)
+    assert pending.field_changes == confirmed.field_changes
+    assert pending.excluded_items == confirmed.excluded_items
+
+    reverted_actions = _editable_mappings(defaults.action_items)
+    reverted_actions[0]["owner"] = f"  {sample_result.action_items[0].owner}  "
+    reverted = replace(defaults, action_items=tuple(reverted_actions))
+    assert not build_pending_review_changes(sample_result, reverted).has_changes
+
+
+def test_pending_review_changes_report_invalid_date_without_model_validation(
+    sample_result: GovernanceResult,
+) -> None:
+    defaults = default_review_form_data(sample_result)
+    findings = _editable_mappings(defaults.findings)
+    findings[0]["due_date"] = "next Friday"
+
+    pending = build_pending_review_changes(
+        sample_result,
+        replace(defaults, findings=tuple(findings)),
+    )
+
+    assert pending.has_changes
+    assert pending.item_state("Finding", 0) == (1, False, 1)
+    assert pending.validation_issues[0].message == "Use YYYY-MM-DD."
+
+
+def test_current_review_form_data_overlays_routed_widget_values(
+    sample_result: GovernanceResult,
+) -> None:
+    state = {
+        f"{REVIEW_WIDGET_PREFIX}action_0_owner": "Taylor Kim",
+        f"{REVIEW_WIDGET_PREFIX}question_0_include": False,
+    }
+
+    form_data = current_review_form_data(state, sample_result)
+
+    assert form_data.action_items[0]["owner"] == "Taylor Kim"
+    assert form_data.open_questions[0]["include"] is False
+    assert form_data.findings[0]["title"] == sample_result.findings[0].title
 
 
 def test_outputs_are_generated_from_reviewed_result_and_are_deterministic(

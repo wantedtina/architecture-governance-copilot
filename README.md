@@ -41,7 +41,8 @@ The implemented deterministic Solution Intent Copilot can:
    information;
 8. identify supporting evidence as either SI or transcript evidence;
 9. map findings to SI sections where supported;
-10. let a reviewer edit fields and exclude proposed items while evidence remains read-only; and
+10. let a reviewer edit fields and exclude proposed items while evidence remains read-only and
+    live, unconfirmed change indicators show the affected sections; and
 11. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
@@ -286,12 +287,15 @@ Implemented:
 - `GovernanceReviewService`, with separate analysis and reviewed-result generation stages;
 - two bounded route hierarchies, versioned session state, and stale-analysis protection;
 - one deliberate project-level light theme for consistent native and branded surfaces;
-- editable human review with item exclusion, a normalized change summary, and read-only evidence;
+- editable human review with live pending-change and validation awareness, item exclusion, a
+  normalized confirmed change summary, and read-only evidence;
 - exact source-quote and supported-locator validation before Human Review;
 - unified input, mode, source-version, and provider-identity invalidation;
 - an evidence-to-output comparison joining source quotes, the confirmed action, its minutes entry,
   and its generated ADO preview;
-- rendered/raw Markdown output and Azure DevOps work-item preview cards; and
+- purpose-labelled rendered, editable, and exact-source Markdown views across drafting, review,
+  and generated records, with safe structured-value interpolation;
+- Azure DevOps work-item preview cards with exact JSON and request payload views; and
 - an explicit completed-workflow panel with artifact counts and a safe **Start New Review**
   reset; and
 - pure UI-support tests plus Streamlit `AppTest` workflow coverage;

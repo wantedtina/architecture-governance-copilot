@@ -125,6 +125,10 @@ automatically carry findings between rounds.
 - Use a deterministic offline provider for the bundled synthetic scenario.
 - Produce a validated `SolutionIntentDraft` with explicit assumptions.
 - Allow a human to edit the draft before confirmation.
+- Present template and supporting-document Markdown as rendered documents with exact source
+  available, while repository excerpts remain verbatim code.
+- Distinguish the generated draft's Markdown editor from its live rendered preview; after
+  confirmation, default to a read-only rendered document with exact Markdown and download.
 - Require **Confirm SI draft** before offering provenance and Markdown download.
 - Do not populate Review Inputs from a local drafting artifact. A separate review begins empty and
   must acquire its own authoritative source.
@@ -151,6 +155,8 @@ automatically carry findings between rounds.
   - optional review date.
 - Reject missing or invalid required input with localized readiness guidance.
 - Clearly label all content as synthetic.
+- Present the authoritative SI as rendered canonical Markdown with a separate read-only canonical
+  source view; keep transcript intake as literal plain text.
 
 ### Analysis
 
@@ -202,6 +208,10 @@ automatically carry findings between rounds.
 - Show a normalized summary of human field changes and exclusions after confirmation without
   treating evidence as an editable field.
 - Preserve routed form state during navigation; navigation alone must not invalidate analysis.
+- Derive a live, session-local comparison with the analyzed proposal that identifies modified
+  fields, exclusions, affected collections, and invalid in-progress values before confirmation.
+- Keep excluded items and their evidence visible, label every affected item as unconfirmed, and
+  remove pending indicators when values return to their normalized analyzed state.
 
 ### Reviewed outputs
 
@@ -226,6 +236,10 @@ automatically carry findings between rounds.
   through correlation lookup, at most one in-memory Create call, and GET verification.
 - Block stale previews, duplicate or ambiguous correlations, unconfirmed requests, and automatic
   retry after an unknown Create result.
+- Present generated review minutes with purpose-labelled rendered and exact Markdown-source views.
+- Escape structured values interpolated into generated Markdown so they cannot introduce headings,
+  lists, links, HTML blocks, or emphasis; preserve exact values in forms, evidence/source views,
+  typed records, and JSON.
 
 ## Non-functional requirements
 
@@ -317,11 +331,15 @@ The PoC is done when:
 - Evidence is visibly distinguished as SI or transcript evidence.
 - Review Outcome and all required list items contain valid evidence.
 - The reviewer can edit and remove proposed items.
+- Pending modifications, exclusions, affected sections, and validation issues are visible before
+  confirmation and survive routed Back/Return without becoming an audit or approval record.
 - Invalid reviewed data cannot generate outputs.
 - Reviewed-record confirmation is explicit and does not imply formal SI approval.
 - Analysis and confirmation change the browser route rather than appending the next stage below
   the previous one.
 - Generated outputs reflect the edited, confirmed record.
+- Markdown-bearing documents have explicit rendered/editor/source roles, while transcripts,
+  evidence quotes, repository excerpts, and machine payloads remain literal.
 - A normalized change summary identifies edited fields and excluded proposals while retaining the
   provider evidence unchanged.
 - Source quotes and supported locators are validated before Human Review, and stale inputs cannot

@@ -104,6 +104,7 @@ SI snapshot**.
 - Component loading works in any order and does not clear already valid inputs.
 - The SI is read-only and exposes synthetic page identity, version, retrieval time, canonicalizer,
   and content fingerprint.
+- The SI opens in **Rendered** form and exposes **Canonical Markdown source** for exact inspection.
 - Transcript and metadata remain separately editable.
 - Readiness shows all three components as loaded, while Analyze remains disabled.
 
@@ -135,6 +136,8 @@ SI snapshot**.
 - Metrics show one decision, three findings, one risk, two actions, one open question, and two
   missing-information entries.
 - Counted tabs organize Decisions, Findings, Risks, Actions, Questions, and Missing Information.
+- **Pending human changes** explicitly reports that current values still match the analyzed
+  proposal.
 - Every required item offers supporting evidence.
 - No generated minutes or ADO work items appear automatically.
 
@@ -155,6 +158,8 @@ SI snapshot**.
 **Expected state:**
 
 - The edited owner remains in the form.
+- The pending summary reports one modified field and the Actions tab/item show one unconfirmed
+  pending item.
 - Evidence remains visible and unchanged.
 - The record remains a human-reviewed draft, not a formal SI approval.
 
@@ -167,6 +172,8 @@ production support ownership**.
 
 - The finding's evidence remains read-only in the current form.
 - The finding is marked for omission from the reviewed result.
+- The pending summary and Findings tab update, and the still-visible item is labelled excluded and
+  unconfirmed.
 - **Production support ownership is not specified** remains in Missing Information, so excluding
   the proposed finding does not create a misleadingly clean record.
 
@@ -192,7 +199,7 @@ production support ownership**.
 
 ### Step 10 — Show the generated minutes
 
-**Action:** Show the **Rendered Markdown** view, then briefly select **Raw Markdown**.
+**Action:** Show the **Rendered** view, then briefly select **Markdown source**.
 
 **Expected state:**
 

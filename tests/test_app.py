@@ -413,6 +413,12 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     assert "Managed PostgreSQL" in generated
     assert app.button(key="agc_generate_si_draft").label == "Regenerate SI Draft"
     assert any(item.label == "View drafting sources" for item in app.expander)
+    assert {tab.label for tab in app.tabs} >= {
+        "Markdown editor",
+        "Rendered preview",
+        "Rendered",
+        "Markdown source",
+    }
     assert app.button(key="agc_confirm_si_draft")
 
     app.button(key="agc_confirm_si_draft").click().run()
@@ -421,6 +427,7 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     assert [item.value for item in app.header] == ["Drafting step 2 — Draft Solution Intent"]
     assert app.text_area(key=DRAFT_CONTENT_WIDGET_KEY).disabled
     assert app.download_button(key="agc_download_confirmed_si")
+    assert {tab.label for tab in app.tabs} >= {"Rendered", "Markdown source"}
     assert any("not been published" in item.value for item in app.success)
     assert all(item.key != SOLUTION_INTENT_WIDGET_KEY for item in app.text_area)
 
@@ -506,6 +513,7 @@ def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None
     assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value.startswith("# Solution Intent")
     assert "[10:00] Priya Shah:" in app.text_area(key=TRANSCRIPT_WIDGET_KEY).value
     assert any("Synthetic review metadata loaded" in item.value for item in app.success)
+    assert {tab.label for tab in app.tabs} >= {"Rendered", "Canonical Markdown source"}
 
     app.button(key="agc_confirm_review_inputs").click().run()
     assert not app.button(key="agc_analyze").disabled
@@ -553,6 +561,7 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     assert app.button(key="agc_back_to_review")
     assert app.button(key="agc_start_new_review")
     assert any("Governance package ready" in item.value for item in app.markdown)
+    assert {tab.label for tab in app.tabs} >= {"Rendered", "Markdown source"}
     output_metrics = {
         item.label: item.value
         for item in app.metric
@@ -850,6 +859,43 @@ def test_routed_back_navigation_preserves_pending_review_edits() -> None:
 
     assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
     assert any("After — Taylor Kim" in item.value for item in app.caption)
+
+
+def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None:
+    app = _analyzed_app()
+    assert any("No pending human changes" in item.value for item in app.info)
+
+    original_owner = app.text_input(key="agc_field_action_0_owner").value
+    app.text_input(key="agc_field_action_0_owner").input("Taylor Kim").run()
+
+    metrics = {item.label: item.value for item in app.metric}
+    assert metrics["Modified fields"] == "1"
+    assert metrics["Excluded items"] == "0"
+    assert metrics["Affected sections"] == "1"
+    assert metrics["Validation issues"] == "0"
+    assert "Actions · 2 · 1 pending" in [tab.label for tab in app.tabs]
+    assert any("Pending · 1 modified · Unconfirmed" in item.value for item in app.caption)
+
+    app.checkbox(key="agc_field_question_0_include").uncheck().run()
+    assert "Questions · 1 · 1 pending" in [tab.label for tab in app.tabs]
+    assert any("Pending · Excluded · Unconfirmed" in item.value for item in app.caption)
+
+    app.text_input(key="agc_field_action_0_due_date").input("next Friday").run()
+    assert any("Action item 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
+    assert {item.label: item.value for item in app.metric}["Validation issues"] == "1"
+
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    app.button(key="agc_return_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Kim"
+    assert any("Action item 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
+
+    app.text_input(key="agc_field_action_0_owner").input(original_owner).run()
+    app.text_input(key="agc_field_action_0_due_date").input("2026-07-24").run()
+    app.checkbox(key="agc_field_question_0_include").check().run()
+    assert any("No pending human changes" in item.value for item in app.info)
+    assert all("pending" not in tab.label for tab in app.tabs)
 
 
 def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> None:

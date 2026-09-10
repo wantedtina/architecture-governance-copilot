@@ -122,11 +122,13 @@ from architecture_governance_copilot.ui_support import (
     TRANSCRIPT_WIDGET_KEY,
     AnalysisInvalidation,
     DraftingSampleContext,
+    PendingReviewChanges,
     ReviewChangeSummary,
     ReviewFormData,
     ReviewInputReadiness,
     Workflow,
     active_stage,
+    build_pending_review_changes,
     build_review_change_summary,
     build_reviewed_result,
     build_sample_review_snapshot,
@@ -138,6 +140,7 @@ from architecture_governance_copilot.ui_support import (
     confirm_si_draft_for_review,
     current_analysis_invalidation,
     current_input_fingerprint,
+    current_review_form_data,
     current_review_input_manifest,
     current_review_mode,
     current_workflow,
@@ -159,6 +162,7 @@ from architecture_governance_copilot.ui_support import (
     reset_drafting_workflow,
     reset_review_workflow,
     restore_review_widget_state,
+    retain_review_widget_state,
     review_input_readiness,
     set_active_stage,
     start_workflow,
@@ -357,6 +361,7 @@ def _render_review_page() -> None:
 
 
 def _render_output_page() -> None:
+    retain_review_widget_state(st.session_state)
     invalidation = current_analysis_invalidation(st.session_state)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
     if invalidation is not None and isinstance(analyzed_result, GovernanceResult):
@@ -1070,6 +1075,23 @@ def _render_step_progress(stage: str) -> None:
     )
 
 
+def _render_readonly_markdown_document(
+    content: str,
+    *,
+    source_label: str = "Markdown source",
+    empty_message: str = "No Markdown document is loaded.",
+) -> None:
+    """Render a reader view alongside the exact, read-only Markdown source."""
+    rendered_tab, source_tab = st.tabs(["Rendered", source_label])
+    with rendered_tab, st.container(border=True):
+        if content.strip():
+            st.markdown(content)
+        else:
+            st.info(empty_message)
+    with source_tab:
+        st.code(content, language="markdown", wrap_lines=True)
+
+
 def _render_project_context_stage() -> None:
     st.header("Drafting step 1 — Project Context")
     st.caption(
@@ -1183,12 +1205,12 @@ def _render_project_context_stage() -> None:
             )
             with template_tab:
                 st.caption(project_context.template_reference)
-                st.code(project_context.template, language="markdown")
+                _render_readonly_markdown_document(project_context.template)
             with repository_tab:
                 st.caption(f"{project_context.repository_reference} · {project_context.branch}")
                 st.code(project_context.source_code_context, language="text")
             with evidence_tab:
-                st.code(project_context.supporting_documents, language="markdown")
+                _render_readonly_markdown_document(project_context.supporting_documents)
             with metadata_tab:
                 st.json(
                     {
@@ -1367,12 +1389,17 @@ def _render_drafting_stage() -> None:
         ["SI Template Snapshot", "Selected Repository Context", "Supporting Evidence"]
     )
     with template_tab:
-        template = st.text_area(
-            "SI template",
-            key=DRAFT_TEMPLATE_WIDGET_KEY,
-            height=280,
-            disabled=True,
-        )
+        template = str(st.session_state[DRAFT_TEMPLATE_WIDGET_KEY])
+        rendered_tab, markdown_tab = st.tabs(["Rendered", "Markdown source"])
+        with rendered_tab, st.container(border=True):
+            st.markdown(template)
+        with markdown_tab:
+            template = st.text_area(
+                "SI template Markdown source",
+                key=DRAFT_TEMPLATE_WIDGET_KEY,
+                height=280,
+                disabled=True,
+            )
     with source_tab:
         source_code_context = st.text_area(
             "Selected source-code context",
@@ -1381,12 +1408,17 @@ def _render_drafting_stage() -> None:
             disabled=True,
         )
     with documents_tab:
-        supporting_documents = st.text_area(
-            "Supporting-document context",
-            key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
-            height=280,
-            disabled=True,
-        )
+        supporting_documents = str(st.session_state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY])
+        rendered_tab, markdown_tab = st.tabs(["Rendered", "Markdown source"])
+        with rendered_tab, st.container(border=True):
+            st.markdown(supporting_documents)
+        with markdown_tab:
+            supporting_documents = st.text_area(
+                "Supporting-document Markdown source",
+                key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+                height=280,
+                disabled=True,
+            )
 
     st.session_state[DRAFT_PROJECT_KEY] = project_name
     st.session_state[DRAFT_TEMPLATE_KEY] = template
@@ -1412,27 +1444,35 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
         st.markdown("### Proposed Solution Intent")
         draft_confirmed = st.session_state[DRAFT_CONFIRMED_KEY] is True
         if not draft_confirmed:
-            with st.form("agc_si_draft_review_form", clear_on_submit=False):
+            editor_tab, preview_tab = st.tabs(["Markdown editor", "Rendered preview"])
+            with editor_tab:
                 reviewed_content = st.text_area(
-                    "Human-reviewed SI draft",
+                    "Human-reviewed SI draft Markdown",
                     key=DRAFT_CONTENT_WIDGET_KEY,
                     height=500,
                 )
-                submitted = st.form_submit_button(
-                    "Confirm SI draft",
-                    key="agc_confirm_si_draft",
-                    type="primary",
-                    width="stretch",
-                )
+            with preview_tab, st.container(border=True):
+                st.markdown(reviewed_content)
+            submitted = st.button(
+                "Confirm SI draft",
+                key="agc_confirm_si_draft",
+                type="primary",
+                width="stretch",
+            )
             if submitted and _confirm_si_draft(reviewed_content):
                 st.rerun()
         else:
-            reviewed_content = st.text_area(
-                "Confirmed SI draft",
-                key=DRAFT_CONTENT_WIDGET_KEY,
-                height=500,
-                disabled=True,
-            )
+            reviewed_content = str(st.session_state[DRAFT_CONTENT_WIDGET_KEY])
+            rendered_tab, source_tab = st.tabs(["Rendered", "Markdown source"])
+            with rendered_tab, st.container(border=True):
+                st.markdown(reviewed_content)
+            with source_tab:
+                reviewed_content = st.text_area(
+                    "Confirmed SI draft Markdown source",
+                    key=DRAFT_CONTENT_WIDGET_KEY,
+                    height=500,
+                    disabled=True,
+                )
             st.success("Draft confirmed by the user. It has not been published to Confluence.")
             provenance = {
                 "project": draft.project_name,
@@ -1489,12 +1529,17 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
             ["SI Template Snapshot", "Selected Repository Context", "Supporting Evidence"]
         )
         with template_tab:
-            st.text_area(
-                "SI template",
-                key=DRAFT_TEMPLATE_WIDGET_KEY,
-                height=280,
-                disabled=True,
-            )
+            template = str(st.session_state[DRAFT_TEMPLATE_KEY])
+            rendered_tab, markdown_tab = st.tabs(["Rendered", "Markdown source"])
+            with rendered_tab, st.container(border=True):
+                st.markdown(template)
+            with markdown_tab:
+                st.text_area(
+                    "SI template Markdown source",
+                    key=DRAFT_TEMPLATE_WIDGET_KEY,
+                    height=280,
+                    disabled=True,
+                )
         with source_tab:
             st.text_area(
                 "Selected source-code context",
@@ -1503,12 +1548,17 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
                 disabled=True,
             )
         with documents_tab:
-            st.text_area(
-                "Supporting-document context",
-                key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
-                height=280,
-                disabled=True,
-            )
+            supporting_documents = str(st.session_state[DRAFT_SUPPORTING_DOCS_KEY])
+            rendered_tab, markdown_tab = st.tabs(["Rendered", "Markdown source"])
+            with rendered_tab, st.container(border=True):
+                st.markdown(supporting_documents)
+            with markdown_tab:
+                st.text_area(
+                    "Supporting-document Markdown source",
+                    key=DRAFT_SUPPORTING_DOCS_WIDGET_KEY,
+                    height=280,
+                    disabled=True,
+                )
 
 
 def _render_drafting_context_snapshot(
@@ -1929,13 +1979,21 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
                 f"Canonicalizer {snapshot.canonicalizer_version} · content fingerprint "
                 f"{snapshot.content_fingerprint}"
             )
-        st.text_area(
-            "Authoritative Solution Intent snapshot",
-            key=SOLUTION_INTENT_WIDGET_KEY,
-            height=315,
-            placeholder="Load the authorized synthetic SI snapshot to begin.",
-            disabled=True,
-        )
+        solution_intent = str(st.session_state[SOLUTION_INTENT_WIDGET_KEY])
+        rendered_tab, source_tab = st.tabs(["Rendered", "Canonical Markdown source"])
+        with rendered_tab, st.container(border=True):
+            if solution_intent.strip():
+                st.markdown(solution_intent)
+            else:
+                st.info("Load the authorized synthetic SI snapshot to begin.")
+        with source_tab:
+            st.text_area(
+                "Authoritative SI canonical Markdown source",
+                key=SOLUTION_INTENT_WIDGET_KEY,
+                height=315,
+                placeholder="Load the authorized synthetic SI snapshot to begin.",
+                disabled=True,
+            )
     with transcript_tab:
         st.caption(
             "Paste user-provided content or load the bundled synthetic transcript. Recommended "
@@ -2444,6 +2502,11 @@ def _render_human_review_stage(
         "This stage does not formally approve the Solution Intent."
     )
     _render_analysis_summary(analyzed_result)
+    pending = build_pending_review_changes(
+        analyzed_result,
+        current_review_form_data(st.session_state, analyzed_result),
+    )
+    _render_pending_review_summary(pending)
 
     with st.container(border=True):
         st.markdown(
@@ -2474,26 +2537,35 @@ def _render_human_review_stage(
 
     review_tabs = st.tabs(
         [
-            f"Decisions · {len(analyzed_result.decisions)}",
-            f"Findings · {len(analyzed_result.findings)}",
-            f"Risks · {len(analyzed_result.risks)}",
-            f"Actions · {len(analyzed_result.action_items)}",
-            f"Questions · {len(analyzed_result.open_questions)}",
-            f"Missing Info · {len(analyzed_result.missing_evidence)}",
+            _pending_tab_label("Decisions", len(analyzed_result.decisions), "Decision", pending),
+            _pending_tab_label("Findings", len(analyzed_result.findings), "Finding", pending),
+            _pending_tab_label("Risks", len(analyzed_result.risks), "Risk", pending),
+            _pending_tab_label(
+                "Actions", len(analyzed_result.action_items), "Action item", pending
+            ),
+            _pending_tab_label(
+                "Questions", len(analyzed_result.open_questions), "Open question", pending
+            ),
+            _pending_tab_label(
+                "Missing Info",
+                len(analyzed_result.missing_evidence),
+                "Missing information",
+                pending,
+            ),
         ]
     )
     with review_tabs[0]:
-        decisions = _render_decision_edits(analyzed_result)
+        decisions = _render_decision_edits(analyzed_result, pending)
     with review_tabs[1]:
-        findings = _render_finding_edits(analyzed_result)
+        findings = _render_finding_edits(analyzed_result, pending)
     with review_tabs[2]:
-        risks = _render_risk_edits(analyzed_result)
+        risks = _render_risk_edits(analyzed_result, pending)
     with review_tabs[3]:
-        actions = _render_action_edits(analyzed_result)
+        actions = _render_action_edits(analyzed_result, pending)
     with review_tabs[4]:
-        questions = _render_question_edits(analyzed_result)
+        questions = _render_question_edits(analyzed_result, pending)
     with review_tabs[5]:
-        missing = _render_missing_evidence_edits(analyzed_result)
+        missing = _render_missing_evidence_edits(analyzed_result, pending)
 
     st.divider()
     st.caption(
@@ -2515,6 +2587,58 @@ def _render_human_review_stage(
     )
 
 
+def _pending_tab_label(
+    label: str,
+    proposal_count: int,
+    collection: str,
+    pending: PendingReviewChanges,
+) -> str:
+    pending_count = pending.pending_item_count(collection)
+    suffix = f" · {pending_count} pending" if pending_count else ""
+    return f"{label} · {proposal_count}{suffix}"
+
+
+def _render_pending_review_summary(pending: PendingReviewChanges) -> None:
+    st.markdown("### Pending human changes")
+    st.caption(
+        "Session-local comparison with the analyzed proposal. Pending values are not confirmed, "
+        "published, or formal approval."
+    )
+    if not pending.has_changes and not pending.validation_issues:
+        st.info("No pending human changes. All current values match the analyzed proposal.")
+        return
+    modified_column, excluded_column, sections_column, invalid_column = st.columns(4)
+    modified_column.metric("Modified fields", len(pending.field_changes))
+    excluded_column.metric("Excluded items", len(pending.excluded_items))
+    sections_column.metric("Affected sections", len(pending.affected_collections))
+    invalid_column.metric("Validation issues", len(pending.validation_issues))
+    affected = ", ".join(pending.affected_collections)
+    if affected:
+        st.caption(f"Affected: {affected}")
+    for issue in pending.validation_issues:
+        location = issue.collection
+        if issue.item_index is not None:
+            location = f"{location} {issue.item_index + 1}"
+        st.warning(f"{location} · {issue.field}: {issue.message}")
+
+
+def _render_pending_item_marker(
+    pending: PendingReviewChanges,
+    collection: str,
+    item_index: int,
+) -> None:
+    modified, excluded, invalid = pending.item_state(collection, item_index)
+    labels: list[str] = []
+    if excluded:
+        labels.append("Excluded")
+    if modified:
+        labels.append(f"{modified} modified")
+    if invalid:
+        labels.append(f"{invalid} needs correction")
+    if labels:
+        st.caption("Pending · " + " · ".join(labels) + " · Unconfirmed")
+
+
 def _render_analysis_summary(result: GovernanceResult) -> None:
     labels_and_values = [
         ("Outcome", humanize(result.review_outcome.value)),
@@ -2531,7 +2655,9 @@ def _render_analysis_summary(result: GovernanceResult) -> None:
         column.metric(label, value)
 
 
-def _render_decision_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_decision_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Confirmed Decisions")
     if not result.decisions:
         st.caption("None recorded.")
@@ -2539,6 +2665,7 @@ def _render_decision_edits(result: GovernanceResult) -> list[dict[str, object]]:
     for index, decision in enumerate(result.decisions):
         with st.container(border=True):
             st.markdown(f"**Decision {index + 1}**")
+            _render_pending_item_marker(pending, "Decision", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_decision_{index}_include",
@@ -2576,7 +2703,9 @@ def _render_decision_edits(result: GovernanceResult) -> list[dict[str, object]]:
     return edits
 
 
-def _render_finding_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_finding_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Review Findings")
     if not result.findings:
         st.caption("None recorded.")
@@ -2584,6 +2713,7 @@ def _render_finding_edits(result: GovernanceResult) -> list[dict[str, object]]:
     for index, finding in enumerate(result.findings):
         with st.container(border=True):
             st.markdown(f"**Review Finding {index + 1}**")
+            _render_pending_item_marker(pending, "Finding", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_finding_{index}_include",
@@ -2685,7 +2815,9 @@ def _render_finding_edits(result: GovernanceResult) -> list[dict[str, object]]:
     return edits
 
 
-def _render_risk_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_risk_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Risks")
     if not result.risks:
         st.caption("None recorded.")
@@ -2693,6 +2825,7 @@ def _render_risk_edits(result: GovernanceResult) -> list[dict[str, object]]:
     for index, risk in enumerate(result.risks):
         with st.container(border=True):
             st.markdown(f"**Risk {index + 1}**")
+            _render_pending_item_marker(pending, "Risk", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_risk_{index}_include",
@@ -2738,7 +2871,9 @@ def _render_risk_edits(result: GovernanceResult) -> list[dict[str, object]]:
     return edits
 
 
-def _render_action_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_action_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Action Items")
     if not result.action_items:
         st.caption("None recorded.")
@@ -2746,6 +2881,7 @@ def _render_action_edits(result: GovernanceResult) -> list[dict[str, object]]:
     for index, action in enumerate(result.action_items):
         with st.container(border=True):
             st.markdown(f"**Action Item {index + 1}**")
+            _render_pending_item_marker(pending, "Action item", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_action_{index}_include",
@@ -2799,7 +2935,9 @@ def _render_action_edits(result: GovernanceResult) -> list[dict[str, object]]:
     return edits
 
 
-def _render_question_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_question_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Open Questions")
     if not result.open_questions:
         st.caption("None recorded.")
@@ -2807,6 +2945,7 @@ def _render_question_edits(result: GovernanceResult) -> list[dict[str, object]]:
     for index, question in enumerate(result.open_questions):
         with st.container(border=True):
             st.markdown(f"**Open Question {index + 1}**")
+            _render_pending_item_marker(pending, "Open question", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_question_{index}_include",
@@ -2843,7 +2982,9 @@ def _render_question_edits(result: GovernanceResult) -> list[dict[str, object]]:
     return edits
 
 
-def _render_missing_evidence_edits(result: GovernanceResult) -> list[dict[str, object]]:
+def _render_missing_evidence_edits(
+    result: GovernanceResult, pending: PendingReviewChanges
+) -> list[dict[str, object]]:
     st.markdown("### Missing Governance Information")
     if not result.missing_evidence:
         st.caption("None recorded.")
@@ -2851,6 +2992,7 @@ def _render_missing_evidence_edits(result: GovernanceResult) -> list[dict[str, o
     for index, missing in enumerate(result.missing_evidence):
         with st.container(border=True):
             st.markdown(f"**Missing Information {index + 1}**")
+            _render_pending_item_marker(pending, "Missing information", index)
             include = st.checkbox(
                 "Include in reviewed record",
                 key=f"agc_field_missing_{index}_include",
@@ -3212,7 +3354,7 @@ def _render_minutes_output(review_minutes: str) -> None:
         "Review before publication. The Domain Architect remains responsible for "
         "the formal governance decision."
     )
-    rendered_tab, raw_tab = st.tabs(["Rendered Markdown", "Raw Markdown"])
+    rendered_tab, raw_tab = st.tabs(["Rendered", "Markdown source"])
     with rendered_tab:
         st.markdown(review_minutes)
     with raw_tab:

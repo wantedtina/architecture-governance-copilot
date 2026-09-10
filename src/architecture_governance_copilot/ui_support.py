@@ -239,6 +239,65 @@ class ReviewChangeSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class ReviewValidationIssue:
+    """One invalid value in the unconfirmed Human Review form."""
+
+    collection: str
+    item_index: int | None
+    item_name: str
+    field: str
+    message: str
+
+
+@dataclass(frozen=True, slots=True)
+class PendingReviewChanges:
+    """Tolerant session-local differences from the analyzed proposal."""
+
+    field_changes: tuple[ReviewFieldChange, ...]
+    excluded_items: tuple[ReviewExcludedItem, ...]
+    validation_issues: tuple[ReviewValidationIssue, ...]
+
+    @property
+    def has_changes(self) -> bool:
+        """Return whether any unconfirmed edit or exclusion exists."""
+        return bool(self.field_changes or self.excluded_items)
+
+    @property
+    def affected_collections(self) -> tuple[str, ...]:
+        """Return affected display collections in stable encounter order."""
+        values: list[str] = []
+        for item in (*self.field_changes, *self.excluded_items, *self.validation_issues):
+            if item.collection not in values:
+                values.append(item.collection)
+        return tuple(values)
+
+    def pending_item_count(self, collection: str) -> int:
+        """Count distinct affected items in one review collection."""
+        positions = {
+            item.item_index
+            for item in (*self.field_changes, *self.excluded_items, *self.validation_issues)
+            if item.collection == collection and item.item_index is not None
+        }
+        return len(positions)
+
+    def item_state(self, collection: str, item_index: int) -> tuple[int, bool, int]:
+        """Return modified-field, excluded, and invalid-field counts for one item."""
+        modified = sum(
+            item.collection == collection and item.item_index == item_index
+            for item in self.field_changes
+        )
+        excluded = any(
+            item.collection == collection and item.item_index == item_index
+            for item in self.excluded_items
+        )
+        invalid = sum(
+            item.collection == collection and item.item_index == item_index
+            for item in self.validation_issues
+        )
+        return modified, excluded, invalid
+
+
+@dataclass(frozen=True, slots=True)
 class AnalysisInvalidation:
     """Reason an earlier analysis can no longer be confirmed or published."""
 
@@ -564,6 +623,16 @@ def restore_review_widget_state(state: MutableMapping[str, Any]) -> None:
     for key, value in stored.items():
         if isinstance(key, str) and key.startswith(REVIEW_WIDGET_PREFIX):
             state.setdefault(key, value)
+
+
+def retain_review_widget_state(state: MutableMapping[str, Any]) -> None:
+    """Detach routed review widget values from Streamlit's page cleanup cycle."""
+    stored = state.get(REVIEW_WIDGET_VALUES_KEY)
+    if not isinstance(stored, Mapping):
+        return
+    for key, value in stored.items():
+        if isinstance(key, str) and key.startswith(REVIEW_WIDGET_PREFIX):
+            state[key] = value
 
 
 def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
@@ -1558,6 +1627,168 @@ def default_review_form_data(result: GovernanceResult) -> ReviewFormData:
             }
             for item in result.missing_evidence
         ),
+    )
+
+
+def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult) -> ReviewFormData:
+    """Overlay current routed widget values on the analyzed proposal defaults."""
+    defaults = default_review_form_data(result)
+
+    def collection_values(
+        values: tuple[Mapping[str, object], ...], widget_collection: str
+    ) -> tuple[Mapping[str, object], ...]:
+        return tuple(
+            {
+                field: state.get(
+                    f"{REVIEW_WIDGET_PREFIX}{widget_collection}_{index}_{field}",
+                    value,
+                )
+                for field, value in item.items()
+            }
+            for index, item in enumerate(values)
+        )
+
+    return ReviewFormData(
+        review_outcome=str(state.get(f"{REVIEW_WIDGET_PREFIX}outcome", defaults.review_outcome)),
+        decisions=collection_values(defaults.decisions, "decision"),
+        findings=collection_values(defaults.findings, "finding"),
+        risks=collection_values(defaults.risks, "risk"),
+        action_items=collection_values(defaults.action_items, "action"),
+        open_questions=collection_values(defaults.open_questions, "question"),
+        missing_evidence=collection_values(defaults.missing_evidence, "missing"),
+    )
+
+
+def build_pending_review_changes(
+    analyzed_result: GovernanceResult,
+    form_data: ReviewFormData,
+) -> PendingReviewChanges:
+    """Compare an in-progress form without requiring it to be model-valid."""
+    field_changes: list[ReviewFieldChange] = []
+    excluded_items: list[ReviewExcludedItem] = []
+    validation_issues: list[ReviewValidationIssue] = []
+
+    outcome = form_data.review_outcome.strip()
+    if outcome != analyzed_result.review_outcome.value:
+        field_changes.append(
+            ReviewFieldChange(
+                collection="Review outcome",
+                item_index=None,
+                item_name="Governance outcome",
+                field="Outcome",
+                before=analyzed_result.review_outcome.value,
+                after=outcome,
+            )
+        )
+
+    collection_specs = (
+        ("decisions", "Decision", "statement", ("statement", "rationale")),
+        (
+            "findings",
+            "Finding",
+            "title",
+            (
+                "title",
+                "description",
+                "category",
+                "si_section",
+                "severity",
+                "status",
+                "recommended_change",
+                "owner",
+                "due_date",
+            ),
+        ),
+        ("risks", "Risk", "description", ("description", "severity", "owner")),
+        (
+            "action_items",
+            "Action item",
+            "title",
+            ("title", "owner", "due_date", "priority"),
+        ),
+        (
+            "open_questions",
+            "Open question",
+            "question",
+            ("question", "owner"),
+        ),
+        (
+            "missing_evidence",
+            "Missing information",
+            "item",
+            ("item", "reason"),
+        ),
+    )
+    optional_fields = {
+        "rationale",
+        "category",
+        "si_section",
+        "recommended_change",
+        "owner",
+        "reason",
+        "due_date",
+    }
+
+    for attribute, collection, name_field, fields in collection_specs:
+        originals = getattr(analyzed_result, attribute)
+        edits = getattr(form_data, attribute)
+        _require_edit_count(collection.lower(), edits, len(originals))
+        for item_index, (original, edit) in enumerate(zip(originals, edits, strict=True)):
+            item_name = str(getattr(original, name_field))
+            if not _included(edit):
+                excluded_items.append(
+                    ReviewExcludedItem(
+                        collection=collection,
+                        item_index=item_index,
+                        item_name=item_name,
+                    )
+                )
+                continue
+            for field in fields:
+                before = _summary_value(getattr(original, field))
+                raw_after = _text(edit, field)
+                normalized_after = (
+                    optional_text(raw_after) if field in optional_fields else raw_after.strip()
+                )
+                if field == "due_date" and normalized_after is not None:
+                    try:
+                        normalized_after = date.fromisoformat(normalized_after).isoformat()
+                    except ValueError:
+                        validation_issues.append(
+                            ReviewValidationIssue(
+                                collection=collection,
+                                item_index=item_index,
+                                item_name=item_name,
+                                field=_REVIEW_FIELD_LABELS[field],
+                                message="Use YYYY-MM-DD.",
+                            )
+                        )
+                elif field not in optional_fields and not normalized_after:
+                    validation_issues.append(
+                        ReviewValidationIssue(
+                            collection=collection,
+                            item_index=item_index,
+                            item_name=item_name,
+                            field=_REVIEW_FIELD_LABELS[field],
+                            message="A value is required.",
+                        )
+                    )
+                if before != normalized_after:
+                    field_changes.append(
+                        ReviewFieldChange(
+                            collection=collection,
+                            item_index=item_index,
+                            item_name=item_name,
+                            field=_REVIEW_FIELD_LABELS[field],
+                            before=before,
+                            after=normalized_after,
+                        )
+                    )
+
+    return PendingReviewChanges(
+        field_changes=tuple(field_changes),
+        excluded_items=tuple(excluded_items),
+        validation_issues=tuple(validation_issues),
     )
 
 

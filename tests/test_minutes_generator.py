@@ -345,3 +345,20 @@ def test_minutes_do_not_include_complete_source_documents(
 
     assert "The conceptual flow is event driven." not in minutes
     assert "Thanks for joining review round two" not in minutes
+
+
+def test_structured_values_cannot_inject_markdown_structure() -> None:
+    action = ActionItem(
+        title="Close gap\n## Injected heading [link](https://example.invalid)",
+        owner="**Admin**",
+        priority=ActionPriority.HIGH,
+        evidence=[_evidence("Quote\n- injected list")],
+    )
+
+    minutes = generate_review_minutes(_minimal_result(action_items=[action]))
+
+    assert "## Injected heading" not in minutes
+    assert "\\#\\# Injected heading" in minutes
+    assert "\\[link\\](https://example.invalid)" in minutes
+    assert "\\*\\*Admin\\*\\*" in minutes
+    assert "Quote - injected list" in minutes

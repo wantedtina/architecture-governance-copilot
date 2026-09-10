@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from architecture_governance_copilot.markdown_support import escape_markdown_text
 from architecture_governance_copilot.models import (
     ActionItem,
     EvidenceSource,
@@ -23,14 +24,16 @@ def generate_review_minutes(result: GovernanceResult) -> str:
         "",
         "## Review Context",
         "",
-        f"- **Project:** {context.project_name}",
-        f"- **Solution Intent:** {context.si_title}",
-        f"- **SI Version:** {context.si_version}",
+        f"- **Project:** {escape_markdown_text(context.project_name)}",
+        f"- **Solution Intent:** {escape_markdown_text(context.si_title)}",
+        f"- **SI Version:** {escape_markdown_text(context.si_version)}",
         f"- **SI Status Before Review:** {_humanize(context.current_si_status)}",
         f"- **Review Round:** {context.review_round}",
         f"- **Review Date:** {_format_optional_date(context.review_date, _NOT_PROVIDED)}",
-        f"- **Domain Architect:** {context.domain_architect or _NOT_PROVIDED}",
-        f"- **ADO Governance Ticket:** {context.ado_ticket_id or _NOT_PROVIDED}",
+        "- **Domain Architect:** "
+        + escape_markdown_text(context.domain_architect or _NOT_PROVIDED),
+        "- **ADO Governance Ticket:** "
+        + escape_markdown_text(context.ado_ticket_id or _NOT_PROVIDED),
         "",
         "## Review Outcome",
         "",
@@ -44,9 +47,9 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     if not result.decisions:
         lines.append(_NONE_RECORDED)
     for index, decision in enumerate(result.decisions, start=1):
-        lines.append(f"{index}. **{decision.statement}**")
+        lines.append(f"{index}. **{escape_markdown_text(decision.statement)}**")
         if decision.rationale is not None:
-            lines.append(f"   - **Rationale:** {decision.rationale}")
+            lines.append(f"   - **Rationale:** {escape_markdown_text(decision.rationale)}")
         _append_item_evidence(lines, decision.evidence)
 
     lines.extend(["", "## Review Findings", ""])
@@ -55,8 +58,8 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     for index, finding in enumerate(result.findings, start=1):
         lines.extend(
             [
-                f"{index}. **{finding.title}**",
-                f"   - **Description:** {finding.description}",
+                f"{index}. **{escape_markdown_text(finding.title)}**",
+                f"   - **Description:** {escape_markdown_text(finding.description)}",
             ]
         )
         _append_optional_field(lines, "Category", finding.category)
@@ -79,7 +82,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     for index, risk in enumerate(result.risks, start=1):
         lines.extend(
             [
-                f"{index}. **{risk.description}**",
+                f"{index}. **{escape_markdown_text(risk.description)}**",
                 f"   - **Severity:** {_humanize(risk.severity)}",
             ]
         )
@@ -96,7 +99,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     if not result.open_questions:
         lines.append(_NONE_RECORDED)
     for index, question in enumerate(result.open_questions, start=1):
-        lines.append(f"{index}. **{question.question}**")
+        lines.append(f"{index}. **{escape_markdown_text(question.question)}**")
         _append_optional_field(lines, "Owner", question.owner)
         _append_item_evidence(lines, question.evidence)
 
@@ -104,7 +107,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
     if not result.missing_evidence:
         lines.append(_NONE_RECORDED)
     for index, missing in enumerate(result.missing_evidence, start=1):
-        lines.append(f"{index}. **{missing.item}**")
+        lines.append(f"{index}. **{escape_markdown_text(missing.item)}**")
         _append_optional_field(lines, "Reason", missing.reason)
         if missing.evidence:
             _append_item_evidence(lines, missing.evidence)
@@ -130,8 +133,8 @@ def format_action_item_entry(action: ActionItem, position: int) -> str:
     if position < 1:
         raise ValueError("Action position must be at least 1.")
     lines = [
-        f"{position}. **{action.title}**",
-        f"   - **Owner:** {action.owner or 'Unassigned'}",
+        f"{position}. **{escape_markdown_text(action.title)}**",
+        f"   - **Owner:** {escape_markdown_text(action.owner or 'Unassigned')}",
         f"   - **Due Date:** {_format_optional_date(action.due_date, 'Not specified')}",
         f"   - **Priority:** {_humanize(action.priority)}",
     ]
@@ -149,7 +152,7 @@ def _format_optional_date(value: date | None, fallback: str) -> str:
 
 def _append_optional_field(lines: list[str], label: str, value: str | None) -> None:
     if value is not None:
-        lines.append(f"   - **{label}:** {value}")
+        lines.append(f"   - **{label}:** {escape_markdown_text(value)}")
 
 
 def _append_evidence(lines: list[str], evidence_items: list[SourceEvidence]) -> None:
@@ -178,8 +181,8 @@ def _format_evidence(evidence: SourceEvidence) -> str:
     if evidence.reference is not None:
         metadata.append(f"Reference: {evidence.reference}")
     locator = " | ".join(_escape_evidence_metadata(item) for item in metadata)
-    return f'[{locator}] "{evidence.quote}"'
+    return f'[{locator}] "{escape_markdown_text(evidence.quote)}"'
 
 
 def _escape_evidence_metadata(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("|", "\\|").replace("]", "\\]")
+    return escape_markdown_text(value).replace("|", "\\|")

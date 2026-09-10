@@ -320,3 +320,22 @@ def test_acceptance_criteria_are_not_inferred_from_action_text() -> None:
     item = generate_mock_ado_work_items(_result_with_actions([action]))[0]
 
     assert item.acceptance_criteria == []
+
+
+def test_work_item_description_escapes_markdown_but_preserves_typed_title() -> None:
+    title = "Close gap\n## Injected heading [link](https://example.invalid)"
+    action = ActionItem(
+        title=title,
+        owner="**Admin**",
+        priority=ActionPriority.HIGH,
+        evidence=[_transcript_evidence("Quote\n- injected list")],
+    )
+
+    item = generate_mock_ado_work_items(_result_with_actions([action]))[0]
+
+    assert item.title == title
+    assert "## Injected heading" not in item.description
+    assert "\\#\\# Injected heading" in item.description
+    assert "\\[link\\](https://example.invalid)" in item.description
+    assert "\\*\\*Admin\\*\\*" in item.description
+    assert "Quote - injected list" in item.description

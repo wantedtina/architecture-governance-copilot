@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from architecture_governance_copilot.markdown_support import escape_markdown_text
 from architecture_governance_copilot.models import (
     ActionItem,
     EvidenceSource,
@@ -45,16 +46,16 @@ def _build_description(result: GovernanceResult, action: ActionItem) -> str:
     lines = [
         "Architecture Governance action generated from a Solution Intent review.",
         "",
-        f"Project: {context.project_name}",
-        f"Solution Intent: {context.si_title}",
-        f"SI Version: {context.si_version}",
+        f"Project: {escape_markdown_text(context.project_name)}",
+        f"Solution Intent: {escape_markdown_text(context.si_title)}",
+        f"SI Version: {escape_markdown_text(context.si_version)}",
         f"Review Round: {context.review_round}",
         f"Review Outcome: {_humanize(result.review_outcome)}",
         "",
         "Action:",
-        action.title,
+        escape_markdown_text(action.title),
         "",
-        f"Owner: {action.owner or 'Unassigned'}",
+        f"Owner: {escape_markdown_text(action.owner or 'Unassigned')}",
         f"Due Date: {action.due_date.isoformat() if action.due_date else 'Not specified'}",
         f"Priority: {_humanize(action.priority)}",
         "",
@@ -99,7 +100,7 @@ def _format_evidence(evidence: SourceEvidence) -> str:
     if evidence.reference is not None:
         metadata.append(f"Reference: {evidence.reference}")
     locator = " | ".join(_escape_evidence_metadata(item) for item in metadata)
-    return f'[{locator}] "{evidence.quote}"'
+    return f'[{locator}] "{escape_markdown_text(evidence.quote)}"'
 
 
 def _humanize(value: str) -> str:
@@ -107,4 +108,4 @@ def _humanize(value: str) -> str:
 
 
 def _escape_evidence_metadata(value: str) -> str:
-    return value.replace("\\", "\\\\").replace("|", "\\|").replace("]", "\\]")
+    return escape_markdown_text(value).replace("|", "\\|")

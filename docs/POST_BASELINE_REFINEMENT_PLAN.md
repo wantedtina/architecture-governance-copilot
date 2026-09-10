@@ -4,7 +4,7 @@ Updated: 2026-09-10
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`.
+Execution authority: `NONE`. No application implementation batch is currently authorized.
 
 Active execution plan: `NONE`
 
@@ -262,7 +262,7 @@ Open decisions to resolve before moving R3 to `Ready`:
 
 ### R4 — Show pending human-review changes before confirmation
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of editable fields in Stage 4 after the 14 September baseline
   was completed.
 - **Observed behavior:** Stage 4 lets the reviewer edit the proposed outcome and item fields or
@@ -308,6 +308,9 @@ Open decisions to resolve before moving R4 to `Ready`:
   separate tolerant comparison that does not require constructing a fully valid reviewed result.
 - How pending indicators persist across routed Back/Return navigation without altering the
   confirmed snapshot or the existing source-input invalidation rules.
+
+Resolution: implemented and verified through
+`docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`.
 
 ### R5 — Authoritative SI and user-provided transcript intake for governance review
 
@@ -372,7 +375,7 @@ Open decisions to resolve before moving R5 to `Ready`:
 
 ### R6 — Purpose-driven Markdown presentation across the workflows
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of inconsistent rendered and source Markdown presentation
   after the 14 September baseline was completed.
 - **Observed behavior:** Stage 1 presents the SI template and supporting-document Markdown as raw
@@ -443,6 +446,9 @@ Open decisions to resolve before moving R6 to `Ready`:
   screens.
 - How R6 is packaged with the two-workflow presentation changes in R2 and the authoritative SI
   intake contract in R5 without expanding into Confluence write-back or live integration.
+
+Resolution: implemented and verified through
+`docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`.
 
 ### R7 — Separate governed Azure DevOps work-item delivery step
 
@@ -779,7 +785,7 @@ new explicit decision and sole active plan.
 | --- | --- | --- |
 | Batch 01 | R10 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_01.md`. |
 | Batch 02 | R2, R5, R8 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_02.md`. |
-| Candidate 03 | R4, R6 | Human-review change awareness and purpose-driven document presentation should target the post-R2/R5/R8 screens instead of being rebuilt twice. Open presentation decisions remain. |
+| Batch 03 | R4, R6 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`. |
 | Candidate 04 | R1 | Drafting-source discovery and manifest work is bounded to the drafting workflow after R2 establishes its independent navigation and reset model. Source-type and metadata decisions remain. |
 | Candidate 05 | R3 | The realistic Internal fake fixture must align with the authoritative review-source contract and revised review workflow from Candidate 02. Scenario-content decisions remain. |
 | Candidate 06 | R7 | Governed work-item delivery depends on the review workflow, authoritative source manifest, confirmed actions, and the rendered-versus-exact presentation policy. Delivery queue, mapping, and recovery decisions remain. |
