@@ -372,6 +372,7 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     _assert_active_step(app, "Project Context")
 
     app.button(key="agc_open_demonstration_project").click().run()
+    app.button(key="agc_evidence_sample").click().run()
     app.switch_page("pages/project_context.py").run()
 
     _assert_active_step(app, "Project Context")
@@ -381,7 +382,7 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
         app.selectbox(key="agc_context_repository_widget").value
         == "payment-notification-repository-main"
     )
-    assert app.multiselect(key="agc_context_evidence_widget").value == ["supporting-context-v1"]
+    assert len(app.session_state[ui_support.DRAFT_EVIDENCE_KEY]) == 1
     project_snapshot = next(
         item.value
         for item in app.markdown
@@ -447,7 +448,7 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
         app.selectbox(key="agc_context_repository_widget").value
         == "payment-notification-repository-main"
     )
-    assert app.multiselect(key="agc_context_evidence_widget").value == ["supporting-context-v1"]
+    assert len(app.session_state[ui_support.DRAFT_EVIDENCE_KEY]) == 1
     app.switch_page("pages/solution_intent_drafting.py").run()
 
     app.button(key="agc_start_separate_review").click().run()
@@ -462,14 +463,13 @@ def test_project_context_blocks_incomplete_provider_package() -> None:
     app.button(key="agc_start_drafting_workflow").click().run()
     app.switch_page("pages/project_context.py").run()
     app.button(key="agc_open_demonstration_project").click().run()
+    app.button(key="agc_evidence_sample").click().run()
     app.switch_page("pages/project_context.py").run()
 
-    app.multiselect(key="agc_context_evidence_widget").set_value([]).run()
+    app.button(key="agc_evidence_remove_supporting-context-v1").click().run()
 
     assert app.button(key="agc_confirm_project_context").disabled
-    assert any(
-        "supporting evidence required by this provider" in item.value for item in app.warning
-    )
+    assert any("Add supporting evidence" in item.value for item in app.warning)
     assert any("Complete the required authorized selections" in item.value for item in app.info)
     assert all(item.key != "agc_generate_si_draft" for item in app.button)
 
@@ -1247,4 +1247,76 @@ def test_fake_provider_failure_does_not_call_offline_fallback(monkeypatch) -> No
     assert app.session_state[ANALYZED_RESULT_KEY] is None
     assert app.session_state[ui_support.REVIEW_MODE_KEY] == "internal_fake"
     assert app.error
+    assert not app.exception
+
+
+def test_project_context_user_notes_are_retained_and_never_generate_sample():
+    app = _initial_app()
+    app.button(key="agc_start_drafting_workflow").click().run()
+    app.switch_page("pages/project_context.py").run()
+    app.button(key="agc_open_demonstration_project").click().run()
+    assert app.session_state[ui_support.DRAFT_EVIDENCE_KEY] == ()
+    assert app.selectbox(key="agc_context_template_widget").disabled
+    assert app.selectbox(key="agc_context_repository_name_widget").options
+    app.button(key="agc_evidence_add").click().run()
+    app.text_area(key="agc_evidence_text_user-evidence-0001").set_value(
+        "Synthetic custom constraints"
+    ).run()
+    assert app.button(key="agc_confirm_project_context").disabled
+    assert any("Custom-input drafting" in item.value for item in app.warning)
+    app.button(key="agc_refresh_project_context").click().run()
+    assert (
+        app.text_area(key="agc_evidence_text_user-evidence-0001").value
+        == "Synthetic custom constraints"
+    )
+    app.switch_page("pages/workflow_home.py").run()
+    app.switch_page("pages/project_context.py").run()
+    assert (
+        app.text_area(key="agc_evidence_text_user-evidence-0001").value
+        == "Synthetic custom constraints"
+    )
+    app.button(key="agc_evidence_remove_user-evidence-0001").click().run()
+    app.button(key="agc_evidence_sample").click().run()
+    assert not app.button(key="agc_confirm_project_context").disabled
+    app.button(key="agc_confirm_project_context").click().run()
+    app.switch_page("pages/solution_intent_drafting.py").run()
+    app.button(key="agc_generate_si_draft").click().run()
+    app.switch_page("pages/project_context.py").run()
+    app.text_area(key="agc_evidence_text_supporting-context-v1").set_value("Edited sample").run()
+    assert app.session_state[ui_support.DRAFT_RESULT_KEY] is None
+    assert not app.session_state[ui_support.PROJECT_CONTEXT_CONFIRMED_KEY]
+    assert not app.exception
+
+
+def test_repository_selector_filters_revisions_and_rejects_unsupported_content():
+    import hashlib
+
+    from architecture_governance_copilot.models import DraftingSourceInventory, DraftingSourceRole
+
+    app = _initial_app()
+    app.button(key="agc_start_drafting_workflow").click().run()
+    app.switch_page("pages/project_context.py").run()
+    app.button(key="agc_open_demonstration_project").click().run()
+    app.button(key="agc_evidence_sample").click().run()
+    inventory = app.session_state[ui_support.PROJECT_CONTEXT_KEY]
+    repository = inventory.resource_for_role(DraftingSourceRole.REPOSITORY)
+    alternate = repository.model_copy(
+        update={
+            "resource_id": "synthetic-alternate-main",
+            "display_name": "Synthetic alternate repository",
+            "content": "Synthetic alternate code",
+            "source_reference": "synthetic://alternate",
+            "content_fingerprint": hashlib.sha256(b"Synthetic alternate code").hexdigest(),
+        }
+    )
+    app.session_state[ui_support.PROJECT_CONTEXT_KEY] = DraftingSourceInventory(
+        **{**inventory.model_dump(), "resources": (*inventory.resources, alternate)}
+    )
+    app.run()
+    app.selectbox(key="agc_context_repository_name_widget").set_value(alternate.display_name).run()
+    assert app.selectbox(key="agc_context_repository_widget").value is None
+    app.selectbox(key="agc_context_repository_widget").set_value(alternate.resource_id).run()
+    assert app.session_state[ui_support.CONTEXT_REPOSITORY_ID_KEY] == alternate.resource_id
+    assert app.button(key="agc_confirm_project_context").disabled
+    assert any("Custom-input" in item.value for item in app.warning)
     assert not app.exception

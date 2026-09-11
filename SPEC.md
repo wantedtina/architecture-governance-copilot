@@ -80,9 +80,9 @@ The drafting journey is:
 
 1. Choose **Draft a Solution Intent** from the landing page.
 2. Open the bundled synthetic project workspace and inspect its available source package.
-3. Select the exact governed template, repository revision, and required supporting evidence from
-   the authorized synthetic inventory; inspect read-only governance metadata and confirm the exact
-   fingerprint-bound source-package manifest.
+3. Inspect the read-only governed template and governance metadata; select a repository and
+   revision from the authorized synthetic inventory. Add or upload editable supporting evidence,
+   then confirm the exact fingerprint-bound source-package manifest.
 4. Generate a deterministic SI draft behind the drafting-provider interface.
 5. Let a project-team reviewer edit and confirm the draft, inspect its provenance, and download the
    unpublished Markdown artifact for manual transfer.
@@ -120,8 +120,18 @@ automatically carry findings between rounds.
   model for Project Context and Draft Solution Intent.
 - Provide a project workspace selector and an authorized synthetic inventory for the bundled
   template, repository revision, supporting evidence, and governance metadata.
-- Use controlled source selectors; expose no manual URL, repository identifier, file path, or
-  upload input in the deterministic PoC.
+- Keep the governed template read-only. Provide separate repository and revision selectors; the
+  bundled inventory contains one repository, while the contract supports multiple repositories.
+  Live ADO permission discovery remains deferred.
+- Start supporting evidence empty. Allow adding, editing, and removing notes or UTF-8 TXT/Markdown
+  uploads (at most 10 items, 1 MiB each). Keep uploads in session memory and reject invalid encoding,
+  empty content, unsupported extensions, and binary control characters.
+- Offer **Add sample evidence** explicitly; never replace custom input with sample content. Record
+  user-entered/uploaded provenance, original upload SHA-256 reference, and current content SHA-256.
+  User content is not externally verified. Refresh and navigation preserve evidence; reset clears it.
+- Block unsupported custom packages before confirmation, while retaining their content. The current
+  deterministic provider accepts only its exact sample inputs. Source edits invalidate drafting
+  confirmation and artifacts without clearing independent review or publication history.
 - Show stable resource IDs, canonical synthetic references, versions or revisions, exact SHA-256
   fingerprints, local validation status, and configured-provider compatibility.
 - Treat the project name and governance work-item reference as required, source-controlled,

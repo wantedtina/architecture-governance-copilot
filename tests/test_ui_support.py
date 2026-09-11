@@ -186,7 +186,7 @@ def test_project_context_open_readiness_and_confirmation() -> None:
     state[CONTEXT_EVIDENCE_IDS_KEY] = ()
 
     assert project_context_readiness(state) == (
-        "Select the supporting evidence required by this provider.",
+        "Add supporting evidence; the sample provider requires its exact supporting context.",
     )
     state[CONTEXT_EVIDENCE_IDS_KEY] = ("supporting-context-v1",)
 
@@ -1511,3 +1511,75 @@ def test_policy_identity_is_compared_without_resetting_compatible_session() -> N
     development = resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": "development"})
     assert apply_deployment_policy(state, development) is True
     assert state[OUTPUTS_KEY] == "compatible output"
+
+
+def test_user_drafting_evidence_is_preserved_in_manifest_and_blocks_fake_generation():
+    from architecture_governance_copilot.ui_support import (
+        DRAFT_EVIDENCE_KEY,
+        add_drafting_evidence,
+        edit_drafting_evidence,
+        refresh_project_context,
+        remove_drafting_evidence,
+    )
+
+    state = {}
+    initialize_session_state(state)
+    open_demonstration_project_into_state(state, load_sample_drafting_context())
+    state[DRAFT_EVIDENCE_KEY] = ()
+    add_drafting_evidence(state, title="business.md", data=b"# Synthetic business constraints")
+    manifest = build_drafting_source_package(state)
+    evidence = manifest.resources[-1]
+    assert evidence.provenance.value == "user_uploaded"
+    assert "sha256" in evidence.source_reference
+    assert any("Custom-input" in item for item in project_context_readiness(state))
+    with pytest.raises(ValueError, match="Custom-input"):
+        confirm_project_context_for_drafting(state)
+    reference = evidence.source_reference
+    edit_drafting_evidence(state, evidence.resource_id, "Edited synthetic constraints")
+    edited = build_drafting_source_package(state).resources[-1]
+    assert edited.provenance.value == "user_entered"
+    assert edited.source_reference == reference
+    assert edited.content_fingerprint != evidence.content_fingerprint
+    refresh_project_context(state)
+    assert state[DRAFT_EVIDENCE_KEY][0].text == "Edited synthetic constraints"
+    remove_drafting_evidence(state, evidence.resource_id)
+    assert project_context_readiness(state)
+
+
+@pytest.mark.parametrize(
+    "title,data",
+    [
+        ("bad.pdf", b"text"),
+        ("bad.txt", b"\xff"),
+        ("empty.md", b" "),
+        ("binary.txt", b"a\x00b"),
+        ("large.md", b"a" * (1024 * 1024 + 1)),
+    ],
+)
+def test_invalid_drafting_upload_does_not_replace_evidence(title, data):
+    from architecture_governance_copilot.ui_support import DRAFT_EVIDENCE_KEY, add_drafting_evidence
+
+    state = {DRAFT_EVIDENCE_KEY: ()}
+    with pytest.raises(ValueError):
+        add_drafting_evidence(state, title=title, data=data)
+    assert state[DRAFT_EVIDENCE_KEY] == ()
+
+
+def test_explicit_sample_evidence_can_be_confirmed_but_edit_revokes_only_drafting():
+    from architecture_governance_copilot.ui_support import (
+        DRAFT_EVIDENCE_KEY,
+        edit_drafting_evidence,
+        load_drafting_sample_evidence,
+    )
+
+    state = {}
+    initialize_session_state(state)
+    open_demonstration_project_into_state(state, load_sample_drafting_context())
+    state[DRAFT_EVIDENCE_KEY] = ()
+    load_drafting_sample_evidence(state)
+    confirm_project_context_for_drafting(state)
+    state[OUTPUTS_KEY] = "independent review"
+    edit_drafting_evidence(state, "supporting-context-v1", "User modification")
+    assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is False
+    assert state[DRAFT_RESULT_KEY] is None
+    assert state[OUTPUTS_KEY] == "independent review"

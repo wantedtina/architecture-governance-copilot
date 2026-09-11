@@ -76,8 +76,8 @@ class DeterministicDemoDrafter:
             if not value.strip():
                 raise DeterministicDraftingFixtureError(f"Deterministic {label} fixture is empty.")
 
-    def draft(self, request: SolutionIntentDraftRequest) -> SolutionIntentDraft:
-        """Return an independent known draft when all demo inputs match."""
+    def validate_request(self, request: SolutionIntentDraftRequest) -> None:
+        """Validate deterministic compatibility without producing a draft."""
         if request.project_name != "Digital Payment Notification Service":
             raise ValueError("Project name does not match the deterministic drafting fixture.")
         if _normalize_document(request.template) != _normalize_document(self._template):
@@ -95,6 +95,9 @@ class DeterministicDemoDrafter:
                 "Supporting-document context does not match the deterministic drafting fixture."
             )
 
+    def draft(self, request: SolutionIntentDraftRequest) -> SolutionIntentDraft:
+        """Return an independent known draft only when every input matches."""
+        self.validate_request(request)
         return SolutionIntentDraft(
             project_name=request.project_name,
             content=self._draft,

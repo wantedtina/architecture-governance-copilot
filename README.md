@@ -29,8 +29,8 @@ is slow, and findings can lose their SI-section context or supporting evidence.
 
 The implemented deterministic Solution Intent Copilot can:
 
-1. open an authorized synthetic project inventory and select the exact SI template, repository
-   revision, and supporting evidence while inspecting read-only governance metadata;
+1. inspect a read-only governed SI template and governance metadata, select a repository and
+   revision from synthetic inventory, and add editable notes or UTF-8 TXT/Markdown evidence;
 2. validate and confirm a fingerprint-bound source-package manifest, then generate a known SI
    draft behind a provider interface;
 3. let a human edit, confirm, inspect provenance for, and download that unpublished draft;

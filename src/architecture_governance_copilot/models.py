@@ -122,6 +122,8 @@ class DraftingSourceProvenance(StrEnum):
     """Origins supported by the deterministic drafting inventory."""
 
     SYNTHETIC_LOCAL_FIXTURE = "synthetic_local_fixture"
+    USER_ENTERED = "user_entered"
+    USER_UPLOADED = "user_uploaded"
 
 
 class ReviewInputProvenance(StrEnum):
@@ -205,7 +207,8 @@ class DraftingSourceInventory(_FrozenGovernanceModel):
         if not self.resources:
             raise ValueError("Drafting inventory must contain at least one resource")
         self.resource_for_role(DraftingSourceRole.TEMPLATE)
-        self.resource_for_role(DraftingSourceRole.REPOSITORY)
+        if not any(r.role is DraftingSourceRole.REPOSITORY for r in self.resources):
+            raise ValueError("Drafting inventory requires a repository")
         if not any(
             resource.role is DraftingSourceRole.SUPPORTING_EVIDENCE for resource in self.resources
         ):

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -50,9 +50,12 @@ from architecture_governance_copilot.runtime_dependencies import (
 )
 from architecture_governance_copilot.si_drafting import (
     DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID,
+    DeterministicDemoDrafter,
 )
 
 STATE_PREFIX = "agc_"
+DRAFT_EVIDENCE_KEY = f"{STATE_PREFIX}draft_evidence"
+DRAFT_REPOSITORY_NAME_KEY = f"{STATE_PREFIX}draft_repository_name"
 DEPLOYMENT_POLICY_ID_KEY = f"{STATE_PREFIX}deployment_policy_id"
 REVIEW_POLICY_RECOVERY_KEY = f"{STATE_PREFIX}review_policy_recovery"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
@@ -603,6 +606,12 @@ def start_workflow(state: MutableMapping[str, Any], workflow: Workflow) -> None:
 
 def reset_drafting_workflow(state: MutableMapping[str, Any]) -> None:
     """Clear only drafting inputs and outputs, then return to drafting entry."""
+    for key in tuple(state):
+        if key.startswith("agc_evidence_") or key in {
+            DRAFT_EVIDENCE_KEY,
+            DRAFT_REPOSITORY_NAME_KEY,
+        }:
+            state.pop(key, None)
     defaults = initial_state_values()
     drafting_keys = (
         PROJECT_CONTEXT_KEY,
@@ -625,6 +634,7 @@ def reset_drafting_workflow(state: MutableMapping[str, Any]) -> None:
     for key in drafting_keys:
         state[key] = defaults[key]
     for key in (
+        "agc_context_repository_name_widget",
         CONTEXT_TEMPLATE_WIDGET_KEY,
         CONTEXT_REPOSITORY_WIDGET_KEY,
         CONTEXT_EVIDENCE_WIDGET_KEY,
@@ -714,6 +724,7 @@ def preserve_review_widget_state(state: MutableMapping[str, Any]) -> None:
 def retain_drafting_source_widget_state(state: MutableMapping[str, Any]) -> None:
     """Retain routed source-widget values from durable source selections."""
     values = (
+        ("agc_context_repository_name_widget", DRAFT_REPOSITORY_NAME_KEY),
         (CONTEXT_TEMPLATE_WIDGET_KEY, CONTEXT_TEMPLATE_ID_KEY),
         (CONTEXT_REPOSITORY_WIDGET_KEY, CONTEXT_REPOSITORY_ID_KEY),
         (CONTEXT_EVIDENCE_WIDGET_KEY, CONTEXT_EVIDENCE_IDS_KEY),
@@ -1351,21 +1362,28 @@ def open_demonstration_project_into_state(
     state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
 
 
-def project_context_readiness(state: Mapping[str, Any]) -> tuple[str, ...]:
+def project_context_readiness(
+    state: Mapping[str, Any], *, check_provider: bool = True
+) -> tuple[str, ...]:
     """Return concise blockers for the currently selected drafting sources."""
-    inventory = state.get(PROJECT_CONTEXT_KEY)
+    try:
+        inventory = drafting_inventory_with_evidence(state)
+    except ValueError as exc:
+        return (str(exc),)
     if not isinstance(inventory, DraftingSourceInventory):
         return ("Open a demonstration project workspace.",)
     blockers: list[str] = []
     template_id = state.get(CONTEXT_TEMPLATE_ID_KEY)
     repository_id = state.get(CONTEXT_REPOSITORY_ID_KEY)
-    evidence_ids = state.get(CONTEXT_EVIDENCE_IDS_KEY)
+    evidence_ids = drafting_evidence_ids(state)
     if not isinstance(template_id, str) or not template_id:
         blockers.append("Select the required Solution Intent template.")
     if not isinstance(repository_id, str) or not repository_id:
         blockers.append("Select the required repository revision.")
     if not isinstance(evidence_ids, (tuple, list)) or not evidence_ids:
-        blockers.append("Select the supporting evidence required by this provider.")
+        blockers.append(
+            "Add supporting evidence; the sample provider requires its exact supporting context."
+        )
     inventory_ids = {resource.resource_id for resource in inventory.resources}
     selected_ids = {
         resource_id
@@ -1381,6 +1399,21 @@ def project_context_readiness(state: Mapping[str, Any]) -> tuple[str, ...]:
         != DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID
     ):
         blockers.append("Select a source package compatible with the configured drafter.")
+    if not blockers and check_provider:
+        try:
+            selected = {r.resource_id: r for r in inventory.resources}
+            request = SolutionIntentDraftRequest(
+                project_name=inventory.project_name,
+                template=selected[template_id].content,
+                source_code_context=selected[repository_id].content,
+                supporting_documents="\n\n".join(selected[k].content for k in sorted(evidence_ids)),
+            )
+            DeterministicDemoDrafter().validate_request(request)
+        except ValueError:
+            blockers.append(
+                "Your inputs are retained, but this deterministic provider only supports its exact "
+                "sample package. Custom-input drafting requires a separately approved provider."
+            )
     return tuple(blockers)
 
 
@@ -1418,11 +1451,13 @@ def confirm_project_context_for_drafting(state: MutableMapping[str, Any]) -> Non
     blockers = project_context_readiness(state)
     if blockers:
         raise ValueError(" ".join(blockers))
-    inventory = state[PROJECT_CONTEXT_KEY]
+    inventory = drafting_inventory_with_evidence(state)
     if not isinstance(inventory, DraftingSourceInventory):
         raise ValueError("Open a demonstration project workspace.")
     manifest = build_drafting_source_package(state)
+    original_inventory = state[PROJECT_CONTEXT_KEY]
     load_drafting_context_into_state(state, inventory, manifest)
+    state[PROJECT_CONTEXT_KEY] = original_inventory
     state[PROJECT_CONTEXT_REFRESHED_KEY] = True
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = True
 
@@ -1439,13 +1474,13 @@ def build_drafting_source_package(
     state: Mapping[str, Any],
 ) -> DraftingSourcePackageManifest:
     """Build the exact live package from authorized state selections."""
-    blockers = project_context_readiness(state)
+    blockers = project_context_readiness(state, check_provider=False)
     if blockers:
         raise ValueError(" ".join(blockers))
-    inventory = state.get(PROJECT_CONTEXT_KEY)
+    inventory = drafting_inventory_with_evidence(state)
     if not isinstance(inventory, DraftingSourceInventory):
         raise ValueError("Open a demonstration project workspace.")
-    evidence_ids = state.get(CONTEXT_EVIDENCE_IDS_KEY)
+    evidence_ids = drafting_evidence_ids(state)
     selected_evidence_ids = evidence_ids if isinstance(evidence_ids, (tuple, list)) else ()
     selected_ids = (
         str(state[CONTEXT_TEMPLATE_ID_KEY]),
@@ -2499,3 +2534,134 @@ def recover_review_policy(
     state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = descriptor.provider_configuration_identity
     state[REVIEW_POLICY_RECOVERY_KEY] = False
     state[DEPLOYMENT_POLICY_ID_KEY] = policy.identity
+
+
+@dataclass(frozen=True)
+class DraftingEvidenceInput:
+    """Editable user input, including incomplete text, before strict manifest validation."""
+
+    evidence_id: str
+    title: str
+    text: str
+    provenance: DraftingSourceProvenance
+    source_reference: str
+
+
+MAX_EVIDENCE_BYTES = 1024 * 1024
+MAX_EVIDENCE_ITEMS = 10
+
+
+def add_drafting_evidence(
+    state: MutableMapping[str, Any], *, title: str = "Notes", data: bytes | None = None
+) -> None:
+    items = tuple(state.get(DRAFT_EVIDENCE_KEY, ()))
+    if len(items) >= MAX_EVIDENCE_ITEMS:
+        raise ValueError("A source package supports at most 10 evidence items.")
+    text = ""
+    provenance = DraftingSourceProvenance.USER_ENTERED
+    reference = "user-entered://notes"
+    if data is not None:
+        if Path(title).suffix.lower() not in {".txt", ".md"}:
+            raise ValueError("Upload a UTF-8 TXT or Markdown file.")
+        if len(data) > MAX_EVIDENCE_BYTES:
+            raise ValueError("Each evidence file must be at most 1 MiB.")
+        try:
+            text = data.decode("utf-8-sig").replace("\r\n", "\n").replace("\r", "\n").strip()
+        except UnicodeError as exc:
+            raise ValueError("Evidence must be valid UTF-8 text.") from exc
+        if not text or any(ord(c) < 32 and c not in "\n\t" for c in text):
+            raise ValueError(
+                "Evidence must contain nonempty text without binary control characters."
+            )
+        provenance = DraftingSourceProvenance.USER_UPLOADED
+        reference = "user-upload://sha256/" + hashlib.sha256(data).hexdigest()
+    counter = int(state.get("agc_evidence_counter", 0)) + 1
+    state["agc_evidence_counter"] = counter
+    state[DRAFT_EVIDENCE_KEY] = (
+        *items,
+        DraftingEvidenceInput(
+            f"user-evidence-{counter:04d}", Path(title).name, text, provenance, reference
+        ),
+    )
+    _invalidate_drafting_source_confirmation(state)
+
+
+def edit_drafting_evidence(state: MutableMapping[str, Any], evidence_id: str, text: str) -> None:
+    items = tuple(state.get(DRAFT_EVIDENCE_KEY, ()))
+    state[DRAFT_EVIDENCE_KEY] = tuple(
+        replace(item, text=text, provenance=DraftingSourceProvenance.USER_ENTERED)
+        if item.evidence_id == evidence_id and item.text != text
+        else item
+        for item in items
+    )
+    if state[DRAFT_EVIDENCE_KEY] != items:
+        _invalidate_drafting_source_confirmation(state)
+
+
+def remove_drafting_evidence(state: MutableMapping[str, Any], evidence_id: str) -> None:
+    state[DRAFT_EVIDENCE_KEY] = tuple(
+        item for item in state.get(DRAFT_EVIDENCE_KEY, ()) if item.evidence_id != evidence_id
+    )
+    _invalidate_drafting_source_confirmation(state)
+
+
+def load_drafting_sample_evidence(state: MutableMapping[str, Any]) -> None:
+    sample = load_sample_drafting_context().resource_for_role(
+        DraftingSourceRole.SUPPORTING_EVIDENCE
+    )
+    items = tuple(state.get(DRAFT_EVIDENCE_KEY, ()))
+    if any(item.evidence_id == sample.resource_id for item in items):
+        return
+    if len(items) >= MAX_EVIDENCE_ITEMS:
+        raise ValueError("A source package supports at most 10 evidence items.")
+    state[DRAFT_EVIDENCE_KEY] = (
+        *items,
+        DraftingEvidenceInput(
+            sample.resource_id,
+            sample.display_name,
+            sample.content,
+            sample.provenance,
+            sample.source_reference,
+        ),
+    )
+    _invalidate_drafting_source_confirmation(state)
+
+
+def drafting_evidence_ids(state: Mapping[str, Any]) -> tuple[str, ...]:
+    if DRAFT_EVIDENCE_KEY in state:
+        return tuple(item.evidence_id for item in state[DRAFT_EVIDENCE_KEY])
+    return tuple(state.get(CONTEXT_EVIDENCE_IDS_KEY, ()))
+
+
+def drafting_inventory_with_evidence(state: Mapping[str, Any]) -> DraftingSourceInventory | None:
+    inventory = state.get(PROJECT_CONTEXT_KEY)
+    if not isinstance(inventory, DraftingSourceInventory) or DRAFT_EVIDENCE_KEY not in state:
+        return inventory
+    resources = [
+        r
+        for r in inventory.resources
+        if r.provenance is DraftingSourceProvenance.SYNTHETIC_LOCAL_FIXTURE
+    ]
+    for item in state[DRAFT_EVIDENCE_KEY]:
+        normalized = item.text.replace("\r\n", "\n").replace("\r", "\n").strip()
+        if not normalized:
+            raise ValueError(f"Evidence '{item.title}' is empty. Add text or remove it.")
+        if len(normalized.encode()) > MAX_EVIDENCE_BYTES:
+            raise ValueError(f"Evidence '{item.title}' exceeds 1 MiB.")
+        resources = [r for r in resources if r.resource_id != item.evidence_id]
+        resources.append(
+            DraftingSourceResource(
+                resource_id=item.evidence_id,
+                role=DraftingSourceRole.SUPPORTING_EVIDENCE,
+                display_name=item.title,
+                source_reference=item.source_reference,
+                revision_kind=DraftingRevisionKind.VERSION,
+                revision="session",
+                content_fingerprint=hashlib.sha256(normalized.encode()).hexdigest(),
+                validation_status=DraftingValidationStatus.VALIDATED,
+                provenance=item.provenance,
+                authorized=True,
+                content=normalized,
+            )
+        )
+    return DraftingSourceInventory(**{**inventory.model_dump(), "resources": tuple(resources)})

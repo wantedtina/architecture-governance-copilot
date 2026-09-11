@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`. Batch 07 completed and verified on 2026-09-11.
+Execution authority: `NONE` — Batch 08 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -836,6 +836,22 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - Complete R10 against the current UI rather than blocking it on R2. Every later UI batch must rerun
   its own light-theme regression checks, so future restructuring cannot rely only on Batch 01
   evidence.
+
+### R11 — Select repositories and supply drafting evidence explicitly
+
+- **State:** `Verified`
+- **Origin:** Human acceptance of Project Context after Batch 07.
+- **Observed behavior:** Repository is static text while only its revision is selectable;
+  supporting evidence can only be selected from the bundled inventory.
+- **Accepted correction:** Separate repository selection from revision selection. Future ADO
+  integration will supply permission-filtered inventory; current selection remains synthetic.
+  Keep governed template and governance metadata read-only. Make supporting evidence user-entered,
+  editable, removable, and uploadable, with sample loading only an explicit demo convenience.
+- Preserve provenance, exact package confirmation, drafting-only invalidation, and deterministic
+  provider limits. Custom input must never be ignored or silently replaced with sample output.
+- The user explicitly requested implementation and verification. Batch 08 records bounded details;
+  this correction supersedes Batch 04's inventory-only evidence interaction, not its historical
+  completion evidence. Live ADO discovery remains deferred.
 
 ## 6. Accepted intake and dependency sequencing
 

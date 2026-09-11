@@ -98,9 +98,11 @@ from architecture_governance_copilot.ui_support import (
     DELIVERY_STAGE,
     DRAFT_CONFIRMED_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
+    DRAFT_EVIDENCE_KEY,
     DRAFT_FINGERPRINT_KEY,
     DRAFT_PROJECT_KEY,
     DRAFT_PROJECT_WIDGET_KEY,
+    DRAFT_REPOSITORY_NAME_KEY,
     DRAFT_RESULT_KEY,
     DRAFT_SOURCE_CODE_KEY,
     DRAFT_SOURCE_CODE_WIDGET_KEY,
@@ -144,6 +146,7 @@ from architecture_governance_copilot.ui_support import (
     ReviewInputReadiness,
     Workflow,
     active_stage,
+    add_drafting_evidence,
     apply_deployment_policy,
     build_drafting_source_package,
     build_pending_review_changes,
@@ -169,7 +172,9 @@ from architecture_governance_copilot.ui_support import (
     delivery_status,
     drafting_input_fingerprint,
     drafting_result_is_stale,
+    edit_drafting_evidence,
     humanize,
+    load_drafting_sample_evidence,
     load_internal_review_into_state,
     load_sample_drafting_context,
     load_sample_review,
@@ -181,6 +186,7 @@ from architecture_governance_copilot.ui_support import (
     record_publication_operation,
     recover_review_policy,
     refresh_project_context,
+    remove_drafting_evidence,
     reset_application_state,
     reset_drafting_workflow,
     reset_review_workflow,
@@ -1278,10 +1284,12 @@ def _render_project_context_stage() -> None:
         _switch_stage(CONTEXT_STAGE)
     if open_clicked:
         try:
+            reset_drafting_workflow(st.session_state)
             open_demonstration_project_into_state(
                 st.session_state,
                 load_sample_drafting_context(),
             )
+            st.session_state[DRAFT_EVIDENCE_KEY] = ()
         except (OSError, UnicodeError, ValueError) as exc:
             st.session_state[ERROR_KEY] = f"Unable to open project workspace: {exc}"
         else:
@@ -1328,11 +1336,6 @@ def _render_project_context_stage() -> None:
             for resource in project_context.resources
             if resource.role is DraftingSourceRole.REPOSITORY
         )
-        evidence_ids = tuple(
-            resource.resource_id
-            for resource in project_context.resources
-            if resource.role is DraftingSourceRole.SUPPORTING_EVIDENCE
-        )
         st.session_state.setdefault(
             CONTEXT_TEMPLATE_WIDGET_KEY,
             st.session_state[CONTEXT_TEMPLATE_ID_KEY],
@@ -1350,7 +1353,8 @@ def _render_project_context_stage() -> None:
         with template_column:
             st.selectbox(
                 "Governed SI template",
-                (None, *template_ids),
+                template_ids,
+                disabled=True,
                 key=CONTEXT_TEMPLATE_WIDGET_KEY,
                 format_func=lambda resource_id: (
                     "Select a template"
@@ -1369,12 +1373,33 @@ def _render_project_context_stage() -> None:
         with project_column:
             st.markdown(f"**Project**  \n{project_context.project_name}")
         with repository_column:
-            repository_names = tuple(resources[item].display_name for item in repository_ids)
-            st.markdown(f"**Repository**  \n{repository_names[0]}")
+            repository_names = tuple(
+                dict.fromkeys(resources[item].display_name for item in repository_ids)
+            )
+            current_name = st.session_state.get(DRAFT_REPOSITORY_NAME_KEY, repository_names[0])
+            if current_name not in repository_names:
+                current_name = repository_names[0]
+            name_key = "agc_context_repository_name_widget"
+            if st.session_state.get(name_key) not in repository_names:
+                st.session_state[name_key] = current_name
+            selected_name = st.selectbox(
+                "Repository",
+                repository_names,
+                key=name_key,
+                help="Synthetic inventory only; live ADO permission discovery is not connected.",
+            )
+            if selected_name != current_name:
+                st.session_state[CONTEXT_REPOSITORY_WIDGET_KEY] = None
+            st.session_state[DRAFT_REPOSITORY_NAME_KEY] = selected_name
         with revision_column:
+            revision_ids = tuple(
+                item for item in repository_ids if resources[item].display_name == selected_name
+            )
+            if st.session_state.get(CONTEXT_REPOSITORY_WIDGET_KEY) not in revision_ids:
+                st.session_state[CONTEXT_REPOSITORY_WIDGET_KEY] = None
             st.selectbox(
                 "Repository revision",
-                (None, *repository_ids),
+                (None, *revision_ids),
                 key=CONTEXT_REPOSITORY_WIDGET_KEY,
                 format_func=lambda resource_id: (
                     "Select a revision"
@@ -1382,29 +1407,14 @@ def _render_project_context_stage() -> None:
                     else f"{resources[resource_id].revision_kind.value.title()} · "
                     f"{resources[resource_id].revision}"
                 ),
-                help="The bundled provider supports the exact main branch snapshot only.",
+                help="Select a revision. The demo supports its bundled snapshot only.",
             )
-
-        st.multiselect(
-            "Supporting evidence",
-            evidence_ids,
-            key=CONTEXT_EVIDENCE_WIDGET_KEY,
-            format_func=lambda resource_id: (
-                f"{resources[resource_id].display_name} · {resources[resource_id].revision}"
-            ),
-            help=(
-                "Required by the configured deterministic drafter. Only authorized, "
-                "previewable synthetic resources are listed."
-            ),
-        )
+        _render_drafting_evidence_inputs()
 
         st.session_state[CONTEXT_TEMPLATE_ID_KEY] = st.session_state[CONTEXT_TEMPLATE_WIDGET_KEY]
         st.session_state[CONTEXT_REPOSITORY_ID_KEY] = st.session_state[
             CONTEXT_REPOSITORY_WIDGET_KEY
         ]
-        st.session_state[CONTEXT_EVIDENCE_IDS_KEY] = tuple(
-            st.session_state[CONTEXT_EVIDENCE_WIDGET_KEY]
-        )
 
         if update_live_drafting_source_package(st.session_state):
             st.rerun()
@@ -1434,17 +1444,13 @@ def _render_project_context_stage() -> None:
                     _render_drafting_resource_identity(selected_repository)
                     st.code(selected_repository.content, language="text", wrap_lines=True)
             with evidence_tab:
-                selected_evidence_ids = st.session_state[CONTEXT_EVIDENCE_IDS_KEY]
-                selected_evidence = [
-                    resources[resource_id]
-                    for resource_id in selected_evidence_ids
-                    if resource_id in resources
-                ]
-                if not selected_evidence:
-                    st.info("No supporting evidence is selected.")
-                for resource in selected_evidence:
-                    _render_drafting_resource_identity(resource)
-                    _render_readonly_markdown_document(resource.content)
+                items = st.session_state.get(DRAFT_EVIDENCE_KEY, ())
+                if not items:
+                    st.info("No supporting evidence has been provided.")
+                for item in items:
+                    st.text(item.title)
+                    st.caption(f"Origin: {item.provenance.value} · {item.source_reference}")
+                    _render_readonly_markdown_document(item.text)
             with metadata_tab:
                 st.json(
                     {
@@ -1480,6 +1486,68 @@ def _render_project_context_stage() -> None:
 
     if confirm_context and _confirm_project_context():
         _switch_stage(DRAFT_STAGE)
+
+
+def _render_drafting_evidence_inputs() -> None:
+    """Collect session-local evidence without treating user content as externally verified."""
+    st.subheader("Supporting evidence")
+    st.caption(
+        "Add notes or upload UTF-8 TXT / Markdown documents, then inspect and edit their text. "
+        "Use synthetic data only. User-provided content is not externally verified. "
+        "Up to 10 items, 1 MiB per item."
+    )
+    st.session_state.setdefault(DRAFT_EVIDENCE_KEY, ())
+    with st.container(horizontal=True):
+        if st.button("Add notes", key="agc_evidence_add"):
+            try:
+                add_drafting_evidence(st.session_state)
+            except ValueError as exc:
+                st.error(str(exc))
+        if st.button("Add sample evidence", key="agc_evidence_sample"):
+            try:
+                load_drafting_sample_evidence(st.session_state)
+            except ValueError as exc:
+                st.error(str(exc))
+    uploaded = st.file_uploader(
+        "Evidence documents",
+        type=["txt", "md"],
+        accept_multiple_files=True,
+        max_upload_size=1,
+        key="agc_evidence_upload",
+    )
+    if st.button("Add uploaded documents", key="agc_evidence_import", disabled=not uploaded):
+        try:
+            # Validate the complete import in a temporary state before applying any item.
+            pending = {
+                DRAFT_EVIDENCE_KEY: st.session_state[DRAFT_EVIDENCE_KEY],
+                "agc_evidence_counter": st.session_state.get("agc_evidence_counter", 0),
+            }
+            for document in uploaded:
+                add_drafting_evidence(pending, title=document.name, data=document.getvalue())
+            st.session_state[DRAFT_EVIDENCE_KEY] = pending[DRAFT_EVIDENCE_KEY]
+            st.session_state["agc_evidence_counter"] = pending["agc_evidence_counter"]
+            update_live_drafting_source_package(st.session_state)
+            st.success(
+                "Uploaded text added. Review the content below before confirming the package."
+            )
+        except ValueError as exc:
+            st.error(str(exc))
+    for item in st.session_state[DRAFT_EVIDENCE_KEY]:
+        with st.container(border=True):
+            st.text(item.title)
+            st.caption(f"Origin: {item.provenance.value} · {item.source_reference}")
+            key = f"agc_evidence_text_{item.evidence_id}"
+            if st.button("Remove evidence", key=f"agc_evidence_remove_{item.evidence_id}"):
+                remove_drafting_evidence(st.session_state, item.evidence_id)
+                st.session_state.pop(key, None)
+                st.rerun()
+            st.session_state.setdefault(key, item.text)
+            text = st.text_area(
+                "Evidence text", key=key, height=180, max_chars=1024 * 1024, persist_state="session"
+            )
+            if (text or "") != item.text:
+                edit_drafting_evidence(st.session_state, item.evidence_id, text or "")
+                st.rerun()
 
 
 def _render_project_context_summary(project_context: DraftingSourceInventory) -> None:

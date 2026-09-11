@@ -397,3 +397,19 @@ or every output field.
 - [ ] Final video is shorter than four minutes.
 - [ ] Exported video is played through once before submission.
 - [ ] Submission requirements and the 14 September 2026 deadline are confirmed.
+
+## Project Context acceptance walkthrough
+
+Open **Draft a Solution Intent**, then **Open Demonstration Project**. The governed template and
+governance metadata are read-only. Select **Repository** and its **Repository revision** from the
+synthetic inventory; this does not connect to ADO or discover live permissions.
+
+Supporting evidence starts empty. Use **Add notes** or upload synthetic UTF-8 `.txt`/`.md` files and
+click **Add uploaded documents**. Inspect, edit, or remove their text. Each item is limited to 1 MiB,
+with at most 10 items. Custom text is retained across refresh and navigation, but the deterministic
+provider blocks packages outside its exact sample contract. No sample is silently substituted.
+
+For the offline generation walkthrough, remove custom items and choose **Add sample evidence**.
+Inspect the source manifest, click **Confirm Context & Continue**, generate the draft, and complete
+human confirmation. Returning to Project Context and editing evidence revokes that draft's
+confirmation and artifacts. Uploaded content remains session-local and is not externally verified.
