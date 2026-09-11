@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 11 completed and verified.
+Execution authority: `NONE` — Batch 12 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -877,6 +877,13 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - **Approval:** User approved default-expanded template, repository, and governance metadata;
   keep editable evidence visible without a duplicate preview. Collapse technical trace details.
 - Preserve read-only governed sources, exact confirmation, and existing generation behavior.
+
+### R15 — Keep each workflow's primary action accessible while scrolling
+
+- **State:** `Verified`
+- **Approval:** User approved extending the Project Context fixed-action pattern to other steps.
+- Fix only the current primary operation, with responsive spacing. Preserve confirmation,
+  capability checks, invalidation, and guarded delivery behavior; no additional execution authority.
 
 ## 6. Accepted intake and dependency sequencing
 

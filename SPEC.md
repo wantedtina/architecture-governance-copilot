@@ -771,3 +771,9 @@ Project Context displays SI Template, Repository context, and Governance Metadat
 expanded sections by default; users may collapse them after review. Evidence appears once in its
 editable input area. Governance metadata remains read-only. Source identity details and the full
 source-package manifest are collapsed by default and remain available for traceability inspection.
+
+Workflow pages keep the current primary action in a shared fixed bottom area: Context confirmation;
+draft generation/confirmation/download; review-input confirmation/analysis; reviewed-record
+confirmation; continue to delivery; and the current ready delivery preview/confirmation/create
+action. Secondary actions remain inline. Existing disabled conditions, human confirmation, and
+protected delivery outcomes still apply. The page reserves bottom space for readable scrolling.

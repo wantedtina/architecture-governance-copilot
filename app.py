@@ -896,7 +896,7 @@ def _apply_visual_theme() -> None:
             font-weight: 600;
             line-height: 1.25;
         }
-        [data-testid="stFormSubmitButton"] {
+        .st-key-agc_primary_action {
             position: fixed;
             right: 2rem;
             bottom: 1.25rem;
@@ -909,8 +909,8 @@ def _apply_visual_theme() -> None:
             backdrop-filter: blur(8px);
             box-shadow: 0 12px 32px rgba(0, 23, 46, 0.2);
         }
-        [data-testid="stForm"] {
-            padding-bottom: 5.5rem;
+        [data-testid="stMainBlockContainer"] {
+            padding-bottom: 9rem;
         }
         [data-testid="stVerticalBlockBorderWrapper"]:has(h4) {
             max-height: 190px;
@@ -1066,7 +1066,7 @@ def _apply_visual_theme() -> None:
             .agc-brand-actions {
                 align-items: flex-start;
             }
-            [data-testid="stFormSubmitButton"] {
+            .st-key-agc_primary_action {
                 right: 1rem;
                 bottom: 1rem;
                 width: calc(100vw - 2rem);
@@ -1235,6 +1235,17 @@ def _render_readonly_markdown_document(
             st.info(empty_message)
     with source_tab:
         st.code(content, language="markdown", wrap_lines=True)
+
+
+def _workflow_action_button(
+    label: str, *, target=None, floating: bool = True, download: bool = False, **kwargs
+) -> bool:
+    """Render the existing action once, optionally in the shared persistent action area."""
+    target = st if target is None else target
+    with target.container(key="agc_primary_action" if floating else None):
+        if download:
+            return st.download_button(label, **kwargs)
+        return st.button(label, **kwargs)
 
 
 def _render_project_context_stage() -> None:
@@ -1473,7 +1484,10 @@ def _render_project_context_stage() -> None:
         )
         st.success(f"Context ready for drafting · {refresh_status}")
 
-    with st.form("agc_project_context_confirmation_form", border=False):
+    with (
+        st.container(key="agc_primary_action"),
+        st.form("agc_project_context_confirmation_form", border=False),
+    ):
         confirm_context = st.form_submit_button(
             "Confirm Context & Continue",
             key="agc_confirm_project_context",
@@ -1648,8 +1662,10 @@ def _render_drafting_stage() -> None:
         generate_column, home_column, context_column, reset_column = st.columns(
             [1.2, 1.25, 1.15, 1],
         )
-        generate_clicked = generate_column.button(
+        generate_clicked = _workflow_action_button(
             "Regenerate SI Draft" if draft_available else "Generate SI Draft",
+            target=generate_column,
+            floating=not draft_available,
             key="agc_generate_si_draft",
             type="primary",
             disabled=not drafting_context_ready or bool(generation_blockers),
@@ -1807,7 +1823,7 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
                 )
             with preview_tab, st.container(border=True):
                 st.markdown(reviewed_content)
-            submitted = st.button(
+            submitted = _workflow_action_button(
                 "Confirm SI draft",
                 key="agc_confirm_si_draft",
                 type="primary",
@@ -1837,8 +1853,10 @@ def _render_generated_si_draft(draft: SolutionIntentDraft) -> None:
             with st.expander("Draft provenance", expanded=True):
                 st.json(provenance)
             action_column, review_column = st.columns(2)
-            action_column.download_button(
+            _workflow_action_button(
                 "Download confirmed Markdown",
+                target=action_column,
+                download=True,
                 data=reviewed_content,
                 file_name="confirmed-solution-intent.md",
                 mime="text/markdown",
@@ -2386,16 +2404,20 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
     readiness = review_input_readiness(st.session_state)
     _render_review_input_readiness(readiness)
     action_column, analyze_column = st.columns(2)
-    confirm_clicked = action_column.button(
+    confirm_clicked = _workflow_action_button(
         "Confirm review input manifest",
+        target=action_column,
+        floating=not readiness.confirmed,
         key="agc_confirm_review_inputs",
         type="primary" if not readiness.confirmed else "secondary",
         disabled=not readiness.ready_to_confirm or readiness.confirmed,
         help="Complete all three review-input components before confirmation.",
         width="stretch",
     )
-    analyze_clicked = analyze_column.button(
+    analyze_clicked = _workflow_action_button(
         "Analyze with Fake AIF" if review_mode is ReviewMode.INTERNAL_FAKE else "Analyze review",
+        target=analyze_column,
+        floating=readiness.confirmed,
         key="agc_analyze",
         type="primary",
         disabled=not readiness.ready_to_analyze,
@@ -2658,7 +2680,7 @@ def _render_review_navigation(*, analysis_invalid: bool) -> None:
 
 
 def _render_output_navigation() -> None:
-    if st.button(
+    if _workflow_action_button(
         "Continue to Work Item Delivery", key="agc_continue_delivery", icon=":material/send:"
     ):
         _switch_stage(DELIVERY_STAGE)
@@ -2884,7 +2906,7 @@ def _render_human_review_stage(
                 "Outcome supporting evidence",
             )
 
-    submitted = st.button(
+    submitted = _workflow_action_button(
         "Confirm Reviewed Record & Generate Outputs",
         key="agc_confirm_review",
         type="primary",
@@ -3913,8 +3935,9 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
                 "then confirm the record again. "
                 "Source-controlled parent and target mappings cannot be edited here."
             )
-        if st.button(
+        if _workflow_action_button(
             "Preview Azure DevOps request",
+            floating=not isinstance(preview, AdoPublicationPreview) and not protected,
             key="agc_prepare_ado_publication",
             icon=":material/preview:",
             disabled=not row.ready or protected,
@@ -3967,7 +3990,7 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
             if not protected:
                 if not isinstance(confirmation, AdoPublicationConfirmation):
                     st.info("Prepared · Inspect both views before confirming this exact request.")
-                    if st.button(
+                    if _workflow_action_button(
                         "Confirm request",
                         key="agc_confirm_ado_publication",
                         icon=":material/check_circle:",
@@ -3981,7 +4004,7 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
                         "Confirmed · No request has been sent yet. "
                         "Create work item submits once to the fake gateway."
                     )
-                    if st.button(
+                    if _workflow_action_button(
                         "Create work item",
                         key="agc_submit_ado_publication",
                         type="primary",
