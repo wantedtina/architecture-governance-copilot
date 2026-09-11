@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 13 completed and verified.
+Execution authority: `NONE` — Batch 14 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -891,6 +891,14 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - **Approval:** User approved showing outcome and item-level evidence by default.
 - Keep evidence source, location and quote visible and read-only; retain manual collapse and
   explicit empty-evidence messages. No change to review or confirmation semantics.
+
+### R17 — Make human edits conspicuous and explain their differences
+
+- **State:** `Verified`
+- **Approval:** User approved item styling/labels, field-level before/after comparisons, and a
+  persistent change summary beside confirmation. Reverting to the original clears markers.
+- Distinguish edits, exclusions and validation errors without relying only on color. Preserve
+  read-only evidence, original analysis, exact comparison semantics and mandatory confirmation.
 
 ## 6. Accepted intake and dependency sequencing
 

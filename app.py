@@ -920,6 +920,21 @@ def _apply_visual_theme() -> None:
         [data-testid="stHeadingWithActionElements"] {
             margin-bottom: 0.15rem;
         }
+        [class*="st-key-agc_review_item_"]:has(.agc-review-edited-marker) {
+            border-left: 5px solid #1769aa;
+            background: #eef6ff;
+        }
+        [class*="st-key-agc_review_item_"]:has(.agc-review-excluded-marker) {
+            border-left: 5px solid #64748b;
+            background: #f1f5f9;
+        }
+        [class*="st-key-agc_review_item_"]:has(.agc-review-invalid-marker) {
+            border-left: 5px solid #b42318;
+            background: #fff1f0;
+        }
+        .agc-review-edited-marker { color: #12578f; }
+        .agc-review-excluded-marker { color: #334155; }
+        .agc-review-invalid-marker { color: #9c2018; }
         .agc-processing-overlay {
             position: fixed;
             inset: 0;
@@ -1238,11 +1253,19 @@ def _render_readonly_markdown_document(
 
 
 def _workflow_action_button(
-    label: str, *, target=None, floating: bool = True, download: bool = False, **kwargs
+    label: str,
+    *,
+    target=None,
+    floating: bool = True,
+    download: bool = False,
+    summary: str | None = None,
+    **kwargs,
 ) -> bool:
     """Render the existing action once, optionally in the shared persistent action area."""
     target = st if target is None else target
     with target.container(key="agc_primary_action" if floating else None):
+        if summary:
+            st.caption(summary)
         if download:
             return st.download_button(label, **kwargs)
         return st.button(label, **kwargs)
@@ -2886,12 +2909,13 @@ def _render_human_review_stage(
     )
     _render_pending_review_summary(pending)
 
-    with st.container(border=True):
+    with _review_item_container("Review outcome", None):
         st.markdown(
             '<p class="agc-section-label">GOVERNANCE DISPOSITION</p>',
             unsafe_allow_html=True,
         )
         st.markdown("### Review Outcome")
+        _render_pending_item_marker(pending, "Review outcome", None)
         outcome_column, evidence_column = st.columns([1, 2])
         with outcome_column:
             review_outcome = _enum_selectbox(
@@ -2900,6 +2924,7 @@ def _render_human_review_stage(
                 analyzed_result.review_outcome.value,
                 key="agc_field_outcome",
             )
+        _render_field_change(pending, "Review outcome", None, "Outcome", target=outcome_column)
         with evidence_column:
             _render_evidence(
                 analyzed_result.outcome_evidence,
@@ -2908,6 +2933,7 @@ def _render_human_review_stage(
 
     submitted = _workflow_action_button(
         "Confirm Reviewed Record & Generate Outputs",
+        summary=_pending_change_caption(pending),
         key="agc_confirm_review",
         type="primary",
         width="stretch",
@@ -2971,9 +2997,62 @@ def _pending_tab_label(
     collection: str,
     pending: PendingReviewChanges,
 ) -> str:
-    pending_count = pending.pending_item_count(collection)
-    suffix = f" · {pending_count} pending" if pending_count else ""
+    edited = {c.item_index for c in pending.field_changes if c.collection == collection}
+    excluded = {c.item_index for c in pending.excluded_items if c.collection == collection}
+    invalid = {c.item_index for c in pending.validation_issues if c.collection == collection}
+    states = []
+    for count, text in (
+        (len(edited), "edited"),
+        (len(excluded), "excluded"),
+        (len(invalid), "needs correction"),
+    ):
+        if count:
+            states.append(f"{count} {text}")
+    suffix = " · " + " · ".join(states) if states else ""
     return f"{label} · {proposal_count}{suffix}"
+
+
+def _change_count(count: int, noun: str) -> str:
+    return f"{count} {noun}{'' if count == 1 else 's'}"
+
+
+def _pending_change_caption(pending: PendingReviewChanges) -> str:
+    return (
+        f"Your changes: {_change_count(len(pending.field_changes), 'field')} edited · "
+        f"{_change_count(len(pending.excluded_items), 'item')} excluded · "
+        f"{len(pending.validation_issues)} need correction · Not confirmed"
+    )
+
+
+def _review_item_container(collection: str, index: int | None):
+    key = collection.lower().replace(" ", "_")
+    return st.container(border=True, key=f"agc_review_item_{key}_{index}")
+
+
+def _render_field_change(pending, collection, item_index, field, *, target=None) -> None:
+    change = next(
+        (
+            c
+            for c in pending.field_changes
+            if c.collection == collection and c.item_index == item_index and c.field == field
+        ),
+        None,
+    )
+    if change is None:
+        return
+    target = st if target is None else target
+    before = change.before if change.before is not None else "(empty)"
+    after = change.after if change.after is not None else "(empty)"
+    with target.container():
+        st.markdown(f"**{field} · Changed by you**")
+        if max(len(before), len(after)) > 120 or "\n" in before + after:
+            with st.expander(f"Compare {field.lower()}: original and your edit"):
+                st.caption("Original")
+                st.text(before)
+                st.caption("Your edit · Not confirmed")
+                st.text(after)
+        else:
+            st.text(f"Original: {before} → Your edit: {after}")
 
 
 def _render_pending_review_summary(pending: PendingReviewChanges) -> None:
@@ -3003,18 +3082,24 @@ def _render_pending_review_summary(pending: PendingReviewChanges) -> None:
 def _render_pending_item_marker(
     pending: PendingReviewChanges,
     collection: str,
-    item_index: int,
+    item_index: int | None,
 ) -> None:
     modified, excluded, invalid = pending.item_state(collection, item_index)
     labels: list[str] = []
-    if excluded:
-        labels.append("Excluded")
     if modified:
-        labels.append(f"{modified} modified")
+        labels.append(f"Edited by you · {_change_count(modified, 'field')}")
+    if excluded:
+        labels.append("Excluded by you")
     if invalid:
-        labels.append(f"{invalid} needs correction")
+        labels.append(f"Needs correction · {_change_count(invalid, 'field')}")
     if labels:
-        st.caption("Pending · " + " · ".join(labels) + " · Unconfirmed")
+        kind = "invalid" if invalid else "excluded" if excluded else "edited"
+        st.markdown(
+            f'<p class="agc-review-{kind}-marker"><strong>'
+            + escape(" · ".join(labels) + " · Not confirmed")
+            + "</strong></p>",
+            unsafe_allow_html=True,
+        )
 
 
 def _render_analysis_summary(result: GovernanceResult) -> None:
@@ -3041,7 +3126,7 @@ def _render_decision_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, decision in enumerate(result.decisions):
-        with st.container(border=True):
+        with _review_item_container("Decision", index):
             st.markdown(f"**Decision {index + 1}**")
             _render_pending_item_marker(pending, "Decision", index)
             include = st.checkbox(
@@ -3061,6 +3146,7 @@ def _render_decision_edits(
                     value=decision.statement,
                 ),
             )
+            _render_field_change(pending, "Decision", index, "Statement")
             rationale = st.text_area(
                 "Rationale (optional)",
                 key=f"agc_field_decision_{index}_rationale",
@@ -3070,6 +3156,7 @@ def _render_decision_edits(
                     value=decision.rationale or "",
                 ),
             )
+            _render_field_change(pending, "Decision", index, "Rationale")
             _render_evidence(decision.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -3089,7 +3176,7 @@ def _render_finding_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, finding in enumerate(result.findings):
-        with st.container(border=True):
+        with _review_item_container("Finding", index):
             st.markdown(f"**Review Finding {index + 1}**")
             _render_pending_item_marker(pending, "Finding", index)
             include = st.checkbox(
@@ -3108,6 +3195,7 @@ def _render_finding_edits(
                     value=finding.title,
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Title")
             description = st.text_area(
                 "Description",
                 key=f"agc_field_finding_{index}_description",
@@ -3117,6 +3205,7 @@ def _render_finding_edits(
                     value=finding.description,
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Description")
             category_column, section_column = st.columns(2)
             category = category_column.text_input(
                 "Category (optional)",
@@ -3126,6 +3215,7 @@ def _render_finding_edits(
                     value=finding.category or "",
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Category", target=category_column)
             si_section = section_column.text_input(
                 "SI section (optional)",
                 key=f"agc_field_finding_{index}_si_section",
@@ -3134,6 +3224,7 @@ def _render_finding_edits(
                     value=finding.si_section or "",
                 ),
             )
+            _render_field_change(pending, "Finding", index, "SI section", target=section_column)
             severity_column, status_column = st.columns(2)
             with severity_column:
                 severity = _enum_selectbox(
@@ -3142,6 +3233,7 @@ def _render_finding_edits(
                     finding.severity.value,
                     key=f"agc_field_finding_{index}_severity",
                 )
+                _render_field_change(pending, "Finding", index, "Severity")
             with status_column:
                 status = _enum_selectbox(
                     "Status",
@@ -3149,6 +3241,7 @@ def _render_finding_edits(
                     finding.status.value,
                     key=f"agc_field_finding_{index}_status",
                 )
+                _render_field_change(pending, "Finding", index, "Status")
             recommended_change = st.text_area(
                 "Recommended change (optional)",
                 key=f"agc_field_finding_{index}_recommended_change",
@@ -3158,6 +3251,7 @@ def _render_finding_edits(
                     value=finding.recommended_change or "",
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Recommended change")
             owner_column, date_column = st.columns(2)
             owner = owner_column.text_input(
                 "Owner (optional)",
@@ -3167,6 +3261,7 @@ def _render_finding_edits(
                     value=finding.owner or "",
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Owner", target=owner_column)
             due_date = date_column.text_input(
                 "Due date (optional, YYYY-MM-DD)",
                 key=f"agc_field_finding_{index}_due_date",
@@ -3175,6 +3270,7 @@ def _render_finding_edits(
                     value=_date_text(finding.due_date),
                 ),
             )
+            _render_field_change(pending, "Finding", index, "Due date", target=date_column)
             _render_evidence(finding.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -3201,7 +3297,7 @@ def _render_risk_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, risk in enumerate(result.risks):
-        with st.container(border=True):
+        with _review_item_container("Risk", index):
             st.markdown(f"**Risk {index + 1}**")
             _render_pending_item_marker(pending, "Risk", index)
             include = st.checkbox(
@@ -3221,6 +3317,7 @@ def _render_risk_edits(
                     value=risk.description,
                 ),
             )
+            _render_field_change(pending, "Risk", index, "Description")
             severity_column, owner_column = st.columns(2)
             with severity_column:
                 severity = _enum_selectbox(
@@ -3229,6 +3326,7 @@ def _render_risk_edits(
                     risk.severity.value,
                     key=f"agc_field_risk_{index}_severity",
                 )
+                _render_field_change(pending, "Risk", index, "Severity")
             owner = owner_column.text_input(
                 "Owner (optional)",
                 key=f"agc_field_risk_{index}_owner",
@@ -3237,6 +3335,7 @@ def _render_risk_edits(
                     value=risk.owner or "",
                 ),
             )
+            _render_field_change(pending, "Risk", index, "Owner", target=owner_column)
             _render_evidence(risk.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -3257,7 +3356,7 @@ def _render_action_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, action in enumerate(result.action_items):
-        with st.container(border=True):
+        with _review_item_container("Action item", index):
             st.markdown(f"**Action Item {index + 1}**")
             _render_pending_item_marker(pending, "Action item", index)
             include = st.checkbox(
@@ -3276,6 +3375,7 @@ def _render_action_edits(
                     value=action.title,
                 ),
             )
+            _render_field_change(pending, "Action item", index, "Title")
             owner_column, date_column, priority_column = st.columns(3)
             owner = owner_column.text_input(
                 "Owner (optional)",
@@ -3285,6 +3385,7 @@ def _render_action_edits(
                     value=action.owner or "",
                 ),
             )
+            _render_field_change(pending, "Action item", index, "Owner", target=owner_column)
             due_date = date_column.date_input(
                 "Due date (optional)",
                 key=f"agc_field_action_{index}_due_date",
@@ -3297,6 +3398,7 @@ def _render_action_edits(
                     value=action.due_date,
                 ),
             )
+            _render_field_change(pending, "Action item", index, "Due date", target=date_column)
             date_column.button(
                 "Clear due date",
                 key=f"agc_clear_action_{index}_due_date",
@@ -3312,6 +3414,7 @@ def _render_action_edits(
                     action.priority.value,
                     key=f"agc_field_action_{index}_priority",
                 )
+                _render_field_change(pending, "Action item", index, "Priority")
             _render_evidence(action.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -3333,7 +3436,7 @@ def _render_question_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, question in enumerate(result.open_questions):
-        with st.container(border=True):
+        with _review_item_container("Open question", index):
             st.markdown(f"**Open Question {index + 1}**")
             _render_pending_item_marker(pending, "Open question", index)
             include = st.checkbox(
@@ -3353,6 +3456,7 @@ def _render_question_edits(
                     value=question.question,
                 ),
             )
+            _render_field_change(pending, "Open question", index, "Question")
             owner = st.text_input(
                 "Owner (optional)",
                 key=f"agc_field_question_{index}_owner",
@@ -3361,6 +3465,7 @@ def _render_question_edits(
                     value=question.owner or "",
                 ),
             )
+            _render_field_change(pending, "Open question", index, "Owner")
             _render_evidence(question.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -3380,7 +3485,7 @@ def _render_missing_evidence_edits(
         st.caption("None recorded.")
     edits: list[dict[str, object]] = []
     for index, missing in enumerate(result.missing_evidence):
-        with st.container(border=True):
+        with _review_item_container("Missing information", index):
             st.markdown(f"**Missing Information {index + 1}**")
             _render_pending_item_marker(pending, "Missing information", index)
             include = st.checkbox(
@@ -3399,6 +3504,7 @@ def _render_missing_evidence_edits(
                     value=missing.item,
                 ),
             )
+            _render_field_change(pending, "Missing information", index, "Item")
             reason = st.text_area(
                 "Reason (optional)",
                 key=f"agc_field_missing_{index}_reason",
@@ -3408,6 +3514,7 @@ def _render_missing_evidence_edits(
                     value=missing.reason or "",
                 ),
             )
+            _render_field_change(pending, "Missing information", index, "Reason")
             _render_evidence(missing.evidence, "Supporting evidence")
             edits.append(
                 {

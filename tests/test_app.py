@@ -928,12 +928,14 @@ def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None
     assert metrics["Excluded items"] == "0"
     assert metrics["Affected sections"] == "1"
     assert metrics["Validation issues"] == "0"
-    assert "Actions · 2 · 1 pending" in [tab.label for tab in app.tabs]
-    assert any("Pending · 1 modified · Unconfirmed" in item.value for item in app.caption)
+    assert "Actions · 2 · 1 edited" in [tab.label for tab in app.tabs]
+    assert any("Edited by you · 1 field" in item.value for item in app.markdown)
 
+    assert any(item.value == "Original: Alex Chen → Your edit: Taylor Kim" for item in app.text)
+    assert any("Your changes: 1 field edited" in item.value for item in app.caption)
     app.checkbox(key="agc_field_question_0_include").uncheck().run()
-    assert "Questions · 1 · 1 pending" in [tab.label for tab in app.tabs]
-    assert any("Pending · Excluded · Unconfirmed" in item.value for item in app.caption)
+    assert "Questions · 1 · 1 excluded" in [tab.label for tab in app.tabs]
+    assert any("Excluded by you" in item.value for item in app.markdown)
 
     app.text_input(key="agc_field_finding_0_due_date").input("next Friday").run()
     assert any("Finding 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
@@ -950,7 +952,9 @@ def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None
     app.text_input(key="agc_field_finding_0_due_date").input("2026-07-24").run()
     app.checkbox(key="agc_field_question_0_include").check().run()
     assert any("No pending human changes" in item.value for item in app.info)
-    assert all("pending" not in tab.label for tab in app.tabs)
+    assert all("edited" not in tab.label and "excluded" not in tab.label for tab in app.tabs)
+    assert not any("Changed by you" in item.value for item in app.markdown)
+    assert not any("Edited by you" in item.value for item in app.markdown)
 
 
 def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> None:

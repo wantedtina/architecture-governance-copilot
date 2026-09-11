@@ -472,3 +472,9 @@ protected delivery outcomes still apply. The page reserves bottom space for read
 Human Review shows outcome and item-level supporting evidence expanded by default. Source labels,
 location metadata, and exact quotes remain read-only. Users may collapse evidence after inspecting
 it; items without a direct quote explicitly say so. Human confirmation remains mandatory.
+
+Human Review distinguishes reviewer edits with highlighted cards and explicit Edited by you /
+Excluded by you / Needs correction labels. Changed fields show Original and Your edit values nearby;
+long comparisons expand on demand. Tabs count edited/excluded/invalid items, while the fixed
+confirmation area summarizes unconfirmed changes. Restoring the original normalized value removes
+its change indication. Source evidence remains read-only and separate from reviewer changes.

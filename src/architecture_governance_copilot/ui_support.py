@@ -304,7 +304,7 @@ class PendingReviewChanges:
         }
         return len(positions)
 
-    def item_state(self, collection: str, item_index: int) -> tuple[int, bool, int]:
+    def item_state(self, collection: str, item_index: int | None) -> tuple[int, bool, int]:
         """Return modified-field, excluded, and invalid-field counts for one item."""
         modified = sum(
             item.collection == collection and item.item_index == item_index
