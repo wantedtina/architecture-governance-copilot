@@ -1311,3 +1311,95 @@ def test_store_and_clear_outputs_manage_only_generated_state(
     assert state[ADO_PUBLICATION_HISTORY_KEY] == {
         retained_operation.correlation_id: retained_operation
     }
+
+
+def test_delivery_selection_and_original_positions_are_separate_from_outputs(sample_result) -> None:
+    from architecture_governance_copilot.ui_support import (
+        DELIVERY_ACTION_SELECTION_KEY,
+        DELIVERY_STAGE,
+        delivery_original_action_index,
+        delivery_outputs_available,
+        select_delivery_action,
+    )
+
+    state = {}
+    initialize_session_state(state)
+    form = default_review_form_data(sample_result)
+    actions = _editable_mappings(form.action_items)
+    actions[0]["include"] = False
+    form = replace(form, action_items=tuple(actions))
+    reviewed = build_reviewed_result(sample_result, form)
+    outputs = GovernanceReviewService(DeterministicDemoExtractor()).generate_outputs(reviewed)
+    summary = build_review_change_summary(sample_result, reviewed, form)
+    store_outputs(state, reviewed, summary, outputs)
+    assert delivery_original_action_index(state, 0) == 1
+    assert delivery_outputs_available(state)
+    set_active_stage(state, DELIVERY_STAGE)
+    select_delivery_action(state, 0)
+    state[OUTPUT_ACTION_SELECTION_KEY] = None
+    assert state[DELIVERY_ACTION_SELECTION_KEY] == 0
+    assert state[OUTPUTS_KEY] is outputs
+    reset_drafting_workflow(state)
+    assert delivery_outputs_available(state)
+    reset_review_workflow(state)
+    assert not delivery_outputs_available(state)
+    assert state[DELIVERY_ACTION_SELECTION_KEY] is None
+
+
+@pytest.mark.parametrize("value", [None, date(1990, 1, 1), date(2099, 12, 31)])
+def test_nullable_action_date_normalization_and_confirmed_summary(sample_result, value) -> None:
+    form = default_review_form_data(sample_result)
+    actions = _editable_mappings(form.action_items)
+    actions[0]["due_date"] = value
+    form = replace(form, action_items=tuple(actions))
+    pending = build_pending_review_changes(sample_result, form)
+    reviewed = build_reviewed_result(sample_result, form)
+    confirmed = build_review_change_summary(sample_result, reviewed, form)
+    assert reviewed.action_items[0].due_date == value
+    assert pending.field_changes == confirmed.field_changes
+    assert not pending.validation_issues
+
+
+def test_migration_preserves_orphan_operation_as_indexed_history() -> None:
+    operation = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="legacy-orphan",
+        request_binding_fingerprint="binding",
+        message="Needs reconciliation.",
+    )
+    state = {STATE_SCHEMA_VERSION_KEY: 3, ADO_PUBLICATION_OPERATION_KEY: operation}
+    initialize_session_state(state)
+    assert state[ADO_PUBLICATION_HISTORY_KEY][operation.correlation_id] == operation
+
+
+def test_delivery_status_never_overstates_unknown_or_partial_success() -> None:
+    from architecture_governance_copilot.publication import (
+        ActionDeliveryReadiness,
+        DeliveryReadiness,
+        DeliveryStatus,
+    )
+    from architecture_governance_copilot.ui_support import delivery_status
+
+    row = ActionDeliveryReadiness(
+        action_index=0,
+        title="Action",
+        reviewed_owner="Owner",
+        resolved_assignee="owner.invalid",
+        due_date=None,
+        reviewed_priority="high",
+        mapped_priority=1,
+        parent_reference="SYN-204",
+        mapped_parent=204,
+    )
+    ready = DeliveryReadiness(capability_available=True, actions=(row, row))
+    success = AdoPublicationOperation(
+        status=PublicationStatus.SUCCEEDED,
+        correlation_id="correlation",
+        request_binding_fingerprint="binding",
+        message="Verified.",
+    )
+    unknown = success.model_copy(update={"status": PublicationStatus.UNKNOWN_RESULT})
+    assert delivery_status(ready, (None, None)) is DeliveryStatus.READY
+    assert delivery_status(ready, (success, None)) is DeliveryStatus.IN_PROGRESS
+    assert delivery_status(ready, (success, success)) is DeliveryStatus.SUCCEEDED
+    assert delivery_status(ready, (success, unknown)) is DeliveryStatus.NEEDS_RECONCILIATION

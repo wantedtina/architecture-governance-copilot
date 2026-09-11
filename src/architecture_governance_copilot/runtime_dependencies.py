@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -27,6 +28,7 @@ from architecture_governance_copilot.integrations.confluence import (
     FakeConfluenceContentTransport,
 )
 from architecture_governance_copilot.models import SolutionIntentReviewContext
+from architecture_governance_copilot.publication import AdoDeliveryCapability
 
 INTERNAL_FAKE_ENABLED_ENV = "AGC_INTERNAL_FAKE_ENABLED"
 INTERNAL_FAKE_PROVIDER_ID_ENV = "AGC_INTERNAL_FAKE_PROVIDER_ID"
@@ -183,3 +185,32 @@ def internal_fake_ado_target() -> AdoTargetConfiguration:
 
 def _is_enabled(value: str | None) -> bool:
     return value is not None and value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def configured_delivery_capability(
+    environ: Mapping[str, str] | None = None,
+) -> AdoDeliveryCapability | None:
+    """Resolve the explicitly enabled fake capability independently of the UI mode label."""
+    environment = os.environ if environ is None else environ
+    if not _is_enabled(environment.get(INTERNAL_FAKE_ENABLED_ENV)):
+        return None
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, environment)
+    snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
+
+    return AdoDeliveryCapability(
+        provider_identity="in-memory-fake-ado-v1",
+        source_page_id=snapshot.page_id,
+        source_space=snapshot.space,
+        source_url=snapshot.url,
+        source_version=snapshot.version,
+        source_canonicalizer_version=snapshot.canonicalizer_version,
+        source_content_fingerprint=snapshot.content_fingerprint,
+        analysis_provider_identity=runtime.descriptor.provider_configuration_identity,
+        transcript_fingerprint=hashlib.sha256(
+            runtime.review_transcript.strip().encode()
+        ).hexdigest(),
+        metadata_fingerprint=hashlib.sha256(
+            runtime.review_context.model_dump_json().encode()
+        ).hexdigest(),
+        target=runtime.ado_target,
+    )

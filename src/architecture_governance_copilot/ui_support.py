@@ -39,6 +39,9 @@ from architecture_governance_copilot.publication import (
     AdoPublicationConfirmation,
     AdoPublicationOperation,
     AdoPublicationPreview,
+    DeliveryReadiness,
+    DeliveryStatus,
+    PublicationStatus,
 )
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
@@ -50,7 +53,7 @@ from architecture_governance_copilot.si_drafting import (
 
 STATE_PREFIX = "agc_"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
-STATE_SCHEMA_VERSION = 3
+STATE_SCHEMA_VERSION = 4
 STATE_SCHEMA_VERSION_KEY = f"{STATE_PREFIX}state_schema_version"
 ACTIVE_WORKFLOW_KEY = f"{STATE_PREFIX}active_workflow"
 
@@ -106,6 +109,9 @@ ERROR_KEY = f"{STATE_PREFIX}error"
 LOADED_KEY = f"{STATE_PREFIX}sample_loaded"
 ANALYSIS_SUCCESS_KEY = f"{STATE_PREFIX}analysis_success"
 OUTPUT_SUCCESS_KEY = f"{STATE_PREFIX}output_success"
+DELIVERY_ACTION_SELECTION_KEY = f"{STATE_PREFIX}delivery_action_selection"
+DELIVERY_ACTION_WIDGET_KEY = f"{STATE_PREFIX}delivery_action_widget"
+DELIVERY_ORIGINAL_INDICES_KEY = f"{STATE_PREFIX}delivery_original_indices"
 OUTPUT_ACTION_SELECTION_KEY = f"{STATE_PREFIX}output_action_selection"
 ADO_PUBLICATION_PREVIEW_KEY = f"{STATE_PREFIX}ado_publication_preview"
 ADO_PUBLICATION_CONFIRMATION_KEY = f"{STATE_PREFIX}ado_publication_confirmation"
@@ -125,8 +131,17 @@ DRAFT_STAGE = "drafting"
 INPUT_STAGE = "inputs"
 REVIEW_STAGE = "review"
 OUTPUT_STAGE = "outputs"
+DELIVERY_STAGE = "delivery"
 VALID_STAGES = frozenset(
-    {HOME_STAGE, CONTEXT_STAGE, DRAFT_STAGE, INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE}
+    {
+        HOME_STAGE,
+        CONTEXT_STAGE,
+        DRAFT_STAGE,
+        INPUT_STAGE,
+        REVIEW_STAGE,
+        OUTPUT_STAGE,
+        DELIVERY_STAGE,
+    }
 )
 
 
@@ -511,6 +526,8 @@ def initial_state_values() -> dict[str, object]:
         ANALYSIS_SUCCESS_KEY: False,
         OUTPUT_SUCCESS_KEY: False,
         OUTPUT_ACTION_SELECTION_KEY: None,
+        DELIVERY_ACTION_SELECTION_KEY: None,
+        DELIVERY_ORIGINAL_INDICES_KEY: (),
         ADO_PUBLICATION_PREVIEW_KEY: None,
         ADO_PUBLICATION_CONFIRMATION_KEY: None,
         ADO_PUBLICATION_OPERATION_KEY: None,
@@ -534,6 +551,8 @@ def initialize_session_state(state: MutableMapping[str, Any]) -> None:
             dict(publication_history) if isinstance(publication_history, Mapping) else {}
         )
         retained_operation = state.get(ADO_PUBLICATION_OPERATION_KEY)
+        if isinstance(retained_operation, AdoPublicationOperation):
+            retained_history.setdefault(retained_operation.correlation_id, retained_operation)
         retained_gateway = state.get(ADO_FAKE_GATEWAY_KEY)
         for key in tuple(state):
             if key.startswith(STATE_PREFIX):
@@ -573,7 +592,9 @@ def start_workflow(state: MutableMapping[str, Any], workflow: Workflow) -> None:
     else:
         stage = active_stage(state)
         state[ACTIVE_STAGE_KEY] = (
-            stage if stage in {INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE} else INPUT_STAGE
+            stage
+            if stage in {INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE, DELIVERY_STAGE}
+            else INPUT_STAGE
         )
 
 
@@ -643,6 +664,8 @@ def reset_review_workflow(state: MutableMapping[str, Any]) -> None:
         ANALYSIS_SUCCESS_KEY,
         OUTPUT_SUCCESS_KEY,
         OUTPUT_ACTION_SELECTION_KEY,
+        DELIVERY_ACTION_SELECTION_KEY,
+        DELIVERY_ORIGINAL_INDICES_KEY,
         ADO_PUBLICATION_PREVIEW_KEY,
         ADO_PUBLICATION_CONFIRMATION_KEY,
         REVIEW_MODE_KEY,
@@ -660,6 +683,7 @@ def reset_review_workflow(state: MutableMapping[str, Any]) -> None:
             METADATA_REVIEW_DATE_WIDGET_KEY,
             METADATA_ARCHITECT_WIDGET_KEY,
             METADATA_TICKET_WIDGET_KEY,
+            DELIVERY_ACTION_WIDGET_KEY,
         }:
             del state[key]
     state[ACTIVE_WORKFLOW_KEY] = Workflow.REVIEW.value
@@ -725,6 +749,8 @@ def clear_analysis_state(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = ()
     clear_publication_preview(state)
     state[ANALYZED_FINGERPRINT_KEY] = None
     state[ERROR_KEY] = None
@@ -1020,6 +1046,8 @@ def invalidate_analysis_for_input_change(
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = ()
     clear_publication_preview(state)
     state[ANALYSIS_SUCCESS_KEY] = False
     state[OUTPUT_SUCCESS_KEY] = False
@@ -1065,6 +1093,8 @@ def prepare_analysis_attempt(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = ()
     clear_publication_preview(state)
     state[ERROR_KEY] = None
     state[ANALYSIS_SUCCESS_KEY] = False
@@ -1604,6 +1634,8 @@ def store_analysis(
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = ()
     clear_publication_preview(state)
     state[ANALYZED_FINGERPRINT_KEY] = fingerprint
     state[ANALYSIS_INVALIDATION_KEY] = None
@@ -1624,6 +1656,18 @@ def store_outputs(
     state[REVIEW_CHANGE_SUMMARY_KEY] = change_summary
     state[OUTPUTS_KEY] = outputs
     state[OUTPUT_ACTION_SELECTION_KEY] = 0 if reviewed_result.action_items else None
+    excluded = {
+        item.item_index
+        for item in change_summary.excluded_items
+        if item.collection == "Action item"
+    }
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = tuple(
+        index
+        for index in range(len(reviewed_result.action_items) + len(excluded))
+        if index not in excluded
+    )
+    state[DELIVERY_ACTION_SELECTION_KEY] = 0 if reviewed_result.action_items else None
+    state.pop(DELIVERY_ACTION_WIDGET_KEY, None)
     clear_publication_preview(state)
     state[ERROR_KEY] = None
     state[OUTPUT_SUCCESS_KEY] = True
@@ -1636,6 +1680,8 @@ def clear_outputs(state: MutableMapping[str, Any]) -> None:
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
     state[OUTPUT_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ACTION_SELECTION_KEY] = None
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = ()
     clear_publication_preview(state)
     state[OUTPUT_SUCCESS_KEY] = False
 
@@ -1645,6 +1691,8 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
     publication_history = state.get(ADO_PUBLICATION_HISTORY_KEY)
     retained_history = dict(publication_history) if isinstance(publication_history, Mapping) else {}
     retained_operation = state.get(ADO_PUBLICATION_OPERATION_KEY)
+    if isinstance(retained_operation, AdoPublicationOperation):
+        retained_history.setdefault(retained_operation.correlation_id, retained_operation)
     retained_gateway = state.get(ADO_FAKE_GATEWAY_KEY)
     for key in tuple(state):
         if key.startswith(STATE_PREFIX):
@@ -1869,7 +1917,7 @@ def default_review_form_data(result: GovernanceResult) -> ReviewFormData:
                 "include": True,
                 "title": item.title,
                 "owner": item.owner or "",
-                "due_date": item.due_date.isoformat() if item.due_date else "",
+                "due_date": item.due_date,
                 "priority": item.priority.value,
             }
             for item in result.action_items
@@ -2311,6 +2359,8 @@ def _included(edit: Mapping[str, object]) -> bool:
 
 def _text(edit: Mapping[str, object], field: str) -> str:
     value = edit.get(field)
+    if field == "due_date" and (value is None or type(value) is date):
+        return value.isoformat() if value is not None else ""
     if not isinstance(value, str):
         raise ValueError(f"Reviewed field '{field}' must be text.")
     return value
@@ -2318,3 +2368,81 @@ def _text(edit: Mapping[str, object], field: str) -> str:
 
 def _required_text(edit: Mapping[str, object], field: str) -> str:
     return _text(edit, field)
+
+
+def delivery_outputs_available(state: Mapping[str, Any]) -> bool:
+    """Local completion is the prerequisite for the conditional delivery branch."""
+    return (
+        isinstance(state.get(REVIEWED_RESULT_KEY), GovernanceResult)
+        and isinstance(state.get(OUTPUTS_KEY), GovernanceOutputs)
+        and state.get(OUTPUT_SUCCESS_KEY) is True
+    )
+
+
+def select_delivery_action(state: MutableMapping[str, Any], index: int) -> None:
+    """Revoke only the active request when the independent delivery selection changes."""
+    result = state.get(REVIEWED_RESULT_KEY)
+    if not isinstance(result, GovernanceResult) or not 0 <= index < len(result.action_items):
+        raise ValueError("Select a confirmed action for delivery.")
+    if state.get(DELIVERY_ACTION_SELECTION_KEY) != index:
+        clear_publication_preview(state)
+    state[DELIVERY_ACTION_SELECTION_KEY] = index
+
+
+def delivery_original_action_index(state: Mapping[str, Any], index: int) -> int:
+    """Require the original analyzed position retained by reviewed confirmation."""
+    indices = state.get(DELIVERY_ORIGINAL_INDICES_KEY)
+    if not isinstance(indices, tuple) or not 0 <= index < len(indices):
+        raise ValueError("Confirm the reviewed record to restore delivery action identities.")
+    return indices[index]
+
+
+def delivery_operation_for_correlations(
+    state: Mapping[str, Any],
+    correlations: tuple[str, ...],
+) -> AdoPublicationOperation | None:
+    """Prefer reconciliation and protected history over a newer failed attempt."""
+    history = state.get(ADO_PUBLICATION_HISTORY_KEY)
+    if not isinstance(history, Mapping):
+        return None
+    operations = [
+        history[c] for c in correlations if isinstance(history.get(c), AdoPublicationOperation)
+    ]
+    rank = {
+        PublicationStatus.UNKNOWN_RESULT: 0,
+        PublicationStatus.SUBMITTING: 1,
+        PublicationStatus.SUCCEEDED: 2,
+        PublicationStatus.DEFINITELY_FAILED: 3,
+        PublicationStatus.NOT_SUBMITTED: 4,
+    }
+    return min(operations, key=lambda op: rank[op.status]) if operations else None
+
+
+def delivery_status(
+    readiness: DeliveryReadiness,
+    operations: tuple[AdoPublicationOperation | None, ...],
+    *,
+    has_preview: bool = False,
+) -> DeliveryStatus:
+    """Summarize delivery without changing the local governance completion boundary."""
+    statuses = {operation.status for operation in operations if operation is not None}
+    if PublicationStatus.UNKNOWN_RESULT in statuses:
+        return DeliveryStatus.NEEDS_RECONCILIATION
+    if PublicationStatus.SUBMITTING in statuses:
+        return DeliveryStatus.IN_PROGRESS
+    if operations and all(op and op.status is PublicationStatus.SUCCEEDED for op in operations):
+        return DeliveryStatus.SUCCEEDED
+    if PublicationStatus.DEFINITELY_FAILED in statuses:
+        return DeliveryStatus.FAILED
+    if readiness.status in {DeliveryStatus.UNAVAILABLE, DeliveryStatus.NOT_APPLICABLE}:
+        return readiness.status
+    if has_preview or PublicationStatus.SUCCEEDED in statuses:
+        return DeliveryStatus.IN_PROGRESS
+    return readiness.status
+
+
+def clear_review_action_due_date(state: MutableMapping[str, Any], index: int) -> None:
+    """Explicitly clear a nullable calendar value before the next widget render."""
+    key = f"{REVIEW_WIDGET_PREFIX}action_{index}_due_date"
+    state[key] = None
+    preserve_review_widget_state(state)

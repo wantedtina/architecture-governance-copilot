@@ -103,7 +103,9 @@ The governance-review journey is independent:
    human-confirmed state.
 
 The implemented UI has a workflow landing page and two local routed progress models: Project
-Context → Draft Solution Intent, and Review Inputs → Human Review → Generated Outputs. Neither
+Context → Draft Solution Intent, and Review Inputs → Human Review → Generated Outputs →
+Work Item Delivery. Local artifacts complete the review at Generated Outputs; delivery is a
+conditional fourth step. Neither
 workflow represents the other as skipped, required, or completed.
 
 The MVP performs this journey for one review round only. `review_round` metadata prepares the
@@ -224,6 +226,14 @@ automatically carry findings between rounds.
 - Keep excluded items and their evidence visible, label every affected item as unconfirmed, and
   remove pending indicators when values return to their normalized analyzed state.
 
+### Action dates
+
+- Use nullable date inputs for Human Review action due dates, initialized from the analyzed value.
+- Provide an explicit Clear due date action; preserve genuine `None` when cleared and deterministic
+  ISO serialization in reviewed outputs.
+- Preserve dates across routed navigation and apply no unapproved business date bounds.
+- Keep finding due dates and existing optional metadata contracts unchanged.
+
 ### Reviewed outputs
 
 - Generate outputs only after explicit human confirmation of the reviewed record.
@@ -251,6 +261,36 @@ automatically carry findings between rounds.
 - Escape structured values interpolated into generated Markdown so they cannot introduce headings,
   lists, links, HTML blocks, or emphasis; preserve exact values in forms, evidence/source views,
   typed records, and JSON.
+
+### Governed work-item delivery
+
+- Always show Work Item Delivery as review step 4; guard its route with confirmed reviewed outputs.
+- Generated Outputs remains locally complete and usable for all delivery states. Normal Back and
+  Return navigation preserves outputs, selection, preview, confirmation, and operation history.
+- Resolve the configured fake capability against exact manifest/source/provider/transcript/metadata
+  facts; never infer capability solely from the visible analysis-mode label. Offline has no target.
+- Report Ready, Not applicable, Unavailable, In progress, Succeeded, Failed, or Needs reconciliation
+  separately from local completion. Present every confirmed action with readiness and operation state.
+- Resolve owner identities only through the authorized stable target mapping. Missing required
+  owner/date/parent or unmapped owner/priority/parent blocks preparation with an action-specific
+  explanation. Return to Human Review for editable corrections; do not rewrite reviewed ownership.
+- Keep project, type, API version, parent, classifications, identities, and priorities read-only.
+- Maintain independent delivery selection and one active exact request/confirmation. Preserve
+  original analyzed action positions through exclusions as a session-local delivery binding; keep
+  provider-neutral output indices compact and evidence unchanged.
+- Use original positions for correlation while checking retained legacy compact-index correlations
+  before Create. Succeeded, submitting, and unknown operations remain protected through exclusion,
+  restoration, reset, and session-schema migration. Known legacy IDs receive GET read-back and remain
+  reconciliation-only when they cannot be verified against the current exact request.
+- Require Preview Azure DevOps request, separate Confirm request, and Create work item in order.
+  Work item summary and Request JSON are peer views of the immutable prepared request, including
+  every outgoing field, parent relation, description/evidence, correlation, and binding fingerprint.
+- Revalidate every binding at submission, reconcile correlations before one Create, and GET-verify
+  the result. Surface prepared, confirmed, submitting, succeeded, definitely failed, and unknown
+  states. Unknown results expose correlation and any known ID and cannot be retried directly.
+- Revoke the active request after source, result, target, mapping, or selection changes; retain
+  per-correlation history independently. This is session-local protection, not durable or exactly-once
+  delivery. No live connector, bulk Create, automatic retry, Update, or administration surface exists.
 
 ## Non-functional requirements
 
@@ -413,7 +453,7 @@ Governance service
   review widgets, read-only evidence, explicit confirmations, output rendering, and state
   transitions.
 - `pages/`: thin file-backed route entry points for the landing page, Project Context, SI Drafting,
-  Review Inputs, Human Review, and Generated Outputs.
+  Review Inputs, Human Review, Generated Outputs, and Work Item Delivery.
 - `ui_support.py`: workflow identity, schema migration, scoped reset, provenance, readiness,
   manifest fingerprint, sample, optional-field, and reviewed-result helpers.
 - `models.py`: strict Pydantic enums and models for review-input manifests and one SI review round.

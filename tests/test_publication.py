@@ -399,3 +399,229 @@ def test_malformed_success_retains_known_id_and_blocks_as_unknown() -> None:
     assert operation.status is PublicationStatus.UNKNOWN_RESULT
     assert operation.receipt is not None
     assert operation.receipt.work_item_id == 7200
+
+
+@pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
+def test_original_action_identity_survives_exclusion_and_protects_history(status) -> None:
+    result, snapshot, target = _preview_inputs()
+    original = build_ado_publication_preview(result, snapshot, 1, target)
+    reviewed = result.model_copy(deep=True)
+    reviewed.action_items = [reviewed.action_items[1]]
+    reviewed.action_items[0].title = "Human edited surviving action"
+    current = build_ado_publication_preview(reviewed, snapshot, 0, target, original_action_index=1)
+    assert current.request.correlation_id == original.request.correlation_id
+    assert current.preview_fingerprint != original.preview_fingerprint
+    prior = AdoPublicationOperation(
+        status=status,
+        correlation_id=original.request.correlation_id,
+        request_binding_fingerprint=original.request.binding_fingerprint,
+        message="Retained.",
+    )
+    gateway = InMemoryFakeAdoGateway()
+    with pytest.raises(PublicationValidationError, match="protected"):
+        AdoPublicationCoordinator(gateway).publish(
+            preview=current,
+            confirmation=confirm_ado_publication_preview(current),
+            reviewed_result=reviewed,
+            source_snapshot=snapshot,
+            target=target,
+            original_action_index=1,
+            prior_operations={prior.correlation_id: prior},
+        )
+    assert gateway.create_calls == []
+    with pytest.raises(PublicationValidationError, match="changed"):
+        AdoPublicationCoordinator(gateway).publish(
+            preview=current,
+            confirmation=confirm_ado_publication_preview(current),
+            reviewed_result=reviewed,
+            source_snapshot=snapshot,
+            target=target,
+        )
+
+
+@pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
+def test_legacy_compacted_correlation_is_retained_after_restoration(status) -> None:
+    result, snapshot, target = _preview_inputs()
+    compact = result.model_copy(deep=True)
+    compact.action_items = [compact.action_items[1]]
+    legacy = build_ado_publication_preview(compact, snapshot, 0, target)
+    restored = build_ado_publication_preview(result, snapshot, 1, target)
+    prior = AdoPublicationOperation(
+        status=status,
+        correlation_id=legacy.request.correlation_id,
+        request_binding_fingerprint=legacy.request.binding_fingerprint,
+        message="Legacy result.",
+    )
+    gateway = InMemoryFakeAdoGateway()
+    with pytest.raises(PublicationValidationError, match="protected"):
+        AdoPublicationCoordinator(gateway).publish(
+            preview=restored,
+            confirmation=confirm_ado_publication_preview(restored),
+            reviewed_result=result,
+            source_snapshot=snapshot,
+            target=target,
+            prior_operations={prior.correlation_id: prior},
+        )
+    assert gateway.create_calls == []
+
+
+def test_legacy_gateway_match_prevents_create_without_local_history() -> None:
+    result, snapshot, target = _preview_inputs()
+    compact = result.model_copy(deep=True)
+    compact.action_items = [compact.action_items[1]]
+    legacy = build_ado_publication_preview(compact, snapshot, 0, target)
+    current = build_ado_publication_preview(result, snapshot, 1, target)
+    gateway = FakeAdoGateway(correlation_results={legacy.request.correlation_id: (7001,)})
+    outcome = AdoPublicationCoordinator(gateway).publish(
+        preview=current,
+        confirmation=confirm_ado_publication_preview(current),
+        reviewed_result=result,
+        source_snapshot=snapshot,
+        target=target,
+    )
+    assert outcome.status is PublicationStatus.UNKNOWN_RESULT
+    assert outcome.receipt.work_item_id == 7001
+    assert legacy.request.correlation_id in outcome.message
+    assert gateway.create_calls == []
+
+
+def _readiness_inputs():
+    from architecture_governance_copilot.runtime_dependencies import configured_delivery_capability
+    from architecture_governance_copilot.ui_support import (
+        confirm_review_input_manifest,
+        initialize_session_state,
+        load_internal_review_into_state,
+    )
+
+    result, snapshot, _ = _preview_inputs()
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {"AGC_INTERNAL_FAKE_ENABLED": "1"})
+    state = {}
+    initialize_session_state(state)
+    state["agc_review_mode"] = "internal_fake"
+    load_internal_review_into_state(
+        state,
+        snapshot=snapshot,
+        transcript=runtime.review_transcript,
+        context=result.context,
+        provider_configuration_identity=runtime.descriptor.provider_configuration_identity,
+    )
+    manifest = confirm_review_input_manifest(state)
+    capability = configured_delivery_capability({"AGC_INTERNAL_FAKE_ENABLED": "1"})
+    return result, snapshot, manifest, capability
+
+
+def test_readiness_is_ordered_explicit_and_does_not_depend_on_mode_label() -> None:
+    from architecture_governance_copilot.publication import (
+        DeliveryStatus,
+        assess_delivery_readiness,
+    )
+
+    result, snapshot, manifest, capability = _readiness_inputs()
+    before = result.model_dump_json()
+    readiness = assess_delivery_readiness(result, snapshot, manifest, capability)
+    assert readiness.status is DeliveryStatus.READY
+    assert [a.action_index for a in readiness.actions] == [0, 1]
+    assert all(a.ready for a in readiness.actions)
+    assert readiness.actions[0].resolved_assignee == "riley.chen.synthetic@example.invalid"
+    assert readiness.actions[1].mapped_parent == 204
+    assert readiness.actions[0].mapped_priority == 1
+    assert (
+        assess_delivery_readiness(
+            result, snapshot, manifest.model_copy(update={"review_mode": "other"}), capability
+        )
+        == readiness
+    )
+    assert result.model_dump_json() == before
+
+
+@pytest.mark.parametrize(
+    "field,value,blocker",
+    [
+        ("owner", "Unmapped Owner", "Unmapped Owner"),
+        ("owner", None, "owner is required"),
+        ("due_date", None, "due date is required"),
+    ],
+)
+def test_preflight_names_each_blocked_action_and_preserves_other_ready_action(
+    field, value, blocker
+) -> None:
+    from architecture_governance_copilot.publication import assess_delivery_readiness
+
+    result, snapshot, manifest, capability = _readiness_inputs()
+    setattr(result.action_items[0], field, value)
+    readiness = assess_delivery_readiness(result, snapshot, manifest, capability)
+    assert not readiness.actions[0].ready
+    assert blocker in " ".join(readiness.actions[0].blockers)
+    assert result.action_items[0].title in readiness.actions[0].blockers[0]
+    assert readiness.actions[1].ready
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "source_page_id",
+        "source_space",
+        "source_url",
+        "source_content_fingerprint",
+        "transcript_fingerprint",
+        "metadata_fingerprint",
+        "provider_configuration_identity",
+    ],
+)
+def test_mismatched_package_is_unavailable(field) -> None:
+    from architecture_governance_copilot.publication import (
+        DeliveryStatus,
+        assess_delivery_readiness,
+    )
+
+    result, snapshot, manifest, capability = _readiness_inputs()
+    changed = manifest.model_copy(update={field: "mismatch"})
+    readiness = assess_delivery_readiness(result, snapshot, changed, capability)
+    assert readiness.status is DeliveryStatus.UNAVAILABLE
+    assert all(not a.ready for a in readiness.actions)
+
+
+def test_preflight_parent_priority_optional_fields_and_no_provider() -> None:
+    from architecture_governance_copilot.publication import (
+        DeliveryStatus,
+        assess_delivery_readiness,
+    )
+
+    result, snapshot, manifest, capability = _readiness_inputs()
+    unavailable = assess_delivery_readiness(result, snapshot, manifest, None)
+    assert unavailable.status is DeliveryStatus.UNAVAILABLE
+    target = capability.target.model_copy(
+        update={"parent_work_item_ids": {"OTHER": 1}, "priority_values": {"low": 3}}
+    )
+    readiness = assess_delivery_readiness(
+        result, snapshot, manifest, capability.model_copy(update={"target": target})
+    )
+    assert "parent" in " ".join(readiness.actions[0].blockers)
+    assert "priority" in " ".join(readiness.actions[0].blockers)
+    result.action_items = []
+    assert (
+        assess_delivery_readiness(result, None, None, None).status is DeliveryStatus.NOT_APPLICABLE
+    )
+
+
+def test_capability_rejects_unknown_fields_and_blank_identity() -> None:
+    _, _, _, capability = _readiness_inputs()
+    from architecture_governance_copilot.publication import AdoDeliveryCapability
+
+    for update in ({"provider_identity": " "}, {"unexpected": True}):
+        with pytest.raises(ValidationError):
+            AdoDeliveryCapability.model_validate(capability.model_dump() | update)
+
+
+def test_readable_summary_contains_every_exact_request_field_and_binding() -> None:
+    from architecture_governance_copilot.publication import publication_request_summary
+
+    result, snapshot, target = _preview_inputs()
+    preview = build_ado_publication_preview(result, snapshot, 1, target)
+    summary = publication_request_summary(preview, target)
+    for operation in preview.request.operations:
+        assert operation.value in summary.values()
+    assert summary["Reviewed owner"] == result.action_items[1].owner
+    assert summary["Resolved assignee"] == target.owner_identities[result.action_items[1].owner]
+    assert summary["Reviewed priority"] == result.action_items[1].priority.value
+    assert summary["Correlation"] == preview.request.correlation_id

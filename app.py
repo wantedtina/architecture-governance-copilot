@@ -49,20 +49,24 @@ from architecture_governance_copilot.models import (
     SourceEvidence,
 )
 from architecture_governance_copilot.publication import (
+    PROTECTED_PUBLICATION_STATUSES,
     AdoPublicationConfirmation,
     AdoPublicationCoordinator,
     AdoPublicationOperation,
     AdoPublicationPreview,
     PublicationStatus,
     PublicationValidationError,
+    assess_delivery_readiness,
     build_ado_publication_preview,
     confirm_ado_publication_preview,
+    delivery_action_correlations,
+    publication_request_summary,
 )
 from architecture_governance_copilot.runtime_dependencies import (
     ReviewMode,
     available_review_modes,
     build_review_runtime,
-    internal_fake_ado_target,
+    configured_delivery_capability,
     review_mode_descriptor,
 )
 from architecture_governance_copilot.si_drafting import (
@@ -74,7 +78,6 @@ from architecture_governance_copilot.ui_support import (
     ADO_FAKE_GATEWAY_KEY,
     ADO_PUBLICATION_CONFIRMATION_KEY,
     ADO_PUBLICATION_HISTORY_KEY,
-    ADO_PUBLICATION_OPERATION_KEY,
     ADO_PUBLICATION_PREVIEW_KEY,
     ANALYZED_RESULT_KEY,
     CONFIRMED_SOURCE_PACKAGE_KEY,
@@ -87,6 +90,9 @@ from architecture_governance_copilot.ui_support import (
     CONTEXT_STAGE,
     CONTEXT_TEMPLATE_ID_KEY,
     CONTEXT_TEMPLATE_WIDGET_KEY,
+    DELIVERY_ACTION_SELECTION_KEY,
+    DELIVERY_ACTION_WIDGET_KEY,
+    DELIVERY_STAGE,
     DRAFT_CONFIRMED_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
     DRAFT_FINGERPRINT_KEY,
@@ -141,6 +147,7 @@ from architecture_governance_copilot.ui_support import (
     build_sample_review_snapshot,
     clear_outputs,
     clear_publication_preview,
+    clear_review_action_due_date,
     clear_stale_si_draft,
     confirm_project_context_for_drafting,
     confirm_review_input_manifest,
@@ -151,6 +158,10 @@ from architecture_governance_copilot.ui_support import (
     current_review_input_manifest,
     current_review_mode,
     current_workflow,
+    delivery_operation_for_correlations,
+    delivery_original_action_index,
+    delivery_outputs_available,
+    delivery_status,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
@@ -172,6 +183,7 @@ from architecture_governance_copilot.ui_support import (
     retain_drafting_source_widget_state,
     retain_review_widget_state,
     review_input_readiness,
+    select_delivery_action,
     set_active_stage,
     start_workflow,
     store_analysis,
@@ -197,6 +209,7 @@ _ROUTE_FILES = {
     INPUT_STAGE: "pages/review_inputs.py",
     REVIEW_STAGE: "pages/human_review.py",
     OUTPUT_STAGE: "pages/generated_outputs.py",
+    DELIVERY_STAGE: "pages/work_item_delivery.py",
 }
 _DEMO_DELAY_ENV = "AGC_DEMO_STEP_DELAY_SECONDS"
 _DEFAULT_DEMO_STEP_DELAY_SECONDS = 0.4
@@ -255,8 +268,23 @@ def main() -> None:
         url_path="generated-outputs",
         visibility="hidden",
     )
+    delivery_page = st.Page(
+        _ROUTE_FILES[DELIVERY_STAGE],
+        title="Work Item Delivery",
+        icon=":material/send:",
+        url_path="work-item-delivery",
+        visibility="hidden",
+    )
     selected_page = st.navigation(
-        [home_page, context_page, drafting_page, input_page, review_page, output_page],
+        [
+            home_page,
+            context_page,
+            drafting_page,
+            input_page,
+            review_page,
+            output_page,
+            delivery_page,
+        ],
         position="hidden",
     )
     selected_page.run()
@@ -398,6 +426,27 @@ def _render_output_page() -> None:
     st.header("Review step 3 — Generated Outputs")
     _render_output_navigation()
     _render_output_stage(outputs, change_summary)
+
+
+def _render_delivery_page() -> None:
+    retain_review_widget_state(st.session_state)
+    if current_analysis_invalidation(st.session_state) is not None:
+        _switch_stage(REVIEW_STAGE)
+    if not delivery_outputs_available(st.session_state):
+        _switch_stage(
+            OUTPUT_STAGE,
+            error="Confirm the reviewed record and generate outputs before Work Item Delivery.",
+        )
+    _render_page_shell(DELIVERY_STAGE)
+    st.header("Review step 4 — Work Item Delivery")
+    with st.container(horizontal=True):
+        if st.button("Back to Generated Outputs", key="agc_delivery_back_outputs"):
+            _switch_stage(OUTPUT_STAGE)
+        if st.button("Back to Human Review", key="agc_delivery_back_review"):
+            _switch_stage(REVIEW_STAGE)
+    st.caption("Local governance artifacts are complete. Delivery is a separate conditional step.")
+    _render_fake_ado_publication(st.session_state[REVIEWED_RESULT_KEY])
+    _render_error()
 
 
 def _render_page_shell(stage: str) -> None:
@@ -975,6 +1024,7 @@ def _render_sidebar(stage: str) -> None:
         INPUT_STAGE: "Review Inputs",
         REVIEW_STAGE: "Human Review",
         OUTPUT_STAGE: "Generated Outputs",
+        DELIVERY_STAGE: "Work Item Delivery",
     }
     with st.sidebar:
         st.markdown("### Architecture Governance")
@@ -1041,12 +1091,13 @@ def _render_step_progress(stage: str) -> None:
             (INPUT_STAGE, "Review Inputs"),
             (REVIEW_STAGE, "Human Review"),
             (OUTPUT_STAGE, "Generated Outputs"),
+            (DELIVERY_STAGE, "Work Item Delivery"),
         ]
     )
     current_index = next(
         index for index, (stage_name, _) in enumerate(stages) if stage_name == stage
     )
-    workflow_complete = stage == OUTPUT_STAGE and st.session_state[OUTPUT_SUCCESS_KEY] is True
+    workflow_complete = delivery_outputs_available(st.session_state)
     step_cards: list[str] = []
     for index, (_, label) in enumerate(stages):
         context_complete = (
@@ -1063,7 +1114,7 @@ def _render_step_progress(stage: str) -> None:
             context_complete
             or draft_complete
             or index < current_index
-            or (workflow_complete and index == current_index)
+            or (workflow_complete and index < 3 and workflow is Workflow.REVIEW)
         ):
             status_class = "agc-step--complete"
             status = "Complete"
@@ -1073,6 +1124,19 @@ def _render_step_progress(stage: str) -> None:
         else:
             status_class = ""
             status = "Upcoming"
+        if workflow is Workflow.REVIEW and index == 3:
+            status_class = "agc-step--active" if stage == DELIVERY_STAGE else ""
+            status = "Unavailable"
+            if delivery_outputs_available(st.session_state):
+                _, readiness, operations = _delivery_context(st.session_state[REVIEWED_RESULT_KEY])
+                status = delivery_status(
+                    readiness,
+                    operations,
+                    has_preview=isinstance(
+                        st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY), AdoPublicationPreview
+                    ),
+                ).value
+            status_class = "agc-step--active" if stage == DELIVERY_STAGE else ""
         step_cards.append(
             f'<div class="agc-step {status_class}">'
             f'<div class="agc-step-number">{index + 1}</div>'
@@ -2457,6 +2521,10 @@ def _render_review_navigation(*, analysis_invalid: bool) -> None:
 
 
 def _render_output_navigation() -> None:
+    if st.button(
+        "Continue to Work Item Delivery", key="agc_continue_delivery", icon=":material/send:"
+    ):
+        _switch_stage(DELIVERY_STAGE)
     back_column, reset_column = st.columns([2, 1])
     if back_column.button(
         "← Back to Human Review",
@@ -3058,13 +3126,25 @@ def _render_action_edits(
                     value=action.owner or "",
                 ),
             )
-            due_date = date_column.text_input(
-                "Due date (optional, YYYY-MM-DD)",
+            due_date = date_column.date_input(
+                "Due date (optional)",
                 key=f"agc_field_action_{index}_due_date",
+                format="YYYY-MM-DD",
+                min_value=date.min,
+                max_value=date.max,
+                persist_state="session",
                 **_review_widget_default(
                     f"agc_field_action_{index}_due_date",
-                    value=_date_text(action.due_date),
+                    value=action.due_date,
                 ),
+            )
+            date_column.button(
+                "Clear due date",
+                key=f"agc_clear_action_{index}_due_date",
+                on_click=clear_review_action_due_date,
+                args=(st.session_state, index),
+                disabled=due_date is None,
+                help="Leave this optional review date genuinely unset.",
             )
             with priority_column:
                 priority = _enum_selectbox(
@@ -3384,8 +3464,6 @@ def _render_output_stage(
         _render_evidence_to_output_comparison(reviewed_result, outputs)
     _render_minutes_output(outputs.review_minutes)
     _render_ado_outputs(outputs)
-    if isinstance(reviewed_result, GovernanceResult):
-        _render_fake_ado_publication(reviewed_result)
 
 
 def _render_evidence_to_output_comparison(
@@ -3568,129 +3646,223 @@ def _render_ado_outputs(outputs: GovernanceOutputs) -> None:
         )
 
 
-def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
-    """Render the explicit preview-confirm-submit flow for the non-network fake only."""
-    if current_review_mode(st.session_state) is not ReviewMode.INTERNAL_FAKE:
-        return
+def _delivery_context(reviewed_result: GovernanceResult):
+    capability = configured_delivery_capability()
     snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
-    if not isinstance(snapshot, ConfluencePageSnapshot):
-        return
-    selected_index = st.session_state.get(OUTPUT_ACTION_SELECTION_KEY)
-    if not isinstance(selected_index, int) or not (
-        0 <= selected_index < len(reviewed_result.action_items)
-    ):
-        return
-
-    target = internal_fake_ado_target()
-    preview_value = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
-    preview = preview_value if isinstance(preview_value, AdoPublicationPreview) else None
-    if preview is not None:
+    manifest = current_review_input_manifest(st.session_state)
+    readiness = assess_delivery_readiness(reviewed_result, snapshot, manifest, capability)
+    operations = tuple(
+        delivery_operation_for_correlations(
+            st.session_state,
+            delivery_action_correlations(
+                reviewed_result,
+                snapshot,
+                row.action_index,
+                delivery_original_action_index(st.session_state, row.action_index),
+                capability.target,
+            ),
+        )
+        if capability is not None and isinstance(snapshot, ConfluencePageSnapshot)
+        else None
+        for row in readiness.actions
+    )
+    preview = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
+    selected_index = st.session_state.get(DELIVERY_ACTION_SELECTION_KEY)
+    if isinstance(preview, AdoPublicationPreview):
         try:
-            current_preview = build_ado_publication_preview(
+            if (
+                capability is None
+                or selected_index is None
+                or not readiness.actions[selected_index].ready
+            ):
+                raise PublicationValidationError("Delivery is no longer ready.")
+            rebuilt = build_ado_publication_preview(
                 reviewed_result,
                 snapshot,
                 selected_index,
-                target,
+                capability.target,
+                original_action_index=delivery_original_action_index(
+                    st.session_state, selected_index
+                ),
             )
-        except PublicationValidationError:
+            if rebuilt != preview:
+                raise PublicationValidationError("The request binding changed.")
+        except (ValueError, IndexError):
             clear_publication_preview(st.session_state)
             preview = None
-        else:
-            if current_preview != preview:
-                clear_publication_preview(st.session_state)
-                preview = None
 
-    with st.container(border=True):
-        st.subheader("Fake Azure DevOps publication")
+    return capability, readiness, operations
+
+
+def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
+    """Show all reviewed actions and one independently selected, exact fake request."""
+    capability, readiness, operations = _delivery_context(reviewed_result)
+    snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
+    preview = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
+    selected_index = st.session_state.get(DELIVERY_ACTION_SELECTION_KEY)
+    status = delivery_status(
+        readiness, operations, has_preview=isinstance(preview, AdoPublicationPreview)
+    )
+    st.subheader(f"Delivery status · {status.value}")
+    st.caption(
+        "Delivery does not approve the Solution Intent. History is session-local, not a durable "
+        "audit record. Restarting cannot establish that a prior Create did not occur."
+    )
+    if not readiness.actions:
+        st.info("Not applicable · No actions were included in the confirmed reviewed record.")
+    elif not readiness.capability_available:
+        clear_publication_preview(st.session_state)
+        st.info(
+            "Unavailable · No delivery provider is configured for this exact review package. "
+            "Use Back to Generated Outputs to inspect or download the local artifacts."
+        )
+        for blocker in readiness.blockers:
+            st.caption(blocker)
+    else:
         st.warning(
-            "Synthetic target · no network. This demonstrates the guarded Create contract; "
-            "it does not publish to Azure DevOps."
+            "Synthetic target · no network. Create work item uses only an in-memory fake gateway."
         )
-        st.caption(
-            "Prepare one exact JSON Patch request, inspect it, confirm it separately, then "
-            "submit it once to the in-memory fake gateway."
-        )
-
-        if st.button(
-            "Prepare exact Create preview",
-            key="agc_prepare_ado_publication",
-            icon=":material/preview:",
-            width="stretch",
-        ):
-            try:
-                preview = build_ado_publication_preview(
-                    reviewed_result,
-                    snapshot,
-                    selected_index,
-                    target,
-                )
-            except PublicationValidationError as exc:
-                st.error(str(exc))
-            else:
-                store_publication_preview(st.session_state, preview)
-
-        if preview is None:
-            st.info("No exact Create request is currently prepared.")
-            _render_publication_operation()
-            return
-
-        st.markdown(f"**Selected action:** {preview.action_title}")
+        target = capability.target
+        with st.expander("Configured target and field mappings", expanded=False):
+            st.json(target.model_dump(mode="json"))
         st.caption(
             f"Target: {target.project} · Type: {target.work_item_type} · "
-            f"Correlation: {preview.request.correlation_id}"
-        )
-        st.code(preview.request.url, language=None)
-        st.json(
-            [operation.model_dump(mode="json") for operation in preview.request.operations],
-            expanded=False,
+            f"API version: {target.api_version}"
         )
 
-        confirmation_value = st.session_state.get(ADO_PUBLICATION_CONFIRMATION_KEY)
-        confirmation = (
-            confirmation_value
-            if isinstance(confirmation_value, AdoPublicationConfirmation)
-            else None
-        )
-        if confirmation is None and st.button(
-            "Confirm exact preview",
-            key="agc_confirm_ado_publication",
-            icon=":material/check_circle:",
-            width="stretch",
-        ):
-            confirmation = confirm_ado_publication_preview(preview)
-            store_publication_confirmation(st.session_state, confirmation)
-
-        if confirmation is not None:
-            st.success("Exact Create preview confirmed. No request has been sent yet.")
-            history_value = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
-            history = history_value if isinstance(history_value, Mapping) else {}
-            protected = history.get(preview.request.correlation_id)
-            protected_status = (
-                protected.status if isinstance(protected, AdoPublicationOperation) else None
+    for row, operation in zip(readiness.actions, operations, strict=True):
+        with st.container(border=True):
+            st.subheader(f"Action {row.action_index + 1}")
+            st.text(row.title)
+            row_status = "Ready" if row.ready else "Unavailable"
+            if operation is not None:
+                row_status = _publication_status_label(operation.status)
+            st.markdown(f"**{row_status}**")
+            st.text(
+                f"Reviewed owner: {row.reviewed_owner or 'Unset'}\n"
+                f"Resolved assignee: {row.resolved_assignee or 'Unresolved'}\n"
+                f"Due date: {row.due_date.isoformat() if row.due_date else 'Unset'}\n"
+                f"Priority: {row.reviewed_priority} → {row.mapped_priority or 'Unmapped'}\n"
+                f"Parent: {row.parent_reference or 'Unset'} → {row.mapped_parent or 'Unmapped'}"
             )
-            if st.button(
-                "Submit once to fake Azure DevOps",
-                key="agc_submit_ado_publication",
-                type="primary",
-                icon=":material/send:",
-                disabled=protected_status
-                in {
-                    PublicationStatus.SUBMITTING,
-                    PublicationStatus.SUCCEEDED,
-                    PublicationStatus.UNKNOWN_RESULT,
-                },
-                width="stretch",
-            ):
-                _submit_fake_ado_publication(
-                    preview,
-                    confirmation,
-                    reviewed_result,
-                    snapshot,
-                )
-                st.session_state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
-                st.rerun()
+            for blocker in row.blockers:
+                st.warning(blocker)
+            if operation is not None:
+                _render_publication_operation(operation)
 
-        _render_publication_operation()
+    if readiness.actions and readiness.capability_available:
+        options = list(range(len(readiness.actions)))
+        selected_index = st.selectbox(
+            "Action to deliver",
+            options,
+            index=selected_index if selected_index in options else 0,
+            key=DELIVERY_ACTION_WIDGET_KEY,
+            format_func=lambda index: f"Action {index + 1} · {readiness.actions[index].title}",
+            persist_state="session",
+        )
+        select_delivery_action(st.session_state, selected_index)
+        preview = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
+        row = readiness.actions[selected_index]
+        operation = operations[selected_index]
+        protected = operation is not None and operation.status in PROTECTED_PUBLICATION_STATUSES
+        if protected:
+            st.info(
+                "This action has a protected result. Another ready action may be selected; "
+                "do not retry a succeeded, submitting, or unknown operation."
+            )
+        if not row.ready:
+            st.info(
+                "Use Back to Human Review to correct the named action, "
+                "then confirm the record again. "
+                "Source-controlled parent and target mappings cannot be edited here."
+            )
+        if st.button(
+            "Preview Azure DevOps request",
+            key="agc_prepare_ado_publication",
+            icon=":material/preview:",
+            disabled=not row.ready or protected,
+        ):
+            preview = build_ado_publication_preview(
+                reviewed_result,
+                snapshot,
+                selected_index,
+                capability.target,
+                original_action_index=delivery_original_action_index(
+                    st.session_state, selected_index
+                ),
+            )
+            store_publication_preview(st.session_state, preview)
+            st.rerun()
+        if isinstance(preview, AdoPublicationPreview):
+            summary_tab, json_tab = st.tabs(["Work item summary", "Request JSON"])
+            with summary_tab:
+                st.caption(
+                    "Read-only summary derived from this exact prepared request. "
+                    "The reviewed owner is preserved; the resolved assignee is "
+                    "its configured target identity."
+                )
+                for label, value in publication_request_summary(preview, capability.target).items():
+                    st.markdown(f"**{escape(label)}**")
+                    if isinstance(value, dict):
+                        st.json(value)
+                    else:
+                        st.text(str(value))
+            with json_tab:
+                st.caption("Exact Create · POST endpoint · JSON Patch request")
+                st.code(preview.request.url, language=None)
+                st.text(preview.request.content_type)
+                st.json(
+                    [operation.model_dump(mode="json") for operation in preview.request.operations]
+                )
+                st.json(
+                    {
+                        "correlation": preview.request.correlation_id,
+                        "request_binding_fingerprint": preview.request.binding_fingerprint,
+                        "preview_fingerprint": preview.preview_fingerprint,
+                        "reviewed_result_fingerprint": preview.reviewed_result_fingerprint,
+                        "source_snapshot_fingerprint": preview.source_snapshot_fingerprint,
+                        "target_fingerprint": preview.target_fingerprint,
+                        "mapping_fingerprint": preview.mapping_fingerprint,
+                        "original_action_index": preview.original_action_index,
+                    }
+                )
+            confirmation = st.session_state.get(ADO_PUBLICATION_CONFIRMATION_KEY)
+            if not protected:
+                if not isinstance(confirmation, AdoPublicationConfirmation):
+                    st.info("Prepared · Inspect both views before confirming this exact request.")
+                    if st.button(
+                        "Confirm request",
+                        key="agc_confirm_ado_publication",
+                        icon=":material/check_circle:",
+                    ):
+                        store_publication_confirmation(
+                            st.session_state, confirm_ado_publication_preview(preview)
+                        )
+                        st.rerun()
+                else:
+                    st.success(
+                        "Confirmed · No request has been sent yet. "
+                        "Create work item submits once to the fake gateway."
+                    )
+                    if st.button(
+                        "Create work item",
+                        key="agc_submit_ado_publication",
+                        type="primary",
+                        icon=":material/send:",
+                    ):
+                        _submit_fake_ado_publication(
+                            preview, confirmation, reviewed_result, snapshot
+                        )
+                        st.session_state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
+                        st.rerun()
+        else:
+            st.info("Not prepared · No exact Create request is currently prepared.")
+    history = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
+    if isinstance(history, Mapping) and history:
+        with st.expander("Session delivery history and reconciliation", expanded=False):
+            for operation in history.values():
+                if isinstance(operation, AdoPublicationOperation):
+                    _render_publication_operation(operation)
 
 
 def _submit_fake_ado_publication(
@@ -3699,42 +3871,56 @@ def _submit_fake_ado_publication(
     reviewed_result: GovernanceResult,
     snapshot: ConfluencePageSnapshot,
 ) -> None:
-    """Recheck the fake source and submit the already confirmed exact request once."""
+    """Revalidate package capability and exact source immediately before guarded submission."""
     try:
+        if current_analysis_invalidation(st.session_state) is not None:
+            raise PublicationValidationError("The confirmed review package changed.")
+        capability, readiness, _ = _delivery_context(reviewed_result)
+        if capability is None or not readiness.actions[preview.action_index].ready:
+            raise PublicationValidationError("Delivery capability or action readiness changed.")
+        if preview.action_index != st.session_state.get(DELIVERY_ACTION_SELECTION_KEY):
+            raise PublicationValidationError("The selected delivery action changed.")
         runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE)
-        if runtime.confluence_reader is None or runtime.confluence_page_id is None:
-            raise PublicationValidationError("The fake source reader is unavailable.")
         current_snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
         if not _same_source_snapshot(current_snapshot, snapshot):
             raise PublicationValidationError(
-                "The Confluence source changed and must be analyzed and confirmed again."
+                "The Confluence source changed; analyze and confirm it again."
             )
-        gateway_value = st.session_state.get(ADO_FAKE_GATEWAY_KEY)
-        gateway = (
-            gateway_value
-            if isinstance(gateway_value, InMemoryFakeAdoGateway)
-            else InMemoryFakeAdoGateway()
-        )
-        st.session_state[ADO_FAKE_GATEWAY_KEY] = gateway
-        history_value = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
-        history = history_value if isinstance(history_value, Mapping) else {}
+        gateway = st.session_state.get(ADO_FAKE_GATEWAY_KEY)
+        if gateway is None:
+            gateway = InMemoryFakeAdoGateway()
+            st.session_state[ADO_FAKE_GATEWAY_KEY] = gateway
         coordinator = AdoPublicationCoordinator(
             gateway,
-            transition=lambda operation: record_publication_operation(
-                st.session_state,
-                operation,
-            ),
+            transition=lambda operation: record_publication_operation(st.session_state, operation),
         )
-        coordinator.publish(
-            preview=preview,
-            confirmation=confirmation,
-            reviewed_result=reviewed_result,
-            source_snapshot=current_snapshot,
-            target=internal_fake_ado_target(),
-            prior_operations=history,
-        )
-    except (PublicationValidationError, ValueError, RuntimeError) as exc:
-        st.error(str(exc))
+        with st.status(
+            "Submitting · Reconciling correlation and verifying read-back", expanded=True
+        ):
+            coordinator.publish(
+                preview=preview,
+                confirmation=confirmation,
+                reviewed_result=reviewed_result,
+                source_snapshot=current_snapshot,
+                target=capability.target,
+                prior_operations=st.session_state.get(ADO_PUBLICATION_HISTORY_KEY),
+                original_action_index=delivery_original_action_index(
+                    st.session_state, preview.action_index
+                ),
+            )
+    except (ValueError, RuntimeError) as exc:
+        clear_publication_preview(st.session_state)
+        st.session_state[ERROR_KEY] = str(exc)
+
+
+def _publication_status_label(status: PublicationStatus) -> str:
+    return {
+        PublicationStatus.NOT_SUBMITTED: "Not prepared",
+        PublicationStatus.SUBMITTING: "Submitting",
+        PublicationStatus.SUCCEEDED: "Succeeded",
+        PublicationStatus.DEFINITELY_FAILED: "Definitely failed",
+        PublicationStatus.UNKNOWN_RESULT: "Needs reconciliation · Unknown result",
+    }[status]
 
 
 def _same_source_snapshot(
@@ -3755,11 +3941,9 @@ def _same_source_snapshot(
     )
 
 
-def _render_publication_operation() -> None:
-    operation_value = st.session_state.get(ADO_PUBLICATION_OPERATION_KEY)
-    if not isinstance(operation_value, AdoPublicationOperation):
-        return
-    operation = operation_value
+def _render_publication_operation(operation: AdoPublicationOperation) -> None:
+    st.text(f"Correlation: {operation.correlation_id}")
+    st.caption(_publication_status_label(operation.status))
     if operation.status is PublicationStatus.SUCCEEDED:
         st.success(operation.message)
     elif operation.status is PublicationStatus.DEFINITELY_FAILED:

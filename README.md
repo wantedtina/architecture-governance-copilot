@@ -49,7 +49,8 @@ The implemented deterministic Solution Intent Copilot can:
 
 The landing page presents two peer workflows. **Draft a Solution Intent** uses **Project Context →
 Draft Solution Intent**. **Review a Solution Intent** uses **Review Inputs → Human Review →
-Generated Outputs**. Each workflow has local progress and reset semantics; neither reports the
+Generated Outputs → Work Item Delivery**. Local review completion occurs at Generated Outputs;
+delivery is a conditional fourth step with its own status. Each workflow has local progress and reset semantics; neither reports the
 other as skipped or complete. A confirmed draft is never silently promoted to an authoritative
 review source.
 Analysis navigates to `/human-review`, and review confirmation navigates to
@@ -127,7 +128,8 @@ architecture-governance-copilot/
 │   ├── solution_intent_drafting.py
 │   ├── review_inputs.py
 │   ├── human_review.py
-│   └── generated_outputs.py
+│   ├── generated_outputs.py
+│   └── work_item_delivery.py
 ├── pyproject.toml
 ├── uv.lock
 ├── README.md
@@ -254,6 +256,37 @@ scenarios. Human draft edits are preserved in the drafting workflow, but the det
 extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts
 only its separate fixed package; arbitrary SI analysis requires a future approved provider.
 
+## Governed work-item delivery
+
+Generated Outputs remains complete and downloadable independently of delivery. Choose
+**Continue to Work Item Delivery** to inspect the conditional fourth review step. Offline reports
+**Unavailable** because no delivery provider is configured for its package; a review with no
+confirmed actions reports **Not applicable**.
+
+The opt-in Internal fake capability is bound to the exact confirmed synthetic source, provider,
+transcript, metadata, and configured target. Each reviewed action shows its owner, mapped assignee,
+nullable due date, priority, parent, and readiness blockers before request preparation. Review
+ownership remains flexible; an unmapped owner blocks that action and provides **Back to Human
+Review** for correction and renewed confirmation. Parent and target mappings are read-only.
+
+Select one action independently of the Generated Outputs evidence comparison, then use
+**Preview Azure DevOps request → Confirm request → Create work item**. Peer **Work item summary**
+and **Request JSON** tabs expose the same prepared request, including all outgoing fields,
+relations, correlation, and binding fingerprints. Create reconciles correlations first, submits
+at most once per protected operation, and verifies the known identifier with GET. Each action has
+its own receipt; another ready action may be delivered separately. Succeeded, submitting, and
+unknown results block direct resubmission. Failed and unknown delivery do not erase local artifacts.
+
+Original analyzed action positions survive exclusions for delivery correlation, while local output
+indices remain compact. Legacy compact-position correlations are also checked so retained history
+cannot silently lose duplicate protection. Changing a selected action or any bound result, source,
+target, or mapping revokes the active request confirmation. Human Review action dates use a nullable
+calendar control and an explicit **Clear due date** action; clearing preserves `None`, and no business date horizon is imposed.
+
+All delivery remains in-memory and no-network. Session history is not a durable audit store;
+process restart cannot establish whether a prior remote operation occurred. Formal architecture
+approval remains a human responsibility.
+
 ## Current implementation status
 
 **The deterministic routed PoC workflow is the verified 14 September submission baseline.**
@@ -285,7 +318,7 @@ Implemented:
   coverage across every review collection;
 - validated review metadata, expected governance result, and evidence-consistency tests;
 - a synchronous `GovernanceExtractor` protocol; and
-- a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback;
+- a fixture-validated `DeterministicDemoExtractor` for offline tests and the primary demo;
 - deterministic Markdown SI review-minutes generation; and
 - typed mock ADO work-item generation with no external request;
 - an immutable `GovernanceOutputs` bundle; and

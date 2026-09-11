@@ -95,3 +95,14 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     assert len(result.action_items) == 2
     assert len(result.open_questions) == 1
     assert len(result.missing_evidence) == 2
+
+
+def test_delivery_configuration_is_explicit_and_bound_to_fake_package() -> None:
+    from architecture_governance_copilot.runtime_dependencies import configured_delivery_capability
+
+    assert configured_delivery_capability({}) is None
+    capability = configured_delivery_capability({INTERNAL_FAKE_ENABLED_ENV: "1"})
+    assert capability.source_page_id == "synthetic-page-204"
+    assert capability.source_version == 8
+    assert capability.provider_identity == "in-memory-fake-ado-v1"
+    assert capability.target.organization_url.startswith("https://example.invalid/")

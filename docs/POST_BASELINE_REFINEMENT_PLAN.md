@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`. No post-baseline application implementation batch is active.
+Execution authority: `NONE`. Batch 06 completed and verified on 2026-09-11.
 
 Active execution plan: `NONE`
 
@@ -479,7 +479,7 @@ Resolution: implemented and verified through
 
 ### R7 — Separate governed Azure DevOps work-item delivery step
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of the mode-specific `Prepare exact Create preview` control
   after the 14 September baseline was completed.
 - **Observed behavior:** Stage 5 always shows provider-neutral Azure DevOps work-item previews and
@@ -610,6 +610,27 @@ Open decisions to resolve before moving R7 to `Ready`:
   adding a database or overstating exactly-once guarantees.
 - How R7 depends on the R2 workflow split, the R5 authoritative source manifest, and the R6
   rendered-versus-exact-request presentation policy.
+
+Readiness resolution approved with Batch 06 on 2026-09-11:
+
+- Add `Work Item Delivery` as a visible conditional fourth review step while keeping Generated
+  Outputs as the independent local completion boundary.
+- Reuse only the existing opt-in Internal fake target; determine availability from the exact
+  confirmed package and configured capability rather than the visible analysis-mode label, while
+  Offline reports delivery unavailable.
+- Present all reviewed actions with per-action readiness and operation state, but retain sequential
+  single-item preview, confirmation, Create, reconciliation, and GET verification.
+- Resolve assignees only through pre-authorized target mappings in this batch. An unmapped reviewed
+  owner remains valid review content but blocks that action and directs the user back to Human
+  Review; add no silent mapping or override.
+- Keep the governance parent source-controlled, add no date bounds, and replace free-text action due
+  dates with nullable date pickers that preserve genuine `None` values.
+- Use peer human-readable and technical request views derived from the same immutable preview, with
+  task-oriented action labels and session-local recovery only.
+
+Verification completed on 2026-09-11: all 433 repository tests, lint, formatting, build,
+and desktop/narrow real-browser acceptance passed. Batch 06 records the delivery capability,
+nullable-date controls, request/receipt workflow, and approved stable action-identity repair.
 
 ### R8 — Order-independent Review Inputs acquisition and visible readiness feedback
 
@@ -815,7 +836,7 @@ new explicit decision and sole active plan.
 | Batch 03 | R4, R6 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`. |
 | Batch 04 | R1 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_04.md`. |
 | Batch 05 | R3 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_05.md`. |
-| Candidate 06 | R7 | Governed work-item delivery depends on the review workflow, authoritative source manifest, confirmed actions, and the rendered-versus-exact presentation policy. Delivery queue, mapping, and recovery decisions remain. |
+| Batch 06 | R7 | Completed and verified on 2026-09-11 in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_06.md`, including the explicitly approved stable action-identity repair. All 433 tests and desktop/narrow browser acceptance passed. |
 | Readiness-gated | R9 | Deployment policy remains accepted but cannot become ready until separately approved live capabilities and their release authority exist; no live connector is authorized by this intake. |
 
 ## 7. Register maintenance and execution handoff

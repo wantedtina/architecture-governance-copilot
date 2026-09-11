@@ -68,8 +68,14 @@ open question, and two missing-evidence items.
 
 When rehearsing this path, enable it explicitly, load the three input components in a non-default
 order, confirm the exact manifest, inspect every Human Review collection, and restore any test edit
-or exclusion before confirmation. Prepare and confirm one exact fake Azure DevOps request, submit
-it once to the in-memory gateway, and verify the deterministic receipt and read-back. State that
+or exclusion before confirmation. On Generated Outputs, select **Continue to Work Item Delivery**.
+Verify that both actions are Ready with mapped owners, dates, priorities, and parent 204. Select
+an action, choose **Preview Azure DevOps request**, inspect **Work item summary** and **Request JSON**,
+then **Confirm request → Create work item**. Verify the receipt and GET read-back. Repeat separately
+for the other action and confirm both receipts survive Back/Return navigation. Test an unmapped
+owner and a cleared date by returning to Human Review, regenerating outputs, inspecting the named
+blockers, and restoring the mapped values. Excluding the preceding action must never permit an
+already succeeded or unknown surviving action to be created again. State that
 the entire path is synthetic and no-network; its greater fixture depth does not demonstrate live
 enterprise connectivity or general semantic extraction.
 
@@ -107,7 +113,8 @@ enterprise connectivity or general semantic extraction.
 **Expected state:**
 
 - The browser navigates to **Review step 1 — Review Inputs**.
-- Review progress contains only Review Inputs, Human Review, and Generated Outputs.
+- Review progress contains Review Inputs, Human Review, Generated Outputs, and conditional
+  Work Item Delivery. Local completion remains at Generated Outputs.
 - Offline demo mode is selected and no source is implied to be loaded.
 - Analyze is disabled.
 
@@ -348,7 +355,7 @@ or every output field.
 - [ ] SI, transcript, people, ticket, and dates are synthetic.
 - [ ] Only one review round—round 2—is shown.
 - [ ] The landing page shows the two peer workflows.
-- [ ] Review progress contains exactly three local steps.
+- [ ] Review progress contains three local artifact steps and a conditional Work Item Delivery step.
 - [ ] Transcript, metadata, and SI are loaded independently.
 - [ ] The authoritative SI is read-only and versioned.
 - [ ] Analyze stays disabled until the exact manifest is confirmed.

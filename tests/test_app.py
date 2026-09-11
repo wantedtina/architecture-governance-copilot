@@ -73,7 +73,7 @@ def _assert_active_step(app: AppTest, label: str) -> None:
         item.value for item in app.markdown if item.value.startswith('<div class="agc-stepper">')
     )
     assert "\n" not in stepper_markup
-    expected_count = 2 if label in {"Project Context", "Draft Solution Intent"} else 3
+    expected_count = 2 if label in {"Project Context", "Draft Solution Intent"} else 4
     assert stepper_markup.count('<div class="agc-step ') == expected_count
     assert "agc-step--active" in stepper_markup
     assert f"<strong>{label}</strong><span>In progress</span>" in stepper_markup
@@ -164,6 +164,10 @@ def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
     assert [item.value for item in app.header] == ["Review step 3 — Generated Outputs"]
     assert any(item.value == "Generated Review Record" for item in app.subheader)
     app.switch_page("pages/generated_outputs.py").run()
+    assert all(item.key != "agc_prepare_ado_publication" for item in app.button)
+    app.button(key="agc_continue_delivery").click().run()
+    assert [item.value for item in app.header] == ["Review step 4 — Work Item Delivery"]
+    app.switch_page("pages/work_item_delivery.py").run()
     assert app.button(key="agc_prepare_ado_publication")
 
     app.button(key="agc_prepare_ado_publication").click().run()
@@ -717,7 +721,7 @@ def test_start_new_review_clears_completed_workflow_and_returns_to_inputs() -> N
 
 def test_invalid_review_date_shows_error_without_stale_outputs() -> None:
     app = _analyzed_app()
-    app.text_input(key="agc_field_action_0_due_date").input("24 July 2026")
+    app.text_input(key="agc_field_finding_0_due_date").input("24 July 2026")
 
     app.button(key="agc_confirm_review").click().run()
 
@@ -733,7 +737,7 @@ def test_generation_failure_clears_previous_review_change_summary() -> None:
 
     app.button(key="agc_back_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
-    app.text_input(key="agc_field_action_0_due_date").input("24 July 2026")
+    app.text_input(key="agc_field_finding_0_due_date").input("24 July 2026")
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
@@ -913,8 +917,8 @@ def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None
     assert "Questions · 1 · 1 pending" in [tab.label for tab in app.tabs]
     assert any("Pending · Excluded · Unconfirmed" in item.value for item in app.caption)
 
-    app.text_input(key="agc_field_action_0_due_date").input("next Friday").run()
-    assert any("Action item 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
+    app.text_input(key="agc_field_finding_0_due_date").input("next Friday").run()
+    assert any("Finding 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
     assert {item.label: item.value for item in app.metric}["Validation issues"] == "1"
 
     app.button(key="agc_back_to_inputs").click().run()
@@ -922,10 +926,10 @@ def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None
     app.button(key="agc_return_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
     assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Kim"
-    assert any("Action item 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
+    assert any("Finding 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
 
     app.text_input(key="agc_field_action_0_owner").input(original_owner).run()
-    app.text_input(key="agc_field_action_0_due_date").input("2026-07-24").run()
+    app.text_input(key="agc_field_finding_0_due_date").input("2026-07-24").run()
     app.checkbox(key="agc_field_question_0_include").check().run()
     assert any("No pending human changes" in item.value for item in app.info)
     assert all("pending" not in tab.label for tab in app.tabs)
@@ -949,3 +953,192 @@ def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> 
     assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == ""
     assert app.session_state[ANALYSIS_INVALIDATION_KEY] is None
     assert all(item.value != "Review step 3 — Generated Outputs" for item in app.header)
+
+
+def test_nullable_action_date_clear_change_and_navigation() -> None:
+    from datetime import date
+
+    app = _analyzed_app()
+    key = "agc_field_action_0_due_date"
+    original = app.date_input(key=key).value
+    assert original == date(2026, 7, 24)
+    app.button(key="agc_clear_action_0_due_date").click().run()
+    assert app.date_input(key=key).value is None
+    assert {item.label: item.value for item in app.metric}["Modified fields"] == "1"
+    app.button(key="agc_confirm_review").click().run()
+    assert app.session_state[REVIEWED_RESULT_KEY].action_items[0].due_date is None
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    app.button(key="agc_delivery_back_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    assert app.date_input(key=key).value is None
+    app.date_input(key=key).set_value(date(1990, 1, 1)).run()
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    app.button(key="agc_return_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    assert app.date_input(key=key).value == date(1990, 1, 1)
+    app.date_input(key=key).set_value(original).run()
+    assert any("No pending human changes" in item.value for item in app.info)
+    assert not app.exception
+
+
+def _fake_delivery_app(monkeypatch) -> AppTest:
+    monkeypatch.setenv("AGC_INTERNAL_FAKE_ENABLED", "1")
+    monkeypatch.setenv("AGC_DEMO_STEP_DELAY_SECONDS", "0")
+    app = _review_inputs_app()
+    app.segmented_control(key="agc_review_mode_widget").set_value("internal_fake").run()
+    for key in (
+        "agc_load_review_metadata",
+        "agc_load_review_source",
+        "agc_load_review_transcript",
+        "agc_confirm_review_inputs",
+        "agc_analyze",
+    ):
+        app.button(key=key).click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert not app.exception
+    return app
+
+
+def _create_selected(app) -> None:
+    for key in (
+        "agc_prepare_ado_publication",
+        "agc_confirm_ado_publication",
+        "agc_submit_ado_publication",
+    ):
+        app.button(key=key).click().run()
+    assert not app.exception
+
+
+def test_delivery_offline_unavailable_empty_not_applicable_and_guard() -> None:
+    app = _initial_app()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
+    app = _analyzed_app()
+    app.button(key="agc_confirm_review").click().run()
+    outputs = app.session_state[OUTPUTS_KEY]
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert any("Unavailable" in item.value for item in app.subheader)
+    assert all(item.key != "agc_prepare_ado_publication" for item in app.button)
+    app.button(key="agc_delivery_back_outputs").click().run()
+    assert app.session_state[OUTPUTS_KEY] == outputs
+    assert len(app.download_button) >= 2
+    app.switch_page("pages/human_review.py").run()
+    for index in (0, 1):
+        app.checkbox(key=f"agc_field_action_{index}_include").uncheck()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert any("Not applicable" in item.value for item in app.info)
+    assert not app.exception
+
+
+def test_delivery_two_actions_independent_selection_summary_and_navigation(monkeypatch) -> None:
+    app = _fake_delivery_app(monkeypatch)
+    assert sum(item.value == "**Ready**" for item in app.markdown) == 2
+    app.selectbox(key=ui_support.DELIVERY_ACTION_WIDGET_KEY).select(1).run()
+    app.button(key="agc_prepare_ado_publication").click().run()
+    preview = app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY]
+    assert preview.action_index == 1
+    assert {tab.label for tab in app.tabs} == {"Work item summary", "Request JSON"}
+    assert any(item.value == "avery.patel.synthetic@example.invalid" for item in app.text)
+    app.button(key="agc_delivery_back_outputs").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    app.selectbox(key=OUTPUT_ACTION_SELECTION_KEY).select(0).run()
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert app.selectbox(key=ui_support.DELIVERY_ACTION_WIDGET_KEY).value == 1
+    assert app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY] == preview
+    app.button(key="agc_confirm_ado_publication").click().run()
+    app.button(key="agc_submit_ado_publication").click().run()
+    first = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    assert app.button(key="agc_prepare_ado_publication").disabled
+    app.selectbox(key=ui_support.DELIVERY_ACTION_WIDGET_KEY).select(0).run()
+    assert app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY] is None
+    assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    _create_selected(app)
+    second = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    assert first.correlation_id != second.correlation_id
+    assert len(app.session_state[ADO_FAKE_GATEWAY_KEY].create_calls) == 2
+    assert app.session_state[ADO_FAKE_GATEWAY_KEY].read_calls == [7001, 7002]
+    assert len(app.session_state[ADO_PUBLICATION_HISTORY_KEY]) == 2
+    assert any(item.value == "Delivery status · Succeeded" for item in app.subheader)
+    assert app.session_state[OUTPUTS_KEY] is not None
+
+
+@pytest.mark.parametrize("unknown", [False, True])
+def test_delivery_exclusion_retains_protection_and_legacy_history_after_reset(
+    monkeypatch, unknown
+) -> None:
+    from architecture_governance_copilot.integrations.azure_devops import FakeAdoGateway
+
+    app = _fake_delivery_app(monkeypatch)
+    app.selectbox(key=ui_support.DELIVERY_ACTION_WIDGET_KEY).select(1).run()
+    if unknown:
+        app.session_state[ADO_FAKE_GATEWAY_KEY] = FakeAdoGateway(create_results=[TimeoutError()])
+    _create_selected(app)
+    first = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    app.button(key="agc_delivery_back_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.checkbox(key="agc_field_action_0_include").uncheck()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert app.button(key="agc_prepare_ado_publication").disabled
+    assert first.correlation_id in " ".join(item.value for item in app.text)
+    assert len(app.session_state[ADO_FAKE_GATEWAY_KEY].create_calls) == 1
+    assert first in app.session_state[ADO_PUBLICATION_HISTORY_KEY].values()
+    assert app.session_state[OUTPUTS_KEY] is not None
+    app.button(key="agc_delivery_back_outputs").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_start_new_review").click().run()
+    assert first in app.session_state[ADO_PUBLICATION_HISTORY_KEY].values()
+    assert not app.exception
+
+
+def test_delivery_blockers_are_named_without_mutating_owner_or_date(monkeypatch) -> None:
+    app = _fake_delivery_app(monkeypatch)
+    app.button(key="agc_delivery_back_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("Unmapped Synthetic Owner")
+    app.date_input(key="agc_field_action_0_due_date").set_value(None)
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert app.button(key="agc_prepare_ado_publication").disabled
+    assert any(
+        "Unmapped Synthetic Owner" in item.value and "Action 1" in item.value
+        for item in app.warning
+    )
+    assert any("due date is required" in item.value for item in app.warning)
+    assert app.button(key="agc_delivery_back_review")
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    assert reviewed.action_items[0].owner == "Unmapped Synthetic Owner"
+    assert reviewed.action_items[0].due_date is None
+    app.selectbox(key=ui_support.DELIVERY_ACTION_WIDGET_KEY).select(1).run()
+    assert not app.button(key="agc_prepare_ado_publication").disabled
+    assert not app.exception
+
+
+def test_delivery_mapping_change_revokes_preview_confirmation_but_keeps_outputs(
+    monkeypatch,
+) -> None:
+    import architecture_governance_copilot.runtime_dependencies as runtime
+
+    app = _fake_delivery_app(monkeypatch)
+    app.button(key="agc_prepare_ado_publication").click().run()
+    app.button(key="agc_confirm_ado_publication").click().run()
+    outputs = app.session_state[OUTPUTS_KEY]
+    target = runtime.internal_fake_ado_target()
+    changed = target.model_copy(update={"priority_values": {"high": 2, "medium": 3, "low": 4}})
+    monkeypatch.setattr(runtime, "internal_fake_ado_target", lambda: changed)
+    app.run()
+    assert app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY] is None
+    assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    assert app.session_state[OUTPUTS_KEY] == outputs
+    assert not app.exception

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Callable, Mapping
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Annotated
 from urllib.parse import quote, urlparse
@@ -28,6 +28,7 @@ from architecture_governance_copilot.integrations.confluence import ConfluencePa
 from architecture_governance_copilot.models import (
     ActionItem,
     GovernanceResult,
+    ReviewInputManifest,
     SourceEvidence,
 )
 
@@ -48,11 +49,170 @@ class PublicationStatus(StrEnum):
     UNKNOWN_RESULT = "unknown_result"
 
 
+class DeliveryStatus(StrEnum):
+    READY = "Ready"
+    NOT_APPLICABLE = "Not applicable"
+    UNAVAILABLE = "Unavailable"
+    IN_PROGRESS = "In progress"
+    SUCCEEDED = "Succeeded"
+    FAILED = "Failed"
+    NEEDS_RECONCILIATION = "Needs reconciliation"
+
+
+class AdoDeliveryCapability(_PublicationModel):
+    """Configured no-network delivery target and exact authorized source package."""
+
+    provider_identity: NonEmptyString
+    source_page_id: NonEmptyString
+    source_space: NonEmptyString
+    source_url: NonEmptyString
+    source_version: int = Field(ge=1)
+    source_canonicalizer_version: NonEmptyString
+    source_content_fingerprint: NonEmptyString
+    analysis_provider_identity: NonEmptyString
+    transcript_fingerprint: NonEmptyString
+    metadata_fingerprint: NonEmptyString
+    target: AdoTargetConfiguration
+
+
+class ActionDeliveryReadiness(_PublicationModel):
+    """Reviewed values, explicit mappings, and every preflight blocker for an action."""
+
+    action_index: int = Field(ge=0)
+    title: NonEmptyString
+    reviewed_owner: str | None
+    resolved_assignee: str | None
+    due_date: date | None
+    reviewed_priority: NonEmptyString
+    mapped_priority: int | None
+    parent_reference: str | None
+    mapped_parent: int | None
+    blockers: tuple[NonEmptyString, ...] = ()
+
+    @property
+    def ready(self) -> bool:
+        return not self.blockers
+
+
+class DeliveryReadiness(_PublicationModel):
+    """Package eligibility is independent from the visible analysis-mode label."""
+
+    capability_available: bool
+    blockers: tuple[NonEmptyString, ...] = ()
+    actions: tuple[ActionDeliveryReadiness, ...] = ()
+
+    @property
+    def status(self) -> DeliveryStatus:
+        if not self.actions:
+            return DeliveryStatus.NOT_APPLICABLE
+        if not self.capability_available:
+            return DeliveryStatus.UNAVAILABLE
+        return (
+            DeliveryStatus.READY
+            if any(a.ready for a in self.actions)
+            else DeliveryStatus.UNAVAILABLE
+        )
+
+
+def assess_delivery_readiness(
+    result: GovernanceResult,
+    snapshot: ConfluencePageSnapshot | None,
+    manifest: ReviewInputManifest | None,
+    capability: AdoDeliveryCapability | None,
+) -> DeliveryReadiness:
+    """Assess all actions without preparing a request, changing a record, or calling a gateway."""
+    blockers: list[str] = []
+    if capability is None:
+        blockers.append("No delivery provider is configured for this review package.")
+    elif snapshot is None or manifest is None:
+        blockers.append("The confirmed authoritative source package is missing.")
+    else:
+        for field in (
+            "source_page_id",
+            "source_space",
+            "source_url",
+            "source_version",
+            "source_canonicalizer_version",
+            "source_content_fingerprint",
+            "transcript_fingerprint",
+            "metadata_fingerprint",
+        ):
+            if getattr(manifest, field) != getattr(capability, field):
+                blockers.append(
+                    f"The confirmed {field.replace('_', ' ')} "
+                    "does not match the configured capability."
+                )
+        if manifest.provider_configuration_identity != capability.analysis_provider_identity:
+            blockers.append(
+                "The confirmed provider identity does not match the configured capability."
+            )
+        if any(
+            (
+                snapshot.page_id != manifest.source_page_id,
+                snapshot.space != manifest.source_space,
+                snapshot.url != manifest.source_url,
+                snapshot.version != manifest.source_version,
+                snapshot.canonicalizer_version != manifest.source_canonicalizer_version,
+                snapshot.content_fingerprint != manifest.source_content_fingerprint,
+            )
+        ):
+            blockers.append("The source snapshot differs from the confirmed review package.")
+        if (
+            hashlib.sha256(result.context.model_dump_json().encode()).hexdigest()
+            != capability.metadata_fingerprint
+        ):
+            blockers.append(
+                "The reviewed metadata differs from the authorized source-controlled package."
+            )
+    target = capability.target if capability is not None else None
+    rows = []
+    for index, action in enumerate(result.action_items):
+        action_blockers = list(blockers)
+        assignee = target.owner_identities.get(action.owner) if target else None
+        priority = target.priority_values.get(action.priority.value) if target else None
+        parent = target.parent_work_item_ids.get(result.context.ado_ticket_id) if target else None
+        if target:
+            for check in (
+                lambda action=action: _mapped_owner(action, target),
+                lambda action=action: _required_due_date(action, target),
+                lambda: _mapped_parent(result, target),
+            ):
+                try:
+                    check()
+                except PublicationValidationError as exc:
+                    action_blockers.append(str(exc))
+            if priority is None:
+                action_blockers.append("The action priority has no approved target mapping.")
+        rows.append(
+            ActionDeliveryReadiness(
+                action_index=index,
+                title=action.title,
+                reviewed_owner=action.owner,
+                resolved_assignee=assignee,
+                due_date=action.due_date,
+                reviewed_priority=action.priority.value,
+                mapped_priority=priority,
+                parent_reference=result.context.ado_ticket_id,
+                mapped_parent=parent,
+                blockers=tuple(
+                    f"Action {index + 1} ({action.title}), owner {action.owner or 'unset'}: {b}"
+                    for b in action_blockers
+                ),
+            )
+        )
+    return DeliveryReadiness(
+        capability_available=not blockers, blockers=tuple(blockers), actions=tuple(rows)
+    )
+
+
 class AdoPublicationPreview(_PublicationModel):
     """Exact Create request plus every identity needed to detect staleness."""
 
     action_index: int = Field(ge=0)
     action_title: NonEmptyString
+    original_action_index: int = Field(ge=0)
+    reviewed_owner: str | None
+    reviewed_priority: NonEmptyString
     reviewed_result_fingerprint: NonEmptyString
     source_snapshot_fingerprint: NonEmptyString
     target_fingerprint: NonEmptyString
@@ -95,15 +255,49 @@ class PublicationValidationError(ValueError):
     """Reject stale, incomplete, or previously attempted publication requests."""
 
 
+PROTECTED_PUBLICATION_STATUSES = frozenset(
+    {
+        PublicationStatus.SUBMITTING,
+        PublicationStatus.SUCCEEDED,
+        PublicationStatus.UNKNOWN_RESULT,
+    }
+)
+
+
+def publication_correlations(
+    result: GovernanceResult,
+    snapshot: ConfluencePageSnapshot,
+    preview: AdoPublicationPreview,
+) -> tuple[str, ...]:
+    """Stable correlation followed by possible pre-migration compact-index aliases."""
+    action = result.action_items[preview.action_index]
+    return tuple(
+        dict.fromkeys(
+            (
+                preview.request.correlation_id,
+                *(
+                    _correlation_id(result, snapshot, action, index, preview.target_fingerprint)
+                    for index in range(preview.original_action_index + 1)
+                ),
+            )
+        )
+    )
+
+
 def build_ado_publication_preview(
     reviewed_result: GovernanceResult,
     source_snapshot: ConfluencePageSnapshot,
     action_index: int,
     target: AdoTargetConfiguration,
+    *,
+    original_action_index: int | None = None,
 ) -> AdoPublicationPreview:
     """Build one exact Create request directly from the confirmed governance model."""
     if not 0 <= action_index < len(reviewed_result.action_items):
         raise PublicationValidationError("Select one confirmed action for publication.")
+    origin = action_index if original_action_index is None else original_action_index
+    if isinstance(origin, bool) or not isinstance(origin, int) or origin < action_index:
+        raise PublicationValidationError("The original analyzed action position is invalid.")
     action = reviewed_result.action_items[action_index]
     owner_identity = _mapped_owner(action, target)
     due_date = _required_due_date(action, target)
@@ -146,7 +340,7 @@ def build_ado_publication_preview(
         reviewed_result,
         source_snapshot,
         action,
-        action_index,
+        origin,
         target_fingerprint,
     )
     operations = _build_patch_operations(
@@ -165,6 +359,7 @@ def build_ado_publication_preview(
             "reviewed_result": reviewed_fingerprint,
             "source_snapshot": source_fingerprint,
             "action_index": action_index,
+            "original_action_index": origin,
             "target": target_fingerprint,
             "mapping": mapping_fingerprint,
         }
@@ -180,6 +375,9 @@ def build_ado_publication_preview(
     return AdoPublicationPreview(
         action_index=action_index,
         action_title=action.title,
+        original_action_index=origin,
+        reviewed_owner=action.owner,
+        reviewed_priority=action.priority.value,
         reviewed_result_fingerprint=reviewed_fingerprint,
         source_snapshot_fingerprint=source_fingerprint,
         target_fingerprint=target_fingerprint,
@@ -222,6 +420,7 @@ class AdoPublicationCoordinator:
         source_snapshot: ConfluencePageSnapshot,
         target: AdoTargetConfiguration,
         prior_operations: Mapping[str, AdoPublicationOperation] | None = None,
+        original_action_index: int | None = None,
     ) -> AdoPublicationOperation:
         """Publish the exact eligible preview once; never automatically retry Create."""
         rebuilt = build_ado_publication_preview(
@@ -229,17 +428,18 @@ class AdoPublicationCoordinator:
             source_snapshot,
             preview.action_index,
             target,
+            original_action_index=original_action_index,
         )
         if rebuilt != preview or confirmation.preview_fingerprint != preview.preview_fingerprint:
             raise PublicationValidationError(
                 "The publication preview changed and must be previewed and confirmed again."
             )
-        prior = (prior_operations or {}).get(preview.request.correlation_id)
-        if prior is not None and prior.status in {
-            PublicationStatus.SUBMITTING,
-            PublicationStatus.SUCCEEDED,
-            PublicationStatus.UNKNOWN_RESULT,
-        }:
+        correlations = publication_correlations(reviewed_result, source_snapshot, preview)
+        if any(
+            operation.status in PROTECTED_PUBLICATION_STATUSES
+            for correlation in correlations
+            if (operation := (prior_operations or {}).get(correlation)) is not None
+        ):
             raise PublicationValidationError(
                 "This action already has a protected publication result. "
                 "Reconcile it before retrying."
@@ -253,7 +453,11 @@ class AdoPublicationCoordinator:
         self._record_transition(submitting)
 
         try:
-            matches = self._gateway.find_by_correlation(target, preview.request.correlation_id)
+            matches_by_id: dict[int, str] = {}
+            for correlation in correlations:
+                for identifier in self._gateway.find_by_correlation(target, correlation):
+                    matches_by_id[identifier] = correlation
+            matches = tuple(matches_by_id)
         except AdoGatewayError:
             return self._finish(
                 preview,
@@ -274,6 +478,21 @@ class AdoPublicationCoordinator:
                 "Multiple work items use this correlation; manual reconciliation is required.",
             )
         if len(matches) == 1:
+            if matches_by_id[matches[0]] != preview.request.correlation_id:
+                verified_operation = self._verify_known_item(
+                    preview,
+                    target,
+                    matches[0],
+                    created_record=None,
+                    reconciled=True,
+                )
+                return self._finish(
+                    preview,
+                    PublicationStatus.UNKNOWN_RESULT,
+                    "An existing legacy correlation identifies this action. "
+                    f"Reconcile {matches_by_id[matches[0]]}; no Create was attempted.",
+                    receipt=verified_operation.receipt,
+                )
             return self._verify_known_item(
                 preview,
                 target,
@@ -687,3 +906,64 @@ def _partial_safe_url(value: object) -> str | None:
 def _fingerprint(value: object) -> str:
     serialized = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
+def delivery_action_correlations(
+    result: GovernanceResult,
+    snapshot: ConfluencePageSnapshot,
+    action_index: int,
+    original_action_index: int,
+    target: AdoTargetConfiguration,
+) -> tuple[str, ...]:
+    """Project operation identities even when a reviewed field currently blocks preparation."""
+    if not 0 <= action_index < len(result.action_items) or original_action_index < action_index:
+        raise PublicationValidationError("The delivery action identity is invalid.")
+    target_fingerprint = _fingerprint(
+        {
+            "organization_url": target.organization_url,
+            "project": target.project,
+            "work_item_type": target.work_item_type,
+            "api_version": target.api_version,
+        }
+    )
+    positions = (original_action_index, *range(original_action_index))
+    return tuple(
+        _correlation_id(
+            result, snapshot, result.action_items[action_index], index, target_fingerprint
+        )
+        for index in positions
+    )
+
+
+def publication_request_summary(
+    preview: AdoPublicationPreview,
+    target: AdoTargetConfiguration,
+) -> dict[str, object]:
+    """Readable labels over every exact outgoing field; no independently rebuilt payload."""
+    labels = {
+        target.fields.title: "Title",
+        target.fields.description: "Description and evidence",
+        target.fields.assigned_to: "Resolved assignee",
+        target.fields.due_date: "Due date",
+        target.fields.priority: "Mapped priority",
+        target.fields.tags: "Tags",
+        target.fields.correlation: "Correlation",
+    }
+    summary: dict[str, object] = {
+        "Action": (
+            f"Action {preview.action_index + 1} · "
+            f"original action {preview.original_action_index + 1}"
+        ),
+        "Target project": target.project,
+        "Work-item type": target.work_item_type,
+        "API version": target.api_version,
+        "Reviewed owner": preview.reviewed_owner or "Unset",
+        "Reviewed priority": preview.reviewed_priority,
+    }
+    for operation in preview.request.operations:
+        if operation.path.startswith("/fields/"):
+            field = operation.path.removeprefix("/fields/")
+            summary[labels.get(field, f"Classification · {field}")] = operation.value
+        else:
+            summary[f"Parent relation · {operation.path}"] = operation.value
+    return summary
