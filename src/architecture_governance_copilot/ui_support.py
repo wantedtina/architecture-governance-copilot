@@ -705,6 +705,7 @@ def reset_review_workflow(state: MutableMapping[str, Any]) -> None:
 
 def clear_review_widget_state(state: MutableMapping[str, Any]) -> None:
     """Remove widget values belonging to a previous human-review form."""
+    state.pop("agc_human_review_tabs", None)
     for key in tuple(state):
         if key.startswith(REVIEW_WIDGET_PREFIX):
             del state[key]
@@ -2679,3 +2680,13 @@ def save_drafting_evidence(state: MutableMapping[str, Any]) -> None:
         raise ValueError("Add evidence before saving.")
     drafting_inventory_with_evidence(state)
     state["agc_evidence_saved"] = tuple(state[DRAFT_EVIDENCE_KEY])
+
+
+def retain_review_tab_selection(state: MutableMapping[str, Any], labels: list[str]) -> None:
+    """Rebind the selected category to its current label before native tab registration."""
+    key = "agc_human_review_tabs"
+    previous = state.get(key)
+    category = previous.split(" · ", 1)[0] if isinstance(previous, str) else None
+    state[key] = next(
+        (label for label in labels if label.split(" · ", 1)[0] == category), labels[0]
+    )

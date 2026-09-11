@@ -921,7 +921,9 @@ def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None
     assert any("No pending human changes" in item.value for item in app.info)
 
     original_owner = app.text_input(key="agc_field_action_0_owner").value
+    app.session_state["agc_human_review_tabs"] = "Actions · 2"
     app.text_input(key="agc_field_action_0_owner").input("Taylor Kim").run()
+    assert app.session_state["agc_human_review_tabs"] == "Actions · 2 · 1 edited"
 
     metrics = {item.label: item.value for item in app.metric}
     assert metrics["Modified fields"] == "1"

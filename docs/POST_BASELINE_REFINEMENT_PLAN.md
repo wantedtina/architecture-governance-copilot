@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 14 completed and verified.
+Execution authority: `NONE` — Batch 15 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -899,6 +899,14 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
   persistent change summary beside confirmation. Reverting to the original clears markers.
 - Distinguish edits, exclusions and validation errors without relying only on color. Preserve
   read-only evidence, original analysis, exact comparison semantics and mandatory confirmation.
+
+### R18 — Preserve the active Human Review category during editing
+
+- **State:** `Verified`
+- **Approval:** User explicitly approved correcting the tab reset after field edits.
+- Editing, excluding, correcting invalid values and reverting must retain the selected review
+  category while preserving dynamic counts, edit comparisons, evidence and confirmation semantics.
+- No unresolved product decision; no provider or integration expansion.
 
 ## 6. Accepted intake and dependency sequencing
 

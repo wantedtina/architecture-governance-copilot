@@ -478,3 +478,6 @@ Excluded by you / Needs correction labels. Changed fields show Original and Your
 long comparisons expand on demand. Tabs count edited/excluded/invalid items, while the fixed
 confirmation area summarizes unconfirmed changes. Restoring the original normalized value removes
 its change indication. Source evidence remains read-only and separate from reviewer changes.
+
+Human Review retains the selected category when edits, exclusions, validation issues, or reverts
+change its tab counts. Switching categories remains an explicit user action within the review page.

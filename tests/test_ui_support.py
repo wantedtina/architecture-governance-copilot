@@ -1590,3 +1590,23 @@ def test_explicit_sample_evidence_can_be_confirmed_but_edit_revokes_only_draftin
     assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is False
     assert state[DRAFT_RESULT_KEY] is None
     assert state[OUTPUTS_KEY] == "independent review"
+
+
+@pytest.mark.parametrize(
+    "category", ["Decisions", "Findings", "Risks", "Actions", "Questions", "Missing Info"]
+)
+def test_review_tab_selection_survives_count_changes_and_reset(category: str) -> None:
+    from architecture_governance_copilot.ui_support import (
+        clear_review_widget_state,
+        retain_review_tab_selection,
+    )
+
+    categories = ["Decisions", "Findings", "Risks", "Actions", "Questions", "Missing Info"]
+    state = {"agc_human_review_tabs": f"{category} · 1"}
+    for suffix in [" · 1 edited", " · 1 edited · 1 needs correction", " · 1 excluded", ""]:
+        labels = [f"{name} · 1{suffix if name == category else ''}" for name in categories]
+        retain_review_tab_selection(state, labels)
+        assert state["agc_human_review_tabs"] == f"{category} · 1{suffix}"
+    clear_review_widget_state(state)
+    retain_review_tab_selection(state, labels)
+    assert state["agc_human_review_tabs"] == "Decisions · 1"

@@ -193,6 +193,7 @@ from architecture_governance_copilot.ui_support import (
     reset_review_workflow,
     restore_review_widget_state,
     retain_drafting_source_widget_state,
+    retain_review_tab_selection,
     retain_review_widget_state,
     review_input_readiness,
     save_drafting_evidence,
@@ -2939,24 +2940,26 @@ def _render_human_review_stage(
         width="stretch",
     )
 
+    tab_labels = [
+        _pending_tab_label("Decisions", len(analyzed_result.decisions), "Decision", pending),
+        _pending_tab_label("Findings", len(analyzed_result.findings), "Finding", pending),
+        _pending_tab_label("Risks", len(analyzed_result.risks), "Risk", pending),
+        _pending_tab_label("Actions", len(analyzed_result.action_items), "Action item", pending),
+        _pending_tab_label(
+            "Questions", len(analyzed_result.open_questions), "Open question", pending
+        ),
+        _pending_tab_label(
+            "Missing Info",
+            len(analyzed_result.missing_evidence),
+            "Missing information",
+            pending,
+        ),
+    ]
+    retain_review_tab_selection(st.session_state, tab_labels)
     review_tabs = st.tabs(
-        [
-            _pending_tab_label("Decisions", len(analyzed_result.decisions), "Decision", pending),
-            _pending_tab_label("Findings", len(analyzed_result.findings), "Finding", pending),
-            _pending_tab_label("Risks", len(analyzed_result.risks), "Risk", pending),
-            _pending_tab_label(
-                "Actions", len(analyzed_result.action_items), "Action item", pending
-            ),
-            _pending_tab_label(
-                "Questions", len(analyzed_result.open_questions), "Open question", pending
-            ),
-            _pending_tab_label(
-                "Missing Info",
-                len(analyzed_result.missing_evidence),
-                "Missing information",
-                pending,
-            ),
-        ]
+        tab_labels,
+        key="agc_human_review_tabs",
+        on_change="rerun",
     )
     with review_tabs[0]:
         decisions = _render_decision_edits(analyzed_result, pending)
