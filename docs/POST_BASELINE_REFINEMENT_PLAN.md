@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 18 completed and verified.
+Execution authority: `NONE` — Batch 19 / R23 is completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -942,6 +942,17 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - Current acceptance feedback applies to demo/development (and regression test), not production.
   Production behavior and release acceptance remain deferred under R9b until internal integration.
 - Automatic extraction must retain strict source evidence rules. Human confirmation is mandatory.
+
+### R23 — Review edited inputs through Internal fake
+
+- **State:** `Verified`
+- **Approval:** User approved dynamic synthetic responses for edited transcript/metadata and
+  inspection/correction of downstream fake Delivery bindings.
+- Preserve the AIF context/evidence boundary and exact canonical result. Bind fake Delivery to the
+  confirmed current package without bypassing source, owner, parent, date or publication safeguards.
+- Development/test only. No Offline fallback or production expansion.
+- **Verification:** Batch 19; 531 tests, repository checks and desktop/narrow browser acceptance
+  passed, including edited inputs through successful fake Delivery.
 
 ## 6. Accepted intake and dependency sequencing
 

@@ -27,13 +27,14 @@ from architecture_governance_copilot.integrations.confluence import (
     ConfluenceReader,
     FakeConfluenceContentTransport,
 )
-from architecture_governance_copilot.models import SolutionIntentReviewContext
+from architecture_governance_copilot.models import ReviewInputManifest, SolutionIntentReviewContext
 from architecture_governance_copilot.publication import AdoDeliveryCapability
+from architecture_governance_copilot.synthetic_aif import SyntheticReviewResponder
 
 INTERNAL_FAKE_ENABLED_ENV = "AGC_INTERNAL_FAKE_ENABLED"
 INTERNAL_FAKE_PROVIDER_ID_ENV = "AGC_INTERNAL_FAKE_PROVIDER_ID"
 OFFLINE_PROVIDER_CONFIGURATION_ID = "offline-deterministic-v2"
-DEFAULT_INTERNAL_FAKE_PROVIDER_ID = "internal-fake-aif-v1"
+DEFAULT_INTERNAL_FAKE_PROVIDER_ID = "internal-fake-aif-v2"
 INTERNAL_FAKE_PAGE_ID = "synthetic-page-204"
 
 
@@ -208,7 +209,14 @@ def build_review_runtime(
         }
     )
     reader = ConfluenceContentApiReader(confluence_transport)
-    transport = FakeAifTransport([response])
+    transport = FakeAifTransport(
+        [response],
+        response_factory=SyntheticReviewResponder(
+            (samples_dir / "internal_fake_solution_intent.md").read_text(encoding="utf-8"),
+            transcript,
+            response,
+        ),
+    )
     extractor = AifGovernanceExtractor(
         transport,
         provider_configuration_identity=descriptor.provider_configuration_identity,
@@ -253,6 +261,8 @@ def internal_fake_ado_target() -> AdoTargetConfiguration:
 
 def configured_delivery_capability(
     environ: Mapping[str, str] | None = None,
+    *,
+    confirmed_manifest: ReviewInputManifest | None = None,
 ) -> AdoDeliveryCapability | None:
     """Resolve the explicitly enabled fake capability independently of the UI mode label."""
     environment = os.environ if environ is None else environ
@@ -264,7 +274,7 @@ def configured_delivery_capability(
     runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, environment)
     snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
 
-    return AdoDeliveryCapability(
+    capability = AdoDeliveryCapability(
         provider_identity="in-memory-fake-ado-v1",
         source_page_id=snapshot.page_id,
         source_space=snapshot.space,
@@ -281,3 +291,30 @@ def configured_delivery_capability(
         ).hexdigest(),
         target=runtime.ado_target,
     )
+
+    if confirmed_manifest is not None:
+        source_fields = (
+            "source_page_id",
+            "source_space",
+            "source_url",
+            "source_version",
+            "source_canonicalizer_version",
+            "source_content_fingerprint",
+        )
+        if (
+            confirmed_manifest.review_mode != ReviewMode.INTERNAL_FAKE.value
+            or confirmed_manifest.provider_configuration_identity
+            != capability.analysis_provider_identity
+            or any(
+                getattr(confirmed_manifest, field) != getattr(capability, field)
+                for field in source_fields
+            )
+        ):
+            return None
+        capability = capability.model_copy(
+            update={
+                "transcript_fingerprint": confirmed_manifest.transcript_fingerprint,
+                "metadata_fingerprint": confirmed_manifest.metadata_fingerprint,
+            }
+        )
+    return capability

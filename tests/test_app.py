@@ -1489,3 +1489,50 @@ def test_demo_human_outcome_without_transcript_support(outcome, profile, monkeyp
     if outcome != "not_stated":
         assert reviewed.outcome_origin == "reviewer_selected"
         assert "Reviewer-selected" in app.session_state[OUTPUTS_KEY].review_minutes
+
+
+@pytest.mark.parametrize("ticket", ["SYN-204", "DEMO-UNMAPPED"])
+def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket):
+    from datetime import date
+
+    monkeypatch.setenv("AGC_INTERNAL_FAKE_ENABLED", "1")
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", "development")
+
+    def forbid_offline(*args):
+        raise AssertionError("Internal fake must not invoke the Offline provider")
+
+    monkeypatch.setattr(
+        "architecture_governance_copilot.extractors.DeterministicDemoExtractor.extract",
+        forbid_offline,
+    )
+    app = _review_inputs_app()
+    app.segmented_control(key="agc_review_mode_widget").set_value("internal_fake").run()
+    for key in ("agc_load_review_source", "agc_load_review_transcript", "agc_load_review_metadata"):
+        app.button(key=key).click().run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(
+        "Action: verify synthetic recovery.\nUnclassified context."
+    ).run()
+    app.text_input(key="agc_metadata_domain_architect").input("Demo Reviewer").run()
+    app.text_input(key="agc_metadata_ticket").input(ticket).run()
+    app.button(key="agc_confirm_review_inputs").click().run()
+    app.button(key="agc_analyze").click().run()
+    assert not app.exception
+    assert app.session_state[ANALYZED_RESULT_KEY].context.domain_architect == "Demo Reviewer"
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("Avery Patel").run()
+    app.date_input(key="agc_field_action_0_due_date").set_value(date(2026, 9, 20)).run()
+    app.selectbox(key="agc_field_outcome").set_value("approved").run()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    assert "Demo Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert not app.exception
+    if ticket == "SYN-204":
+        assert not app.button(key="agc_prepare_ado_publication").disabled
+        _create_selected(app)
+        assert any("Succeeded" in item.value for item in app.caption)
+    else:
+        assert app.button(key="agc_prepare_ado_publication").disabled
+        assert any("parent" in item.value.lower() for item in app.warning)
+    assert not any("fingerprint" in item.value for item in app.warning)

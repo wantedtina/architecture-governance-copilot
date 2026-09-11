@@ -317,8 +317,7 @@ in any order → Confirm review input manifest → Analyze review → edit or ex
 Reviewed Record & Generate Outputs**.
 The application uses a synthetic workspace. Drafting accepts custom Evidence through offline
 topic grouping; governance review accepts edited transcripts and metadata within the bundled SI scenario. Human draft edits are preserved in the drafting workflow, but the deterministic offline
-extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts
-only its separate fixed package; arbitrary SI analysis requires a future approved provider.
+extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts edited transcript/metadata for its separate synthetic SI; arbitrary SI analysis requires a future approved provider.
 
 ## Governed work-item delivery
 
@@ -495,3 +494,12 @@ its generated record carries non-production human provenance. Supporting transcr
 optional, read-only references. Provider-generated stated outcomes still require source evidence.
 Production remains unavailable pending internal integration and separate release acceptance; these
 demo refinements do not define or approve future production outcome policy.
+
+Internal fake in development/test accepts edited transcript and editable review metadata through
+its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
+changed text uses the same conservative literal grouping as Offline without invoking that provider.
+AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
+manifest for the configured synthetic SI/provider. Owner, date and parent mappings remain required:
+use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
+the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
+old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.

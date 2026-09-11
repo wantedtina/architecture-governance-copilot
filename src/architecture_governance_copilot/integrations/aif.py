@@ -6,7 +6,7 @@ import copy
 import hashlib
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from enum import StrEnum
 from typing import Annotated, Protocol, runtime_checkable
 
@@ -117,15 +117,20 @@ class FakeAifTransport:
     def __init__(
         self,
         responses: Sequence[str | Mapping[str, object] | Exception],
+        *,
+        response_factory: Callable[[AifGovernanceRequest], Mapping[str, object]] | None = None,
     ) -> None:
         if not responses:
             raise ValueError("At least one fake AIF response is required.")
         self._responses = list(responses)
+        self._response_factory = response_factory
         self.calls: list[AifGovernanceRequest] = []
 
     def analyze(self, request: AifGovernanceRequest) -> str | Mapping[str, object]:
         """Consume one configured response for each explicit analysis call."""
         self.calls.append(request)
+        if self._response_factory is not None:
+            return copy.deepcopy(self._response_factory(request))
         if not self._responses:
             raise AifTransportFailure(AifErrorCategory.TIMEOUT)
         response = self._responses.pop(0)

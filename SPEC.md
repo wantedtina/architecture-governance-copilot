@@ -708,12 +708,13 @@ invalidating incompatible prior confirmations through existing provenance contro
 credential, model SDK, Confluence page, Teams API or ADO API is required.
 
 The opt-in Internal fake runtime uses a distinct 1,083-word Synthetic Order Routing Service SI,
-28 timestamped transcript lines across four fictional roles, and a fixed fake AIF response. The
+28 timestamped transcript lines across four fictional roles, and a canonical fake AIF response. The
 response contains three findings, one decision, one risk, two actions, one open question, and two
 missing-evidence items. The fake Confluence storage body canonicalizes exactly to the committed
 Markdown snapshot, and every proposed item is validated against exact SI or transcript evidence
 before locally trusted references are assigned. The richer package exercises the provider-shaped
-contracts and Human Review surface; it does not make a network request or support arbitrary input.
+contracts and Human Review surface; it makes no network request. Edited transcripts use literal grouping and retain unclassified lines;
+editable metadata is carried into the result. The authoritative SI remains fixed.
 
 ## Main technical and demo risks
 
@@ -808,3 +809,12 @@ its generated record carries non-production human provenance. Supporting transcr
 optional, read-only references. Provider-generated stated outcomes still require source evidence.
 Production remains unavailable pending internal integration and separate release acceptance; these
 demo refinements do not define or approve future production outcome policy.
+
+Internal fake in development/test accepts edited transcript and editable review metadata through
+its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
+changed text uses the same conservative literal grouping as Offline without invoking that provider.
+AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
+manifest for the configured synthetic SI/provider. Owner, date and parent mappings remain required:
+use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
+the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
+old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.

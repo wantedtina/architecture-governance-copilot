@@ -99,4 +99,5 @@ deterministic topic grouping and literal source excerpts. It is not general sema
 The exact canonical package still produces its frozen draft. Offline review supports edited
 transcripts through literal candidate grouping and valid editable metadata, with unclassified text
 retained for human review. Its SI remains fixture-bound: a materially edited or custom-generated SI
-requires a future approved review provider. Internal fake retains its separate fixed contract.
+requires a future approved review provider. Internal fake supports edited transcript/metadata through a request-aware synthetic transport,
+while retaining its separate fixed SI and strict AIF context/evidence contract.

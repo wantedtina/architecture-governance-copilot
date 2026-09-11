@@ -185,3 +185,72 @@ def test_production_never_constructs_a_provider(mode: ReviewMode, monkeypatch) -
     )
     with pytest.raises(ValueError, match="not configured"):
         build_review_runtime(mode, {"AGC_DEPLOYMENT_PROFILE": "production"})
+
+
+def test_internal_fake_response_uses_current_metadata_and_transcript():
+    from architecture_governance_copilot.models import ReviewOutcome
+
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
+    si = runtime.confluence_reader.get_page(runtime.confluence_page_id).canonical_text
+    context = runtime.review_context.model_copy(
+        update={"domain_architect": "Demo Reviewer", "review_round": 2}
+    )
+    metadata_only = runtime.extractor.extract(si, runtime.review_transcript, context)
+    assert metadata_only.context == context
+    assert len(metadata_only.findings) == 3
+    transcript = "Action: test synthetic failover.\nUnclassified synthetic text."
+    edited = runtime.extractor.extract(si, transcript, context)
+    assert edited.review_outcome is ReviewOutcome.NOT_STATED
+    assert edited.action_items[0].title == "Action: test synthetic failover."
+    assert edited.action_items[0].evidence[0].quote in transcript
+    assert not edited.findings
+    assert edited.context == context
+
+
+def test_dynamic_fake_capability_remains_bound_to_synthetic_source_and_mode():
+    from architecture_governance_copilot.models import ReviewInputManifest, ReviewInputProvenance
+    from architecture_governance_copilot.runtime_dependencies import configured_delivery_capability
+
+    environment = {INTERNAL_FAKE_ENABLED_ENV: "1"}
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, environment)
+    snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
+    canonical = configured_delivery_capability(environment)
+    fields = {
+        key: getattr(canonical, key)
+        for key in ReviewInputManifest.model_fields
+        if hasattr(canonical, key)
+    }
+    manifest = ReviewInputManifest(
+        **{
+            **fields,
+            "source_retrieved_at": snapshot.retrieved_at,
+            "transcript_fingerprint": "edited-transcript",
+            "metadata_fingerprint": "edited-metadata",
+            "transcript_provenance": ReviewInputProvenance.USER_ENTERED,
+            "metadata_provenance": ReviewInputProvenance.USER_ENTERED,
+            "transcript_edited": True,
+            "metadata_edited": True,
+            "review_mode": "internal_fake",
+            "provider_configuration_identity": runtime.descriptor.provider_configuration_identity,
+        }
+    )
+    bound = configured_delivery_capability(environment, confirmed_manifest=manifest)
+    assert bound.transcript_fingerprint == "edited-transcript"
+    assert bound.target == canonical.target
+    for changes in (
+        {"source_version": 99},
+        {"review_mode": "offline"},
+        {"provider_configuration_identity": "other"},
+    ):
+        assert (
+            configured_delivery_capability(
+                environment, confirmed_manifest=manifest.model_copy(update=changes)
+            )
+            is None
+        )
+    assert (
+        configured_delivery_capability(
+            {"AGC_DEPLOYMENT_PROFILE": "production"}, confirmed_manifest=manifest
+        )
+        is None
+    )

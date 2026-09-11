@@ -2482,8 +2482,7 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
         else:
             st.rerun()
 
-    if review_mode is ReviewMode.OFFLINE:
-        st.caption(DEMO_REVIEW_GUIDANCE)
+    st.caption(DEMO_REVIEW_GUIDANCE.replace("Offline demo", "Synthetic review"))
     processing_placeholder = st.empty()
     if analyze_clicked:
         with processing_placeholder.container():
@@ -2931,8 +2930,7 @@ def _render_human_review_stage(
     analyzed_result: GovernanceResult,
 ) -> tuple[ReviewFormData, bool]:
     st.subheader("Draft Structured Review")
-    if current_review_mode(st.session_state) is ReviewMode.OFFLINE:
-        st.info(DEMO_REVIEW_GUIDANCE)
+    st.info(DEMO_REVIEW_GUIDANCE.replace("Offline demo", "Synthetic review"))
     st.caption(
         "Edit or exclude proposed items. Supporting evidence is read-only. "
         "This stage does not formally approve the Solution Intent."
@@ -3983,9 +3981,13 @@ def _render_ado_outputs(outputs: GovernanceOutputs) -> None:
 
 
 def _delivery_context(reviewed_result: GovernanceResult):
-    capability = configured_delivery_capability()
     snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
     manifest = current_review_input_manifest(st.session_state)
+    capability = (
+        configured_delivery_capability(confirmed_manifest=manifest)
+        if review_input_readiness(st.session_state).confirmed
+        else None
+    )
     readiness = assess_delivery_readiness(reviewed_result, snapshot, manifest, capability)
     operations = tuple(
         delivery_operation_for_correlations(
