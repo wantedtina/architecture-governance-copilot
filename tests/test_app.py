@@ -600,6 +600,11 @@ def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None
 
 def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     app = _analyzed_app()
+    evidence_sections = [
+        item for item in app.expander if "supporting evidence" in item.label.lower()
+    ]
+    assert evidence_sections
+    assert all(item.proto.expanded for item in evidence_sections)
 
     app.text_input(key="agc_field_action_0_owner").input("Taylor Kim")
     app.checkbox(key="agc_field_question_0_include").uncheck()

@@ -777,3 +777,7 @@ draft generation/confirmation/download; review-input confirmation/analysis; revi
 confirmation; continue to delivery; and the current ready delivery preview/confirmation/create
 action. Secondary actions remain inline. Existing disabled conditions, human confirmation, and
 protected delivery outcomes still apply. The page reserves bottom space for readable scrolling.
+
+Human Review shows outcome and item-level supporting evidence expanded by default. Source labels,
+location metadata, and exact quotes remain read-only. Users may collapse evidence after inspecting
+it; items without a direct quote explicitly say so. Human confirmation remains mandatory.

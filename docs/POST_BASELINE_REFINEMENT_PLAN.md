@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 12 completed and verified.
+Execution authority: `NONE` — Batch 13 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -884,6 +884,13 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - **Approval:** User approved extending the Project Context fixed-action pattern to other steps.
 - Fix only the current primary operation, with responsive spacing. Preserve confirmation,
   capability checks, invalidation, and guarded delivery behavior; no additional execution authority.
+
+### R16 — Expand Human Review evidence by default
+
+- **State:** `Verified`
+- **Approval:** User approved showing outcome and item-level evidence by default.
+- Keep evidence source, location and quote visible and read-only; retain manual collapse and
+  explicit empty-evidence messages. No change to review or confirmation semantics.
 
 ## 6. Accepted intake and dependency sequencing
 

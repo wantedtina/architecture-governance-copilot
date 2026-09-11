@@ -3423,7 +3423,7 @@ def _render_evidence(
     evidence_items: Sequence[SourceEvidence],
     label: str,
     *,
-    expanded: bool = False,
+    expanded: bool = True,
 ) -> None:
     with st.expander(f"{label} ({len(evidence_items)})", expanded=expanded):
         if not evidence_items:
