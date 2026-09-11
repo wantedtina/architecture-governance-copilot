@@ -394,6 +394,18 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     assert "3 authorized resources" in project_snapshot
     assert "deterministic-demo-drafter-v1" in project_snapshot
     assert any("Synthetic offline manifest" in item.value for item in app.caption)
+    expanders = {item.label: item for item in app.expander}
+    for label in ("SI Template", "Repository", "Governance Metadata"):
+        assert expanders[label].proto.expanded
+    for label in (
+        "Template source details",
+        "Repository source details",
+        "Inspect exact source-package manifest",
+    ):
+        assert not expanders[label].proto.expanded
+    assert "Inspect selected source previews" not in expanders
+    assert not any(item.label == "Evidence" for item in app.tabs)
+    assert any(item.value == "ADO Workitem - Solution Intent 12658902" for item in app.text)
 
     app.button(key="agc_confirm_project_context").click().run()
     assert [item.value for item in app.header] == ["Drafting step 2 — Draft Solution Intent"]

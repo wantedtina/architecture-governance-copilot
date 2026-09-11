@@ -425,3 +425,8 @@ unmapped text remains in the complete source appendix. Missing design details re
 This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
 sample package retains its canonical output. Custom drafts do not become supported inputs for the
 separate fixture-bound governance review extractor.
+
+Project Context displays SI Template, Repository context, and Governance Metadata in independently
+expanded sections by default; users may collapse them after review. Evidence appears once in its
+editable input area. Governance metadata remains read-only. Source identity details and the full
+source-package manifest are collapsed by default and remain available for traceability inspection.

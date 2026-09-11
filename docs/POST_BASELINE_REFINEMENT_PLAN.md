@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 10 completed and verified.
+Execution authority: `NONE` — Batch 11 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -870,6 +870,13 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
   canonical sample result, traceability, editable drafts, and mandatory human confirmation.
 - Keep generation deterministic and offline; do not claim semantic AI inference. Real enterprise
   and model integration remain deferred. Supersedes R12's custom-evidence generation blocker.
+
+### R14 — Show Project Context review content by default
+
+- **State:** `Verified`
+- **Approval:** User approved default-expanded template, repository, and governance metadata;
+  keep editable evidence visible without a duplicate preview. Collapse technical trace details.
+- Preserve read-only governed sources, exact confirmation, and existing generation behavior.
 
 ## 6. Accepted intake and dependency sequencing
 

@@ -1411,58 +1411,52 @@ def _render_project_context_stage() -> None:
                 ),
                 help="Select a revision. The demo supports its bundled snapshot only.",
             )
-        _render_drafting_evidence_inputs()
-
         st.session_state[CONTEXT_TEMPLATE_ID_KEY] = st.session_state[CONTEXT_TEMPLATE_WIDGET_KEY]
         st.session_state[CONTEXT_REPOSITORY_ID_KEY] = st.session_state[
             CONTEXT_REPOSITORY_WIDGET_KEY
         ]
 
+        with st.expander("SI Template", expanded=True):
+            selected_template = _selected_drafting_resource(
+                project_context, st.session_state[CONTEXT_TEMPLATE_ID_KEY]
+            )
+            if selected_template is None:
+                st.info("No governed SI template is selected.")
+            else:
+                _render_readonly_markdown_document(selected_template.content)
+                with st.expander("Template source details"):
+                    _render_drafting_resource_identity(selected_template)
+
+        with st.expander("Repository", expanded=True):
+            selected_repository = _selected_drafting_resource(
+                project_context, st.session_state[CONTEXT_REPOSITORY_ID_KEY]
+            )
+            if selected_repository is None:
+                st.info("No repository revision is selected.")
+            else:
+                st.text(selected_repository.display_name)
+                st.caption(
+                    f"{selected_repository.revision_kind.value.title()}: "
+                    f"{selected_repository.revision}"
+                )
+                st.code(selected_repository.content, language="text", wrap_lines=True)
+                with st.expander("Repository source details"):
+                    _render_drafting_resource_identity(selected_repository)
+
+        _render_drafting_evidence_inputs()
+
+        with st.expander("Governance Metadata", expanded=True):
+            st.caption("Source-controlled and read-only · validated synthetic workspace")
+            for label, value in (
+                ("Project", project_context.project_name),
+                ("Project ID", project_context.project_id),
+                ("Governance reference", project_context.governance_reference),
+            ):
+                st.markdown(f"**{label}**")
+                st.text(value)
+
         if update_live_drafting_source_package(st.session_state):
             st.rerun()
-
-        with st.expander("Inspect selected source previews"):
-            template_tab, repository_tab, evidence_tab, metadata_tab = st.tabs(
-                ["SI Template", "Repository", "Evidence", "Governance Metadata"]
-            )
-            with template_tab:
-                selected_template = _selected_drafting_resource(
-                    project_context,
-                    st.session_state[CONTEXT_TEMPLATE_ID_KEY],
-                )
-                if selected_template is None:
-                    st.info("No governed SI template is selected.")
-                else:
-                    _render_drafting_resource_identity(selected_template)
-                    _render_readonly_markdown_document(selected_template.content)
-            with repository_tab:
-                selected_repository = _selected_drafting_resource(
-                    project_context,
-                    st.session_state[CONTEXT_REPOSITORY_ID_KEY],
-                )
-                if selected_repository is None:
-                    st.info("No repository revision is selected.")
-                else:
-                    _render_drafting_resource_identity(selected_repository)
-                    st.code(selected_repository.content, language="text", wrap_lines=True)
-            with evidence_tab:
-                items = st.session_state.get(DRAFT_EVIDENCE_KEY, ())
-                if not items:
-                    st.info("No supporting evidence has been provided.")
-                for item in items:
-                    st.text(item.title)
-                    st.caption(f"Origin: {item.provenance.value} · {item.source_reference}")
-                    _render_readonly_markdown_document(item.text)
-            with metadata_tab:
-                st.json(
-                    {
-                        "project_id": project_context.project_id,
-                        "project_name": project_context.project_name,
-                        "governance_reference": project_context.governance_reference,
-                        "field_control": "source_controlled_read_only",
-                        "validation_status": "validated",
-                    }
-                )
 
     _render_selected_source_package(st.session_state)
 
@@ -1622,7 +1616,7 @@ def _render_selected_source_package(state: Mapping[str, object]) -> None:
         "Synthetic offline manifest · human confirmation records drafting inputs only; it is "
         "not architecture approval and contacts no external system."
     )
-    with st.expander("Inspect exact source-package manifest", expanded=True):
+    with st.expander("Inspect exact source-package manifest"):
         st.json(manifest.model_dump(mode="json"))
 
 
