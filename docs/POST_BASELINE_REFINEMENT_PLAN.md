@@ -4,10 +4,14 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 17 completed and verified.
+Execution authority: `NONE` — Batch 18 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
+
+Acceptance scope: Current user feedback targets demo/development and its regression tests.
+Production product behavior is not accepted by these refinements; internal integration and R9b
+release acceptance remain deferred unless the user explicitly expands scope.
 
 ## 1. Purpose and authority
 
@@ -929,6 +933,15 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - **Approval:** User approved selecting current transcript evidence for a stated outcome, immediate
   field-level validation and a useful error message. Not stated remains valid without evidence.
 - Preserve evidence validation and immutable original quotes; never fabricate outcome support.
+
+### R22 — Allow reviewer-selected outcomes in non-production demonstrations
+
+- **State:** `Verified`
+- **Approval:** User approved freely selecting outcomes with reviewer-selected provenance and
+  optional transcript evidence. This supersedes R21's mandatory evidence gate for human choices.
+- Current acceptance feedback applies to demo/development (and regression test), not production.
+  Production behavior and release acceptance remain deferred under R9b until internal integration.
+- Automatic extraction must retain strict source evidence rules. Human confirmation is mandatory.
 
 ## 6. Accepted intake and dependency sequencing
 

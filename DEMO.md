@@ -469,8 +469,9 @@ line evidence, assign the action owner/date during Human Review, and confirm bef
 outputs. Unclassified content can be clarified in the transcript and reanalyzed after confirming
 the changed manifest. No automatic approval or real API call is demonstrated.
 
-When an analyzed outcome has no evidence, Human Review offers Supporting transcript lines.
-Selecting a stated outcome requires at least one original transcript line before confirmation;
-Not stated remains valid without evidence. Selected quotes are read-only and retain line references.
-Evidence binding is recorded as a human change and is cleared with a new analysis. Users must judge
-whether the selected text supports the outcome; selection does not confer formal approval.
+In demo/development (and automated test), Human Review permits every outcome without mandatory
+transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
+its generated record carries non-production human provenance. Supporting transcript lines remain
+optional, read-only references. Provider-generated stated outcomes still require source evidence.
+Production remains unavailable pending internal integration and separate release acceptance; these
+demo refinements do not define or approve future production outcome policy.

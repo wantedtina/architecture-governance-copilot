@@ -202,7 +202,8 @@ automatically carry findings between rounds.
 
 ### Evidence and traceability
 
-- Every outcome other than `not_stated` must have evidence.
+- Every provider-extracted outcome other than `not_stated` must have evidence. Non-production
+  human-selected outcomes use an explicitly separate reviewed-result type with optional references.
 - Every finding, decision, risk, action, and open question must have at least one evidence item.
 - Evidence must identify its source as `solution_intent` or `meeting_transcript`.
 - SI evidence should show its section when available.
@@ -606,7 +607,7 @@ These models accept evidence from either source through `SourceEvidence`.
 | --- | --- | --- |
 | `context` | `SolutionIntentReviewContext` | Required. |
 | `review_outcome` | `ReviewOutcome` | Required. |
-| `outcome_evidence` | list of `SourceEvidence` | Defaults empty; must be non-empty unless outcome is `not_stated`. |
+| `outcome_evidence` | list of `SourceEvidence` | Provider results require evidence unless outcome is `not_stated`; non-production reviewer-selected results carry explicit human provenance instead. |
 | `findings` | list of `ReviewFinding` | Independent empty default. |
 | `decisions` | list of `Decision` | Independent empty default. |
 | `risks` | list of `Risk` | Independent empty default. |
@@ -801,8 +802,9 @@ severity, priority, owner, date and outcome still require human inspection and c
 Shared operation failures remain visible above the persistent action area, including on narrow
 screens. Input corrections clear stale errors; delivery history and protected results remain intact.
 
-When an analyzed outcome has no evidence, Human Review offers Supporting transcript lines.
-Selecting a stated outcome requires at least one original transcript line before confirmation;
-Not stated remains valid without evidence. Selected quotes are read-only and retain line references.
-Evidence binding is recorded as a human change and is cleared with a new analysis. Users must judge
-whether the selected text supports the outcome; selection does not confer formal approval.
+In demo/development (and automated test), Human Review permits every outcome without mandatory
+transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
+its generated record carries non-production human provenance. Supporting transcript lines remain
+optional, read-only references. Provider-generated stated outcomes still require source evidence.
+Production remains unavailable pending internal integration and separate release acceptance; these
+demo refinements do not define or approve future production outcome policy.

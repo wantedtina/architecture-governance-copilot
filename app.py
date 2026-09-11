@@ -2941,6 +2941,7 @@ def _render_human_review_stage(
     pending = build_pending_review_changes(
         analyzed_result,
         current_review_form_data(st.session_state, analyzed_result),
+        allow_reviewer_outcome=resolve_deployment_policy().reviewer_outcome_allowed,
     )
     _render_pending_review_summary(pending)
 
@@ -2965,7 +2966,7 @@ def _render_human_review_stage(
             if not analyzed_result.outcome_evidence:
                 options = transcript_evidence_options(str(st.session_state[TRANSCRIPT_KEY]))
                 lines = st.multiselect(
-                    "Supporting transcript lines",
+                    "Supporting transcript lines (optional)",
                     options=list(options),
                     format_func=lambda line: f"Line {line}: {options[line]}",
                     key="agc_field_outcome_lines",
@@ -2979,24 +2980,24 @@ def _render_human_review_stage(
                 )
             _render_evidence(
                 analyzed_result.outcome_evidence if outcome_evidence is None else outcome_evidence,
-                "Outcome supporting evidence",
+                "Source evidence (reference only)"
+                if review_outcome != analyzed_result.review_outcome.value
+                else "Outcome supporting evidence",
             )
-            missing_outcome_evidence = review_outcome != ReviewOutcome.NOT_STATED.value and not (
-                analyzed_result.outcome_evidence or outcome_evidence
+            st.caption(
+                "Optional source references. You may choose any outcome during human review; "
+                "this does not confer formal architecture approval."
             )
-            if missing_outcome_evidence:
-                st.warning("Select supporting transcript evidence for the review outcome.")
-            elif not analyzed_result.outcome_evidence:
-                st.caption(
-                    "Not stated can be confirmed without outcome evidence. "
-                    "Selecting evidence does not constitute formal architecture approval."
-                )
+        if review_outcome != analyzed_result.review_outcome.value:
+            st.info(
+                "Reviewer-selected · This outcome reflects your human review, "
+                "not an extracted statement."
+            )
 
     submitted = _workflow_action_button(
         "Confirm Reviewed Record & Generate Outputs",
         summary=_pending_change_caption(pending),
         key="agc_confirm_review",
-        disabled=missing_outcome_evidence,
         type="primary",
         width="stretch",
     )
@@ -3694,7 +3695,11 @@ def _generate_reviewed_outputs(
             ),
             unsafe_allow_html=True,
         )
-        reviewed_result = build_reviewed_result(analyzed_result, form_data)
+        reviewed_result = build_reviewed_result(
+            analyzed_result,
+            form_data,
+            allow_reviewer_outcome=resolve_deployment_policy().reviewer_outcome_allowed,
+        )
         change_summary = build_review_change_summary(
             analyzed_result,
             reviewed_result,

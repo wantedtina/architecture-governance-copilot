@@ -489,8 +489,9 @@ severity, priority, owner, date and outcome still require human inspection and c
 Shared operation failures remain visible above the persistent action area, including on narrow
 screens. Input corrections clear stale errors; delivery history and protected results remain intact.
 
-When an analyzed outcome has no evidence, Human Review offers Supporting transcript lines.
-Selecting a stated outcome requires at least one original transcript line before confirmation;
-Not stated remains valid without evidence. Selected quotes are read-only and retain line references.
-Evidence binding is recorded as a human change and is cleared with a new analysis. Users must judge
-whether the selected text supports the outcome; selection does not confer formal approval.
+In demo/development (and automated test), Human Review permits every outcome without mandatory
+transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
+its generated record carries non-production human provenance. Supporting transcript lines remain
+optional, read-only references. Provider-generated stated outcomes still require source evidence.
+Production remains unavailable pending internal integration and separate release acceptance; these
+demo refinements do not define or approve future production outcome policy.

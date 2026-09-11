@@ -19,6 +19,7 @@ from architecture_governance_copilot.integrations.confluence import (
     build_confluence_snapshot,
 )
 from architecture_governance_copilot.models import (
+    DemoReviewedGovernanceResult,
     DraftingRevisionKind,
     DraftingSourceInventory,
     DraftingSourcePackageManifest,
@@ -2023,6 +2024,8 @@ def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult)
 def build_pending_review_changes(
     analyzed_result: GovernanceResult,
     form_data: ReviewFormData,
+    *,
+    allow_reviewer_outcome: bool = False,
 ) -> PendingReviewChanges:
     """Compare an in-progress form without requiring it to be model-valid."""
     field_changes: list[ReviewFieldChange] = []
@@ -2035,7 +2038,7 @@ def build_pending_review_changes(
         if form_data.outcome_evidence is not None
         else tuple(analyzed_result.outcome_evidence)
     )
-    if outcome != ReviewOutcome.NOT_STATED.value and not evidence:
+    if outcome != ReviewOutcome.NOT_STATED.value and not evidence and not allow_reviewer_outcome:
         validation_issues.append(
             ReviewValidationIssue(
                 collection="Review outcome",
@@ -2182,6 +2185,8 @@ def build_pending_review_changes(
 def build_reviewed_result(
     analyzed_result: GovernanceResult,
     form_data: ReviewFormData,
+    *,
+    allow_reviewer_outcome: bool = False,
 ) -> GovernanceResult:
     """Reconstruct and validate a reviewed result without mutating analysis."""
     _require_edit_count("decisions", form_data.decisions, len(analyzed_result.decisions))
@@ -2204,7 +2209,11 @@ def build_reviewed_result(
         if form_data.outcome_evidence is not None
         else analyzed_result.outcome_evidence
     )
-    if form_data.review_outcome != ReviewOutcome.NOT_STATED.value and not evidence:
+    if (
+        form_data.review_outcome != ReviewOutcome.NOT_STATED.value
+        and not evidence
+        and not allow_reviewer_outcome
+    ):
         raise ValueError("Select supporting transcript evidence for the review outcome.")
     payload: dict[str, object] = {
         "context": analyzed_result.context.model_copy(deep=True),
@@ -2299,6 +2308,10 @@ def build_reviewed_result(
             if _included(edit)
         ],
     }
+    if allow_reviewer_outcome and form_data.review_outcome != analyzed_result.review_outcome.value:
+        return DemoReviewedGovernanceResult.model_validate(
+            {**payload, "outcome_origin": "reviewer_selected"}
+        )
     return GovernanceResult.model_validate(payload)
 
 

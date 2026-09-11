@@ -1424,7 +1424,7 @@ def test_shared_feedback_in_drafting_pages_and_delivery(monkeypatch) -> None:
     assert any("do not retry a protected operation" in item.value for item in app.caption)
 
 
-def test_custom_outcome_requires_evidence_and_preserves_selection_across_tabs() -> None:
+def test_custom_outcome_allows_optional_evidence_and_preserves_selection_across_tabs() -> None:
     app = _review_inputs_app()
     for key in ("agc_load_review_source", "agc_load_review_transcript", "agc_load_review_metadata"):
         app.button(key=key).click().run()
@@ -1436,8 +1436,8 @@ def test_custom_outcome_requires_evidence_and_preserves_selection_across_tabs() 
     app.switch_page("pages/human_review.py").run()
     assert not app.button(key="agc_confirm_review").disabled
     app.selectbox(key="agc_field_outcome").set_value("changes_requested").run()
-    assert app.button(key="agc_confirm_review").disabled
-    assert any("Select supporting transcript evidence" in item.value for item in app.warning)
+    assert not app.button(key="agc_confirm_review").disabled
+    assert any("Reviewer-selected" in item.value for item in app.info)
     app.multiselect(key="agc_field_outcome_lines").set_value([2]).run()
     assert not app.button(key="agc_confirm_review").disabled
     app.text_input(key="agc_field_action_0_owner").input("Demo Owner").run()
@@ -1456,3 +1456,36 @@ def test_custom_outcome_requires_evidence_and_preserves_selection_across_tabs() 
         c.field == "Supporting evidence"
         for c in app.session_state[ui_support.REVIEW_CHANGE_SUMMARY_KEY].field_changes
     )
+
+
+@pytest.mark.parametrize(
+    "outcome",
+    [
+        "changes_requested",
+        "approved",
+        "conditionally_approved",
+        "rejected",
+        "pending",
+        "not_stated",
+    ],
+)
+@pytest.mark.parametrize("profile", ["demo", "development"])
+def test_demo_human_outcome_without_transcript_support(outcome, profile, monkeypatch):
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", profile)
+    app = _review_inputs_app()
+    for key in ("agc_load_review_source", "agc_load_review_metadata", "agc_load_review_transcript"):
+        app.button(key=key).click().run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input("Action: test synthetic recovery.").run()
+    app.button(key="agc_confirm_review_inputs").click().run()
+    app.button(key="agc_analyze").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.selectbox(key="agc_field_outcome").set_value(outcome).run()
+    assert not app.button(key="agc_confirm_review").disabled
+    app.button(key="agc_confirm_review").click().run()
+    assert not app.exception
+    reviewed = app.session_state[ui_support.REVIEWED_RESULT_KEY]
+    assert reviewed.review_outcome.value == outcome
+    assert reviewed.outcome_evidence == []
+    if outcome != "not_stated":
+        assert reviewed.outcome_origin == "reviewer_selected"
+        assert "Reviewer-selected" in app.session_state[OUTPUTS_KEY].review_minutes

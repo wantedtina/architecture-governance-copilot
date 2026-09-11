@@ -41,6 +41,9 @@ def generate_review_minutes(result: GovernanceResult) -> str:
         "",
         "**Supporting Evidence:**",
     ]
+    if getattr(result, "outcome_origin", None) == "reviewer_selected":
+        lines[-1] = "**Source Evidence (reference only):**"
+        lines.insert(-1, "**Outcome origin:** Reviewer-selected in a non-production human review.")
     _append_evidence(lines, result.outcome_evidence)
 
     lines.extend(["", "## Confirmed Decisions", ""])

@@ -67,6 +67,8 @@ class EvidenceValidatingExtractor:
     ) -> GovernanceResult:
         """Delegate extraction once, then reject unresolved or conflicting evidence."""
         result = self._extractor.extract(solution_intent, review_transcript, context)
+        # Providers cannot claim human provenance to bypass their evidence contract.
+        GovernanceResult.model_validate(result.model_dump())
         validate_governance_evidence(result, solution_intent, review_transcript)
         return result
 

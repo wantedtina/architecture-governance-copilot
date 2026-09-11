@@ -137,3 +137,11 @@ If later authorized, ADO Update must GET the current revision, display an exact 
 separate confirmation, include a revision test, and stop on conflict. Confluence write-back may
 target only a separately designated synthetic review page and must preview title, space, parent,
 body, target, and version before confirmation.
+
+## Non-production refinement boundary
+
+Current post-baseline user acceptance covers demo/development, not production. In particular,
+reviewer-selected outcomes with optional transcript evidence are approved for synthetic human
+review only. During internal integration, explicitly decide production outcome authority, provenance,
+evidence requirements and audit behavior before release. Do not inherit demo policy implicitly.
+Existing production denial, provider boundaries, no-synthetic-fallback and R9b acceptance gates remain.

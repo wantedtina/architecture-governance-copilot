@@ -410,6 +410,17 @@ class GovernanceResult(_GovernanceModel):
         return self
 
 
+class DemoReviewedGovernanceResult(GovernanceResult):
+    """Non-production human outcome choice, never an accepted provider response."""
+
+    outcome_origin: Literal["reviewer_selected"]
+
+    @model_validator(mode="after")
+    def require_stated_outcome_evidence(self) -> Self:
+        """Human-selected demo outcomes may carry optional source references."""
+        return self
+
+
 class MockAdoWorkItem(_GovernanceModel):
     """A validated preview of a future mock Azure DevOps work item."""
 

@@ -86,6 +86,15 @@ class DeploymentPolicy:
     review_modes: tuple[ReviewModeDescriptor, ...]
 
     @property
+    def reviewer_outcome_allowed(self) -> bool:
+        """Current human outcome policy is approved only for non-production acceptance."""
+        return self.profile in {
+            DeploymentProfile.DEMO,
+            DeploymentProfile.DEVELOPMENT,
+            DeploymentProfile.TEST,
+        }
+
+    @property
     def drafting_allowed(self) -> bool:
         return self.profile is not DeploymentProfile.PRODUCTION
 

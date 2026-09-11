@@ -1675,3 +1675,46 @@ def test_outcome_evidence_binding_and_guard():
     assert analyzed.outcome_evidence == []
     with pytest.raises(ValueError, match="Select evidence from the current transcript"):
         selected_outcome_evidence("New source", [29])
+
+
+def test_nonproduction_outcome_does_not_relax_provider_contract():
+    from dataclasses import replace
+
+    from pydantic import ValidationError
+
+    from architecture_governance_copilot.evidence_validation import EvidenceValidatingExtractor
+    from architecture_governance_copilot.models import GovernanceResult, ReviewOutcome
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import (
+        build_reviewed_result,
+        default_review_form_data,
+    )
+
+    root = Path(__file__).resolve().parents[1] / "samples"
+    canonical = GovernanceResult.model_validate_json((root / "expected_result.json").read_text())
+    analyzed = canonical.model_copy(
+        update={"review_outcome": ReviewOutcome.NOT_STATED, "outcome_evidence": []}
+    )
+    form = replace(default_review_form_data(analyzed), review_outcome="approved")
+    for profile in ("demo", "development", "test"):
+        policy = resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": profile})
+        reviewed = build_reviewed_result(
+            analyzed, form, allow_reviewer_outcome=policy.reviewer_outcome_allowed
+        )
+        assert reviewed.outcome_origin == "reviewer_selected"
+    production = resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": "production"})
+    assert not production.review_modes
+    assert not production.reviewer_outcome_allowed
+    with pytest.raises(ValueError, match="Select supporting transcript evidence"):
+        build_reviewed_result(
+            analyzed, form, allow_reviewer_outcome=production.reviewer_outcome_allowed
+        )
+
+    class ForgedProvider:
+        def extract(self, *args):
+            return reviewed
+
+    with pytest.raises(ValidationError):
+        EvidenceValidatingExtractor(ForgedProvider()).extract("SI", "Transcript", canonical.context)
+    with pytest.raises(ValidationError):
+        GovernanceResult.model_validate(reviewed.model_dump())

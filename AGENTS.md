@@ -32,6 +32,15 @@
 - Preserve the synthetic fixtures in `samples/` as the deterministic contract; update fixtures
   and their validation tests together.
 
+## Acceptance environment scope
+
+- Current user testing and refinement feedback target demo/development behavior; automated test
+  mirrors those approved synthetic paths. Do not infer production product requirements or release
+  acceptance from this feedback unless the user explicitly extends its scope.
+- Production integration and behavior remain subject to separate internal integration decisions
+  and end-to-end acceptance. Preserve current production denial of synthetic workflows and never
+  silently substitute a demo/fake provider for a production capability.
+
 ## Planning and change control
 
 - Determine current product truth from the checked-out revision, application code, tests, and
