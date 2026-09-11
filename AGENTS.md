@@ -105,3 +105,7 @@ while retaining its separate fixed SI and strict AIF context/evidence contract.
 Internal fake accepts free-form nonblank owners and governance tickets via deterministic local
 simulated aliases, never enterprise identity/parent verification. Missing required Delivery fields
 still block publication; Offline remains local-output only.
+
+The explicit Internal fake new-demo-run command may discard local simulated work items and review
+state after in-product confirmation in development/test. Ordinary resets retain reconciliation
+facts; production and non-fake gateway state must never be cleared by this command.

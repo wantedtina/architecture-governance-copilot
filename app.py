@@ -159,6 +159,7 @@ from architecture_governance_copilot.ui_support import (
     build_review_change_summary,
     build_reviewed_result,
     build_sample_review_snapshot,
+    can_start_new_demo_run,
     choose_review_action_owner,
     clear_outputs,
     clear_publication_preview,
@@ -211,6 +212,7 @@ from architecture_governance_copilot.ui_support import (
     select_delivery_action,
     selected_outcome_evidence,
     set_active_stage,
+    start_new_demo_run,
     start_workflow,
     store_analysis,
     store_metadata_component,
@@ -530,6 +532,30 @@ def _render_delivery_page() -> None:
     _render_error()
 
 
+def _render_demo_run_controls() -> None:
+    policy = resolve_deployment_policy()
+    if not can_start_new_demo_run(st.session_state, policy):
+        return
+    with st.popover("Start new demo run", icon=":material/restart_alt:"):
+        st.markdown("**Start a fresh Internal fake run**")
+        st.write(
+            "This clears this session's review inputs, human edits, generated outputs, "
+            "request previews, simulated work items, receipts and delivery history, "
+            "including uncertain simulated results. It cannot restore the discarded demo run. "
+            "Drafting work is kept. No external system is contacted."
+        )
+        st.caption(
+            "Close this panel to keep the current run. Nothing is cleared until you confirm."
+        )
+        if st.button("Clear demo run & restart", key="agc_confirm_new_demo_run"):
+            start_new_demo_run(st.session_state, resolve_deployment_policy())
+            _switch_stage(INPUT_STAGE)
+    st.caption(
+        "Reset review keeps simulated delivery history and duplicate protection. "
+        "Start new demo run clears the simulation so you can repeat the demonstration."
+    )
+
+
 def _render_page_shell(stage: str) -> None:
     clear_stale_operation_error(st.session_state)
     set_active_stage(st.session_state, stage)
@@ -537,6 +563,8 @@ def _render_page_shell(stage: str) -> None:
     _render_header()
     if stage != HOME_STAGE:
         _render_step_progress(stage)
+    if stage in {INPUT_STAGE, REVIEW_STAGE, OUTPUT_STAGE, DELIVERY_STAGE}:
+        _render_demo_run_controls()
 
 
 def _switch_stage(stage: str, *, error: str | None = None) -> None:
@@ -2352,6 +2380,7 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
         )
         reset_clicked = reset_column.button(
             "Reset review",
+            help="Clear review inputs and outputs; keep delivery history and duplicate protection.",
             key="agc_reset_review",
             width="stretch",
         )
@@ -2740,6 +2769,7 @@ def _render_review_navigation(*, analysis_invalid: bool) -> None:
 
     if reset_column.button(
         "Reset review",
+        help="Clear review inputs and outputs; keep delivery history and duplicate protection.",
         key="agc_reset_from_review",
         width="stretch",
     ):
@@ -2762,6 +2792,7 @@ def _render_output_navigation() -> None:
 
     if reset_column.button(
         "Reset review",
+        help="Clear review inputs and outputs; keep delivery history and duplicate protection.",
         key="agc_reset_from_outputs",
         width="stretch",
     ):

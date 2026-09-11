@@ -1600,3 +1600,54 @@ def test_delivery_actions_explain_each_transition(monkeypatch):
     assert not any("Nothing has been sent" in item.value for item in app.info)
     assert len(app.session_state[ADO_FAKE_GATEWAY_KEY].create_calls) == 1
     assert not app.exception
+
+
+@pytest.mark.parametrize("unknown", [False, True])
+def test_new_demo_run_allows_another_create_without_restart(monkeypatch, unknown):
+    from architecture_governance_copilot.integrations.azure_devops import FakeAdoGateway
+
+    app = _fake_delivery_app(monkeypatch)
+    if unknown:
+        app.session_state[ADO_FAKE_GATEWAY_KEY] = FakeAdoGateway(create_results=[TimeoutError()])
+    _create_selected(app)
+    old_gateway = app.session_state[ADO_FAKE_GATEWAY_KEY]
+    old_operation = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    assert app.button(key="agc_prepare_ado_publication").disabled
+    # Merely rendering the confirmation panel and rerunning must not erase anything.
+    app.run()
+    assert old_operation in app.session_state[ADO_PUBLICATION_HISTORY_KEY].values()
+    assert app.session_state[ADO_FAKE_GATEWAY_KEY] is old_gateway
+    app.button(key="agc_confirm_new_demo_run").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    assert app.session_state[ADO_PUBLICATION_HISTORY_KEY] == {}
+    assert app.session_state[ADO_FAKE_GATEWAY_KEY] is None
+    assert app.session_state[OUTPUTS_KEY] is None
+    assert app.segmented_control(key="agc_review_mode_widget").value == "internal_fake"
+    for key in (
+        "agc_load_review_metadata",
+        "agc_load_review_source",
+        "agc_load_review_transcript",
+        "agc_confirm_review_inputs",
+        "agc_analyze",
+    ):
+        app.button(key=key).click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert not app.button(key="agc_prepare_ado_publication").disabled
+    _create_selected(app)
+    new_gateway = app.session_state[ADO_FAKE_GATEWAY_KEY]
+    assert new_gateway is not old_gateway
+    assert len(new_gateway.create_calls) == 1
+    assert len(app.session_state[ADO_PUBLICATION_HISTORY_KEY]) == 1
+    assert app.button(key="agc_prepare_ado_publication").disabled
+    assert not app.exception
+
+
+def test_offline_has_no_new_fake_demo_run_control(monkeypatch):
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", "demo")
+    app = _review_inputs_app()
+    assert not any(button.key == "agc_confirm_new_demo_run" for button in app.button)

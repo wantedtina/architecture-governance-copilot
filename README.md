@@ -535,3 +535,16 @@ Create shows a submission notification, then focuses the selected result with re
 reconciliation guidance. Floating actions repeat the current state and next step. Focus/scroll is
 one-shot per explicit action, respects reduced motion, and is cleared when the preview becomes
 stale. Normal reruns do not request focus. No confirmation or duplicate-protection rule changes.
+
+
+For repeat Internal fake demonstrations, select **Start new demo run** in any review stage, read
+its cleanup scope, then choose **Clear demo run & restart**. Opening or closing the panel does not
+change state. Confirmation discards this session's review inputs, edits, outputs, request previews,
+simulated work items, receipts and delivery history, including uncertain simulated results. It
+preserves drafting and returns to empty Review Inputs in Internal fake. Load inputs and complete
+both human confirmations again; the same sample can be delivered in the new run without a restart.
+
+Ordinary **Reset review**, **Start New Review**, and **Reset all local demo state** continue to
+retain delivery reconciliation facts and duplicate protection. Only the explicit new-demo-run
+command discards the local simulation. It is available only in development/test Internal fake with
+a known local fake gateway, never Offline or production, and never deletes remote records.

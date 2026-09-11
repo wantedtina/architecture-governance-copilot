@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 22 / R26 is completed and verified.
+Execution authority: `NONE` — Batch 23 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -1032,3 +1032,16 @@ requirements-intake update.
 - Do not change delivery authorization, confirmation semantics, mappings or retry protections.
 - **Verification:** Batch 22; 548 tests and repository checks passed; desktop/narrow Chrome
   verified one-shot focus/scroll for Preview, Confirm and successful Create/read-back.
+
+
+### R27 — Explicit new Internal fake demo run
+
+- **State:** `Verified`
+- **Approval:** User approved a dedicated new-run action with clear cleanup scope.
+- Clear review inputs/results and only local fake work items, receipts and history for a new demo
+  run without restarting the app. Require an explicit in-product confirmation; preserve drafting.
+- Keep ordinary Reset review and within-run duplicate protections unchanged. Development/test
+  Internal fake only; no Offline or production reset capability and no remote deletion.
+- **Verification:** Batch 23; 558 tests and repository checks passed. Desktop/narrow Chrome
+  verified two successful runs without restarting the app, explicit reset confirmation and
+  retained within-run duplicate protection.

@@ -1770,3 +1770,89 @@ def test_delivery_focus_markup_rejects_untrusted_values():
     for target, sequence in [("<script>", 1), ("result", "1"), ("preview", True)]:
         with pytest.raises(ValueError):
             delivery_focus_markup(target, sequence)
+
+
+@pytest.mark.parametrize("profile", ["development", "test"])
+def test_new_demo_run_clears_only_local_review_and_keeps_internal_mode(profile):
+    from architecture_governance_copilot.integrations.azure_devops import InMemoryFakeAdoGateway
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import (
+        DELIVERY_ATTENTION_KEY,
+        REVIEW_MODE_KEY,
+        REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
+        request_delivery_attention,
+        start_new_demo_run,
+    )
+
+    policy = resolve_deployment_policy(
+        {"AGC_DEPLOYMENT_PROFILE": profile, "AGC_INTERNAL_FAKE_ENABLED": "1"}
+    )
+    state = {}
+    initialize_session_state(state)
+    draft = object()
+    gateway = InMemoryFakeAdoGateway()
+    state.update(
+        {
+            REVIEW_MODE_KEY: "internal_fake",
+            DRAFT_RESULT_KEY: draft,
+            ADO_FAKE_GATEWAY_KEY: gateway,
+            ADO_PUBLICATION_HISTORY_KEY: {"old": object()},
+            ADO_PUBLICATION_OPERATION_KEY: object(),
+            OUTPUTS_KEY: object(),
+            ANALYZED_RESULT_KEY: object(),
+            "agc_field_action_0_owner": "Old owner",
+            "agc_human_review_tabs": "Actions · 2",
+        }
+    )
+    request_delivery_attention(state, "result")
+    start_new_demo_run(state, policy)
+    assert state[DRAFT_RESULT_KEY] is draft
+    assert state[ADO_PUBLICATION_HISTORY_KEY] == {}
+    assert state[ADO_FAKE_GATEWAY_KEY] is None
+    assert state[ADO_PUBLICATION_OPERATION_KEY] is None
+    assert state[OUTPUTS_KEY] is None
+    assert state[ANALYZED_RESULT_KEY] is None
+    assert state[ACTIVE_STAGE_KEY] == INPUT_STAGE
+    assert state[REVIEW_MODE_KEY] == "internal_fake"
+    assert (
+        state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY]
+        == policy.review_modes[-1].provider_configuration_identity
+    )
+    assert DELIVERY_ATTENTION_KEY not in state
+    assert "agc_human_review_tabs" not in state
+    assert "agc_field_action_0_owner" not in state
+
+
+@pytest.mark.parametrize(
+    "profile,enabled,mode",
+    [
+        ("production", "0", "internal_fake"),
+        ("demo", "0", "offline"),
+        ("development", "0", "internal_fake"),
+        ("development", "1", "offline"),
+    ],
+)
+def test_new_demo_run_denied_without_mutating_state(profile, enabled, mode):
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import REVIEW_MODE_KEY, start_new_demo_run
+
+    policy = resolve_deployment_policy(
+        {"AGC_DEPLOYMENT_PROFILE": profile, "AGC_INTERNAL_FAKE_ENABLED": enabled}
+    )
+    state = {REVIEW_MODE_KEY: mode, ADO_PUBLICATION_HISTORY_KEY: {"kept": "record"}}
+    original = dict(state)
+    with pytest.raises(ValueError):
+        start_new_demo_run(state, policy)
+    assert state == original
+
+
+def test_new_demo_run_rejects_non_fake_gateway():
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import REVIEW_MODE_KEY, start_new_demo_run
+
+    policy = resolve_deployment_policy({"AGC_INTERNAL_FAKE_ENABLED": "1"})
+    state = {REVIEW_MODE_KEY: "internal_fake", ADO_FAKE_GATEWAY_KEY: object()}
+    original = dict(state)
+    with pytest.raises(ValueError):
+        start_new_demo_run(state, policy)
+    assert state == original

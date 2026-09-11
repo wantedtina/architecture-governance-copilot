@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Any
 
 from architecture_governance_copilot.governance_service import GovernanceOutputs
+from architecture_governance_copilot.integrations.azure_devops import (
+    FakeAdoGateway,
+    InMemoryFakeAdoGateway,
+)
 from architecture_governance_copilot.integrations.confluence import (
     ConfluenceBodyFormat,
     ConfluencePagePayload,
@@ -49,6 +53,7 @@ from architecture_governance_copilot.publication import (
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     DeploymentPolicy,
+    DeploymentProfile,
     ReviewMode,
 )
 from architecture_governance_copilot.si_drafting import (
@@ -2844,3 +2849,37 @@ def request_delivery_attention(state: MutableMapping[str, Any], target: str) -> 
 def consume_delivery_attention(state: MutableMapping[str, Any]) -> tuple[str, int] | None:
     """Consume only once so normal reruns preserve the user's reading position."""
     return state.pop(DELIVERY_ATTENTION_KEY, None)
+
+
+def can_start_new_demo_run(state: Mapping[str, Any], policy: DeploymentPolicy) -> bool:
+    """Restrict destructive simulation reset to an explicitly enabled local fake workflow."""
+    return (
+        policy.profile in {DeploymentProfile.DEVELOPMENT, DeploymentProfile.TEST}
+        and current_review_mode(state) is ReviewMode.INTERNAL_FAKE
+        and any(item.mode is ReviewMode.INTERNAL_FAKE for item in policy.review_modes)
+        and (
+            state.get(ADO_FAKE_GATEWAY_KEY) is None
+            or type(state.get(ADO_FAKE_GATEWAY_KEY)) in {FakeAdoGateway, InMemoryFakeAdoGateway}
+        )
+    )
+
+
+def start_new_demo_run(state: MutableMapping[str, Any], policy: DeploymentPolicy) -> None:
+    """Discard only a confirmed local fake run; retain drafting and operator configuration."""
+    if not can_start_new_demo_run(state, policy):
+        raise ValueError(
+            "A new demo run is available only for the configured Internal fake workflow."
+        )
+    descriptor = next(item for item in policy.review_modes if item.mode is ReviewMode.INTERNAL_FAKE)
+    reset_review_workflow(state)
+    clear_review_widget_state(state)
+    clear_publication_preview(state)
+    state[ADO_PUBLICATION_OPERATION_KEY] = None
+    state[ADO_PUBLICATION_HISTORY_KEY] = {}
+    state[ADO_FAKE_GATEWAY_KEY] = None
+    state[REVIEW_MODE_KEY] = ReviewMode.INTERNAL_FAKE.value
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = descriptor.provider_configuration_identity
+    state[REVIEW_INPUT_FEEDBACK_KEY] = (
+        "New demo run ready. Previous simulated work items and receipts were cleared. "
+        "Load and confirm new review inputs to begin."
+    )
