@@ -82,6 +82,7 @@ from architecture_governance_copilot.synthetic_delivery import (
     synthetic_owner_identity,
     synthetic_parent_id,
 )
+from architecture_governance_copilot.ui_focus import delivery_focus_markup
 from architecture_governance_copilot.ui_support import (
     ADO_FAKE_GATEWAY_KEY,
     ADO_PUBLICATION_CONFIRMATION_KEY,
@@ -167,6 +168,7 @@ from architecture_governance_copilot.ui_support import (
     confirm_project_context_for_drafting,
     confirm_review_input_manifest,
     confirm_si_draft_for_review,
+    consume_delivery_attention,
     current_analysis_invalidation,
     current_input_fingerprint,
     current_review_form_data,
@@ -196,6 +198,7 @@ from architecture_governance_copilot.ui_support import (
     refresh_project_context,
     remember_operation_error,
     remove_drafting_evidence,
+    request_delivery_attention,
     reset_application_state,
     reset_drafting_workflow,
     reset_review_workflow,
@@ -4090,6 +4093,13 @@ def _delivery_context(reviewed_result: GovernanceResult):
     return capability, readiness, operations
 
 
+def _delivery_destination(target: str, title: str) -> None:
+    st.html(
+        f'<h3 id="agc-delivery-{target}" tabindex="-1" '
+        f'style="scroll-margin-top:5rem">{escape(title)}</h3>'
+    )
+
+
 def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
     """Show all reviewed actions and one independently selected, exact fake request."""
     capability, readiness, operations = _delivery_context(reviewed_result)
@@ -4197,8 +4207,37 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
                 ),
             )
             store_publication_preview(st.session_state, preview)
+            request_delivery_attention(st.session_state, "preview")
+            st.toast("Preview ready. Review the request below; nothing has been sent.")
             st.rerun()
+        if operation is not None or st.session_state.get(ERROR_KEY):
+            _delivery_destination("result", "Delivery result")
+            if operation is not None:
+                _render_publication_operation(operation)
+                if operation.status is PublicationStatus.SUCCEEDED:
+                    st.info(
+                        "Complete · The simulated work item was created. Review its receipt above."
+                    )
+                elif operation.status is PublicationStatus.UNKNOWN_RESULT:
+                    st.warning(
+                        "Result unknown · Reconcile this action before any further submission."
+                    )
+                elif operation.status is PublicationStatus.DEFINITELY_FAILED:
+                    st.error(
+                        "Not completed · Review the failure details "
+                        "before preparing another request."
+                    )
+            else:
+                st.error("Request could not be completed. " + str(st.session_state[ERROR_KEY]))
         if isinstance(preview, AdoPublicationPreview):
+            _delivery_destination("preview", "Review the prepared request")
+            if not protected and not isinstance(
+                st.session_state.get(ADO_PUBLICATION_CONFIRMATION_KEY), AdoPublicationConfirmation
+            ):
+                st.info(
+                    "Preview ready · Review the summary or exact JSON, then Confirm request. "
+                    "Nothing has been sent."
+                )
             summary_tab, json_tab = st.tabs(["Work item summary", "Request JSON"])
             with summary_tab:
                 st.caption(
@@ -4239,12 +4278,16 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
                         "Confirm request",
                         key="agc_confirm_ado_publication",
                         icon=":material/check_circle:",
+                        summary="Preview ready · Review details, then confirm. Nothing sent.",
                     ):
                         store_publication_confirmation(
                             st.session_state, confirm_ado_publication_preview(preview)
                         )
+                        request_delivery_attention(st.session_state, "confirmation")
+                        st.toast("Request confirmed. Nothing sent yet; Create work item is next.")
                         st.rerun()
                 else:
+                    _delivery_destination("confirmation", "Request confirmed — ready to create")
                     st.success(
                         "Confirmed · No request has been sent yet. "
                         "Create work item submits once to the fake gateway."
@@ -4254,14 +4297,20 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
                         key="agc_submit_ado_publication",
                         type="primary",
                         icon=":material/send:",
+                        summary="Confirmed · Nothing sent. Create submits this request once.",
                     ):
+                        st.toast("Submitting the simulated request and checking the result…")
                         _submit_fake_ado_publication(
                             preview, confirmation, reviewed_result, snapshot
                         )
                         st.session_state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
+                        request_delivery_attention(st.session_state, "result")
                         st.rerun()
         else:
             st.info("Not prepared · No exact Create request is currently prepared.")
+    attention = consume_delivery_attention(st.session_state)
+    if attention is not None:
+        st.html(delivery_focus_markup(*attention), unsafe_allow_javascript=True)
     history = st.session_state.get(ADO_PUBLICATION_HISTORY_KEY)
     if isinstance(history, Mapping) and history:
         with st.expander("Session delivery history and reconciliation", expanded=False):

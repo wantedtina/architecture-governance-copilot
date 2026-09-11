@@ -1757,6 +1757,7 @@ def reset_application_state(state: MutableMapping[str, Any]) -> None:
 
 def clear_publication_preview(state: MutableMapping[str, Any]) -> None:
     """Revoke current publication eligibility without erasing operation history."""
+    state.pop(DELIVERY_ATTENTION_KEY, None)
     state[ADO_PUBLICATION_PREVIEW_KEY] = None
     state[ADO_PUBLICATION_CONFIRMATION_KEY] = None
 
@@ -2824,3 +2825,22 @@ def choose_review_action_owner(state: MutableMapping[str, Any], index: int, owne
     """Apply an explicit human choice without changing other action fields."""
     state[f"agc_field_action_{index}_owner"] = owner
     preserve_review_widget_state(state)
+
+
+DELIVERY_ATTENTION_KEY = "agc_delivery_attention"
+DELIVERY_ATTENTION_SEQUENCE_KEY = "agc_delivery_attention_sequence"
+DELIVERY_ATTENTION_TARGETS = {"preview", "confirmation", "result"}
+
+
+def request_delivery_attention(state: MutableMapping[str, Any], target: str) -> None:
+    """Queue one visual transition, never a publication command."""
+    if target not in DELIVERY_ATTENTION_TARGETS:
+        raise ValueError("Unknown delivery attention target.")
+    sequence = state.get(DELIVERY_ATTENTION_SEQUENCE_KEY, 0) + 1
+    state[DELIVERY_ATTENTION_SEQUENCE_KEY] = sequence
+    state[DELIVERY_ATTENTION_KEY] = (target, sequence)
+
+
+def consume_delivery_attention(state: MutableMapping[str, Any]) -> tuple[str, int] | None:
+    """Consume only once so normal reruns preserve the user's reading position."""
+    return state.pop(DELIVERY_ATTENTION_KEY, None)

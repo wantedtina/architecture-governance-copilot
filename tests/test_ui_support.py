@@ -1739,3 +1739,34 @@ def test_custom_owner_is_preserved_in_reviewed_result_and_outputs(sample_result)
     assert reviewed.action_items[0].owner == "Custom Owner / Team"
     assert reviewed.action_items[0].evidence == sample_result.action_items[0].evidence
     assert "Custom Owner / Team" in outputs.review_minutes
+
+
+def test_delivery_attention_is_one_shot_and_revoked_with_preview():
+    from architecture_governance_copilot.ui_support import (
+        clear_publication_preview,
+        consume_delivery_attention,
+        request_delivery_attention,
+    )
+
+    state = {}
+    request_delivery_attention(state, "preview")
+    assert consume_delivery_attention(state) == ("preview", 1)
+    assert consume_delivery_attention(state) is None
+    request_delivery_attention(state, "confirmation")
+    clear_publication_preview(state)
+    assert consume_delivery_attention(state) is None
+    request_delivery_attention(state, "result")
+    assert consume_delivery_attention(state) == ("result", 3)
+    with pytest.raises(ValueError):
+        request_delivery_attention(state, "user-controlled-anchor")
+
+
+def test_delivery_focus_markup_rejects_untrusted_values():
+    from architecture_governance_copilot.ui_focus import delivery_focus_markup
+
+    html = delivery_focus_markup("preview", 1)
+    assert "agc-delivery-preview" in html
+    assert "prefers-reduced-motion" in html
+    for target, sequence in [("<script>", 1), ("result", "1"), ("preview", True)]:
+        with pytest.raises(ValueError):
+            delivery_focus_markup(target, sequence)

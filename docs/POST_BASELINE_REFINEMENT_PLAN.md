@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 21 / R25 is completed and verified.
+Execution authority: `NONE` — Batch 22 / R26 is completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -1021,3 +1021,14 @@ requirements-intake update.
   Offline remains local-output only; production and real identity resolution are out of scope.
 - **Verification:** Batch 21; 545 tests and full repository checks passed; desktop/narrow Chrome
   completed custom transcript, SYN-205 and custom owner through fake Create and read-back.
+
+
+### R26 — Delivery action feedback and attention guidance
+
+- **State:** `Verified`
+- **Approval:** User requested UX improvements after Preview, Confirm and Create.
+- Each explicit action identifies its result and next step, with one-time focus/scroll to the relevant
+  preview, confirmation or receipt/error region. Keep status visible in the floating action area.
+- Do not change delivery authorization, confirmation semantics, mappings or retry protections.
+- **Verification:** Batch 22; 548 tests and repository checks passed; desktop/narrow Chrome
+  verified one-shot focus/scroll for Preview, Confirm and successful Create/read-back.

@@ -507,3 +507,11 @@ Review Inputs shows the simulated parent ID; Human Review shows the simulated as
 names and ticket text remain unchanged in outputs. Preview confirmation binds these resolved maps;
 changing a reviewed value revokes the preview while stable correlations retain duplicate guards.
 Offline continues to accept custom review values for local outputs, without a Delivery capability.
+
+
+Delivery action feedback: Preview brings the prepared request into view and explains that nothing
+has been sent. Confirm moves attention to the confirmed/not-sent notice and the Create next step.
+Create shows a submission notification, then focuses the selected result with receipt or failure/
+reconciliation guidance. Floating actions repeat the current state and next step. Focus/scroll is
+one-shot per explicit action, respects reduced motion, and is cleared when the preview becomes
+stale. Normal reruns do not request focus. No confirmation or duplicate-protection rule changes.

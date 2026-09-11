@@ -1585,3 +1585,18 @@ def test_custom_owner_edit_revokes_preview_and_requires_confirmation(monkeypatch
     assert current.mapping_fingerprint != original.mapping_fingerprint
     assert app.button(key="agc_confirm_ado_publication")
     assert not app.exception
+
+
+def test_delivery_actions_explain_each_transition(monkeypatch):
+    app = _fake_delivery_app(monkeypatch)
+    app.button(key="agc_prepare_ado_publication").click().run()
+    assert any("Preview ready" in item.value for item in app.info)
+    assert any("Nothing sent" in item.value for item in app.caption)
+    app.button(key="agc_confirm_ado_publication").click().run()
+    assert any("No request has been sent yet" in item.value for item in app.success)
+    assert not any("Preview ready" in item.value for item in app.info)
+    app.button(key="agc_submit_ado_publication").click().run()
+    assert any("simulated work item was created" in item.value for item in app.info)
+    assert not any("Nothing has been sent" in item.value for item in app.info)
+    assert len(app.session_state[ADO_FAKE_GATEWAY_KEY].create_calls) == 1
+    assert not app.exception
