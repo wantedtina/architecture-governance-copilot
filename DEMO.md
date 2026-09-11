@@ -81,6 +81,8 @@ names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 - A single global disclosure states **Demo Mode · Synthetic Data · No External Connections**.
 - The workflow landing page is active.
 - Both peer workflow choices are visible.
+- Briefly note that drafting opens an authorized synthetic inventory and requires confirmation of
+  an exact fingerprint-bound `Selected Source Package`; it does not scan or contact a repository.
 - No analysis or outputs are displayed.
 
 ### Step 2 — Enter the governance-review workflow

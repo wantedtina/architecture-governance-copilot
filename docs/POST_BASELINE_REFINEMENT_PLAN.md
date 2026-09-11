@@ -1,10 +1,10 @@
 # Post-baseline refinement register
 
-Updated: 2026-09-10
+Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`. No application implementation batch is currently authorized.
+Execution authority: `NONE`. No post-baseline application implementation batch is active.
 
 Active execution plan: `NONE`
 
@@ -95,7 +95,7 @@ acceptance evidence.
 
 ### R1 — Production-shaped Project Context source acquisition and selection
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User testing after the 14 September baseline was completed.
 - **Observed behavior:** Opening the single demonstration workspace loads one frozen source
   package and presents four inclusion checkboxes. The required template and repository controls
@@ -142,6 +142,19 @@ Open decisions to resolve before moving R1 to `Ready`:
   approved enterprise discovery adapter. No live connector is implied by this item.
 - Whether source changes invalidate only drafting and later stages or require a full workspace reset
   in specific cases.
+
+Verified Batch 04 resolution:
+
+- Limit the batch to a deterministic authorized synthetic inventory and source-package contract;
+  add no live adapter, manual identifier, URL, upload, or user-authored note capability.
+- Require the governed template, exact repository revision, and the one bundled supporting evidence
+  resource because all three are required by the configured deterministic drafter.
+- Treat project name and governance work-item reference as required, source-controlled metadata;
+  defer editable taxonomies and people fields until an approved schema exists.
+- Confirm one exact manifest that binds resource identities, versions or revisions, fingerprints,
+  validation status, and provider configuration before drafting.
+- Invalidate the source-package confirmation and drafting artifacts when those bound facts change;
+  preserve the independent governance-review workflow and remote reconciliation facts.
 
 ### R2 — Separate SI drafting and governance review into two workflows
 
@@ -786,7 +799,7 @@ new explicit decision and sole active plan.
 | Batch 01 | R10 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_01.md`. |
 | Batch 02 | R2, R5, R8 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_02.md`. |
 | Batch 03 | R4, R6 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`. |
-| Candidate 04 | R1 | Drafting-source discovery and manifest work is bounded to the drafting workflow after R2 establishes its independent navigation and reset model. Source-type and metadata decisions remain. |
+| Batch 04 | R1 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_04.md`. |
 | Candidate 05 | R3 | The realistic Internal fake fixture must align with the authoritative review-source contract and revised review workflow from Candidate 02. Scenario-content decisions remain. |
 | Candidate 06 | R7 | Governed work-item delivery depends on the review workflow, authoritative source manifest, confirmed actions, and the rendered-versus-exact presentation policy. Delivery queue, mapping, and recovery decisions remain. |
 | Readiness-gated | R9 | Deployment policy remains accepted but cannot become ready until separately approved live capabilities and their release authority exist; no live connector is authorized by this intake. |

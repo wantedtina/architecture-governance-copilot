@@ -80,8 +80,9 @@ The drafting journey is:
 
 1. Choose **Draft a Solution Intent** from the landing page.
 2. Open the bundled synthetic project workspace and inspect its available source package.
-3. Explicitly include or exclude the SI template, repository context, supporting evidence, and
-   governance metadata, then confirm the context package.
+3. Select the exact governed template, repository revision, and required supporting evidence from
+   the authorized synthetic inventory; inspect read-only governance metadata and confirm the exact
+   fingerprint-bound source-package manifest.
 4. Generate a deterministic SI draft behind the drafting-provider interface.
 5. Let a project-team reviewer edit and confirm the draft, inspect its provenance, and download the
    unpublished Markdown artifact for manual transfer.
@@ -115,11 +116,21 @@ automatically carry findings between rounds.
 
 - Enter drafting explicitly from the workflow landing page and present a local two-step progress
   model for Project Context and Draft Solution Intent.
-- Provide a project workspace selector and production-shaped source cards for the bundled
-  synthetic template, repository, supporting evidence, and governance metadata.
-- Require explicit confirmation of the required template and repository sources before drafting.
-- Clearly label source statuses as simulated and make no external synchronization or API calls.
-- Accept project name, SI template, selected source-code context, and optional supporting notes.
+- Provide a project workspace selector and an authorized synthetic inventory for the bundled
+  template, repository revision, supporting evidence, and governance metadata.
+- Use controlled source selectors; expose no manual URL, repository identifier, file path, or
+  upload input in the deterministic PoC.
+- Show stable resource IDs, canonical synthetic references, versions or revisions, exact SHA-256
+  fingerprints, local validation status, and configured-provider compatibility.
+- Treat the project name and governance work-item reference as required, source-controlled,
+  read-only metadata.
+- Require explicit human confirmation of one exact `Selected Source Package` manifest before
+  drafting. Confirmation records inputs and never represents architecture approval.
+- Require the template, repository revision, and supporting evidence selected by the current
+  deterministic provider; report incomplete or incompatible packages without a fallback.
+- Clearly label local validation and make no external synchronization or API calls.
+- Accept project name, SI template, selected source-code context, and supporting notes from the
+  confirmed package.
 - Treat source code as pasted or pre-normalized text; do not clone, scan, or execute repositories.
 - Hide draft generation behind a `SolutionIntentDrafter` provider interface.
 - Use a deterministic offline provider for the bundled synthetic scenario.
@@ -314,6 +325,7 @@ These extensions must not appear in the required demo path.
 The PoC is done when:
 
 - The bundled drafting template, source context, and supporting notes load together.
+- The exact drafting source manifest must be valid and human-confirmed before generation.
 - SI draft generation works deterministically without network access or credentials.
 - The draft is editable and requires explicit human confirmation.
 - The landing page exposes two independent workflows with truthful local progress and scoped reset.
@@ -419,10 +431,11 @@ Governance service
 - `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
 - `tests/`: validation and transformation tests independent of external services.
 
-Streamlit session state is the only runtime state. It holds drafting context and draft,
+Streamlit session state is the only runtime state. It holds the authorized drafting inventory,
+source selections, live and confirmed source-package manifests, drafting context and draft,
 human-confirmed SI content, the review inputs, latest analysis, independent review draft,
-validated reviewed record, generated outputs, errors, analyzed-input fingerprint, durable
-in-progress review fields, and active route stage. It does not hold or simulate review history.
+validated reviewed record, generated outputs, errors, input fingerprints, durable in-progress
+review fields, and active route stage. It does not hold or simulate review history.
 
 ## Model design
 
@@ -433,8 +446,14 @@ Collection defaults use independent factories. All models serialize with
 
 ### SI-drafting models
 
+- `DraftingSourceResource` and `DraftingSourceInventory` identify authorized local resources with
+  roles, references, revision kinds, exact content fingerprints, validation status, provenance,
+  and content.
+- `SelectedDraftingSource` and `DraftingSourcePackageManifest` retain immutable, content-independent
+  identities for the exact human-confirmed provider package.
 - `SolutionIntentDraftRequest` contains required `project_name`, required template text,
-  required selected source-code context, and optional supporting-document context.
+  required selected source-code context, and structurally optional supporting-document context.
+  The configured deterministic provider requires the exact bundled supporting context.
 - `SolutionIntentDraft` contains the project name, generated Markdown content, provider name,
   input-type provenance, and explicit assumptions.
 - `DraftInputType` distinguishes template, source-code, and supporting-document context.
@@ -559,6 +578,9 @@ SolutionIntentDrafter.draft(
 `DeterministicDemoDrafter` accepts only the bundled synthetic template, source context, and
 supporting notes. It returns the known synthetic SI plus explicit assumptions. It does not scan
 repositories, execute source, call an LLM, publish to Confluence, or approve architecture.
+Draft eligibility and stale-result detection additionally bind the canonical request to the
+confirmed source-package fingerprint and provider configuration identity without changing this
+provider protocol.
 
 The implemented governance-review provider boundary is:
 

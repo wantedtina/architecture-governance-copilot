@@ -1,5 +1,6 @@
 """Tests for structured governance data models."""
 
+import hashlib
 from datetime import UTC, date, datetime
 
 import pytest
@@ -9,6 +10,13 @@ from architecture_governance_copilot.models import (
     ActionItem,
     ActionPriority,
     Decision,
+    DraftingRevisionKind,
+    DraftingSourceInventory,
+    DraftingSourcePackageManifest,
+    DraftingSourceProvenance,
+    DraftingSourceResource,
+    DraftingSourceRole,
+    DraftingValidationStatus,
     EvidenceSource,
     FindingSeverity,
     FindingStatus,
@@ -21,10 +29,110 @@ from architecture_governance_copilot.models import (
     ReviewOutcome,
     Risk,
     RiskSeverity,
+    SelectedDraftingSource,
     SolutionIntentReviewContext,
     SolutionIntentStatus,
     SourceEvidence,
 )
+
+
+def drafting_resource_payload(**overrides: object) -> dict[str, object]:
+    """Build one exact authorized synthetic drafting resource."""
+    content = str(overrides.pop("content", "# Template"))
+    payload: dict[str, object] = {
+        "resource_id": "template-v1",
+        "role": "template",
+        "display_name": "Governed template",
+        "source_reference": "synthetic://template",
+        "revision_kind": "version",
+        "revision": "v1",
+        "content_fingerprint": hashlib.sha256(content.encode()).hexdigest(),
+        "validation_status": "validated",
+        "provenance": "synthetic_local_fixture",
+        "authorized": True,
+        "content": content,
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_drafting_resource_rejects_tampered_content_and_unknown_fields() -> None:
+    resource = DraftingSourceResource.model_validate(drafting_resource_payload())
+
+    assert resource.role is DraftingSourceRole.TEMPLATE
+    assert resource.revision_kind is DraftingRevisionKind.VERSION
+    assert resource.validation_status is DraftingValidationStatus.VALIDATED
+    assert resource.provenance is DraftingSourceProvenance.SYNTHETIC_LOCAL_FIXTURE
+
+    with pytest.raises(ValidationError, match="fingerprint does not match"):
+        DraftingSourceResource.model_validate(
+            drafting_resource_payload(content_fingerprint="0" * 64)
+        )
+    with pytest.raises(ValidationError, match="Extra inputs are not permitted"):
+        DraftingSourceResource.model_validate(drafting_resource_payload(secret="no"))
+
+
+def test_drafting_inventory_and_manifest_reject_ambiguous_resources() -> None:
+    template = DraftingSourceResource.model_validate(drafting_resource_payload())
+    repository = DraftingSourceResource.model_validate(
+        drafting_resource_payload(
+            resource_id="repository-main",
+            role="repository",
+            display_name="Repository",
+            source_reference="synthetic://repository",
+            revision_kind="branch",
+            revision="main",
+            content="source context",
+        )
+    )
+    evidence = DraftingSourceResource.model_validate(
+        drafting_resource_payload(
+            resource_id="evidence-v1",
+            role="supporting_evidence",
+            display_name="Evidence",
+            source_reference="synthetic://evidence",
+            content="evidence context",
+        )
+    )
+    inventory = DraftingSourceInventory(
+        project_id="project",
+        project_name="Project",
+        governance_reference="WORK-1",
+        provider_configuration_identity="provider-v1",
+        resources=(template, repository, evidence),
+    )
+    selected = tuple(
+        SelectedDraftingSource(**item.model_dump(exclude={"content"}))
+        for item in inventory.resources
+    )
+
+    manifest = DraftingSourcePackageManifest(
+        project_id=inventory.project_id,
+        project_name=inventory.project_name,
+        governance_reference=inventory.governance_reference,
+        provider_configuration_identity=inventory.provider_configuration_identity,
+        offline=True,
+        resources=selected,
+    )
+
+    assert manifest.offline is True
+    with pytest.raises(ValidationError, match="resource IDs must be unique"):
+        DraftingSourceInventory(
+            project_id="project",
+            project_name="Project",
+            governance_reference="WORK-1",
+            provider_configuration_identity="provider-v1",
+            resources=(template, template, repository, evidence),
+        )
+    with pytest.raises(ValidationError, match="resource IDs must be unique"):
+        DraftingSourcePackageManifest(
+            project_id="project",
+            project_name="Project",
+            governance_reference="WORK-1",
+            provider_configuration_identity="provider-v1",
+            offline=True,
+            resources=(selected[0], selected[1], selected[0].model_copy()),
+        )
 
 
 def review_input_manifest_payload(**overrides: object) -> dict[str, object]:

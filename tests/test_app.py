@@ -373,8 +373,12 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
 
     _assert_active_step(app, "Project Context")
     assert not app.button(key="agc_refresh_project_context").disabled
-    assert app.checkbox(key="agc_context_template_selected").value is True
-    assert app.checkbox(key="agc_context_repository_selected").value is True
+    assert app.selectbox(key="agc_context_template_widget").value == "si-template-v1-1"
+    assert (
+        app.selectbox(key="agc_context_repository_widget").value
+        == "payment-notification-repository-main"
+    )
+    assert app.multiselect(key="agc_context_evidence_widget").value == ["supporting-context-v1"]
     project_snapshot = next(
         item.value
         for item in app.markdown
@@ -382,8 +386,9 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     )
     assert "Digital Payment Notification Service" in project_snapshot
     assert "ADO Workitem - Solution Intent 12658902" in project_snapshot
-    assert "v1.1" in project_snapshot
-    assert "55390-19-payment-notification-service · main" in project_snapshot
+    assert "3 authorized resources" in project_snapshot
+    assert "deterministic-demo-drafter-v1" in project_snapshot
+    assert any("Synthetic offline manifest" in item.value for item in app.caption)
 
     app.button(key="agc_confirm_project_context").click().run()
     assert [item.value for item in app.header] == ["Drafting step 2 — Draft Solution Intent"]
@@ -431,11 +436,39 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
     assert any("not been published" in item.value for item in app.success)
     assert all(item.key != SOLUTION_INTENT_WIDGET_KEY for item in app.text_area)
 
+    app.button(key="agc_back_to_project_context").click().run()
+    assert [item.value for item in app.header] == ["Drafting step 1 — Project Context"]
+    app.switch_page("pages/project_context.py").run()
+    assert app.selectbox(key="agc_context_template_widget").value == "si-template-v1-1"
+    assert (
+        app.selectbox(key="agc_context_repository_widget").value
+        == "payment-notification-repository-main"
+    )
+    assert app.multiselect(key="agc_context_evidence_widget").value == ["supporting-context-v1"]
+    app.switch_page("pages/solution_intent_drafting.py").run()
+
     app.button(key="agc_start_separate_review").click().run()
 
     assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
     assert app.text_area(key=SOLUTION_INTENT_WIDGET_KEY).value == ""
     assert app.text_area(key=TRANSCRIPT_WIDGET_KEY).value == ""
+
+
+def test_project_context_blocks_incomplete_provider_package() -> None:
+    app = _initial_app()
+    app.button(key="agc_start_drafting_workflow").click().run()
+    app.switch_page("pages/project_context.py").run()
+    app.button(key="agc_open_demonstration_project").click().run()
+    app.switch_page("pages/project_context.py").run()
+
+    app.multiselect(key="agc_context_evidence_widget").set_value([]).run()
+
+    assert app.button(key="agc_confirm_project_context").disabled
+    assert any(
+        "supporting evidence required by this provider" in item.value for item in app.warning
+    )
+    assert any("Complete the required authorized selections" in item.value for item in app.info)
+    assert all(item.key != "agc_generate_si_draft" for item in app.button)
 
 
 def test_review_components_load_in_any_order_and_require_confirmation() -> None:

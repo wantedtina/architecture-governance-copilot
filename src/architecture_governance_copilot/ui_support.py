@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from enum import StrEnum
 from pathlib import Path
@@ -18,9 +19,17 @@ from architecture_governance_copilot.integrations.confluence import (
     build_confluence_snapshot,
 )
 from architecture_governance_copilot.models import (
+    DraftingRevisionKind,
+    DraftingSourceInventory,
+    DraftingSourcePackageManifest,
+    DraftingSourceProvenance,
+    DraftingSourceResource,
+    DraftingSourceRole,
+    DraftingValidationStatus,
     GovernanceResult,
     ReviewInputManifest,
     ReviewInputProvenance,
+    SelectedDraftingSource,
     SolutionIntentDraft,
     SolutionIntentDraftRequest,
     SolutionIntentReviewContext,
@@ -35,20 +44,28 @@ from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     ReviewMode,
 )
+from architecture_governance_copilot.si_drafting import (
+    DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID,
+)
 
 STATE_PREFIX = "agc_"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
-STATE_SCHEMA_VERSION = 2
+STATE_SCHEMA_VERSION = 3
 STATE_SCHEMA_VERSION_KEY = f"{STATE_PREFIX}state_schema_version"
 ACTIVE_WORKFLOW_KEY = f"{STATE_PREFIX}active_workflow"
 
 PROJECT_CONTEXT_KEY = f"{STATE_PREFIX}project_context"
 PROJECT_CONTEXT_CONFIRMED_KEY = f"{STATE_PREFIX}project_context_confirmed"
 PROJECT_CONTEXT_REFRESHED_KEY = f"{STATE_PREFIX}project_context_refreshed"
-CONTEXT_TEMPLATE_SELECTED_KEY = f"{STATE_PREFIX}context_template_selected"
-CONTEXT_REPOSITORY_SELECTED_KEY = f"{STATE_PREFIX}context_repository_selected"
-CONTEXT_SUPPORTING_SELECTED_KEY = f"{STATE_PREFIX}context_supporting_selected"
-CONTEXT_ADO_SELECTED_KEY = f"{STATE_PREFIX}context_ado_selected"
+CONTEXT_TEMPLATE_ID_KEY = f"{STATE_PREFIX}context_template_id"
+CONTEXT_REPOSITORY_ID_KEY = f"{STATE_PREFIX}context_repository_id"
+CONTEXT_EVIDENCE_IDS_KEY = f"{STATE_PREFIX}context_evidence_ids"
+CONTEXT_TEMPLATE_WIDGET_KEY = f"{STATE_PREFIX}context_template_widget"
+CONTEXT_REPOSITORY_WIDGET_KEY = f"{STATE_PREFIX}context_repository_widget"
+CONTEXT_EVIDENCE_WIDGET_KEY = f"{STATE_PREFIX}context_evidence_widget"
+LIVE_SOURCE_PACKAGE_KEY = f"{STATE_PREFIX}live_source_package"
+CONFIRMED_SOURCE_PACKAGE_KEY = f"{STATE_PREFIX}confirmed_source_package"
+CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY = f"{STATE_PREFIX}confirmed_source_package_fingerprint"
 DRAFT_PROJECT_KEY = f"{STATE_PREFIX}draft_project"
 DRAFT_TEMPLATE_KEY = f"{STATE_PREFIX}draft_template"
 DRAFT_SOURCE_CODE_KEY = f"{STATE_PREFIX}draft_source_code"
@@ -157,20 +174,6 @@ class DraftingSamplePaths:
     template: Path
     source_code_context: Path
     supporting_documents: Path
-
-
-@dataclass(frozen=True, slots=True)
-class DraftingSampleContext:
-    """Loaded bundled synthetic context for SI drafting."""
-
-    project_name: str
-    template: str
-    source_code_context: str
-    supporting_documents: str
-    governance_reference: str
-    template_reference: str
-    repository_reference: str
-    branch: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,29 +339,87 @@ def drafting_sample_paths() -> DraftingSamplePaths:
     )
 
 
-def load_sample_drafting_context() -> DraftingSampleContext:
-    """Load and validate the bundled synthetic SI-drafting context."""
+def load_sample_drafting_context() -> DraftingSourceInventory:
+    """Load and validate the authorized synthetic drafting inventory."""
     paths = drafting_sample_paths()
-    template = paths.template.read_text(encoding="utf-8")
-    source_code_context = paths.source_code_context.read_text(encoding="utf-8")
-    supporting_documents = paths.supporting_documents.read_text(encoding="utf-8")
-    for label, value in (
-        ("SI template", template),
-        ("source-code context", source_code_context),
-        ("supporting-document context", supporting_documents),
-    ):
-        if not value.strip():
-            raise ValueError(f"Bundled {label} is empty.")
-    return DraftingSampleContext(
-        project_name="Digital Payment Notification Service",
-        template=template,
-        source_code_context=source_code_context,
-        supporting_documents=supporting_documents,
-        governance_reference="ADO Workitem - Solution Intent 12658902",
-        template_reference="v1.1",
-        repository_reference="55390-19-payment-notification-service",
-        branch="main",
+    template = _read_drafting_source(paths.template, "SI template")
+    source_code_context = _read_drafting_source(paths.source_code_context, "source-code context")
+    supporting_documents = _read_drafting_source(
+        paths.supporting_documents, "supporting-document context"
     )
+    resources = (
+        _drafting_source_resource(
+            resource_id="si-template-v1-1",
+            role=DraftingSourceRole.TEMPLATE,
+            display_name="Governed Solution Intent template",
+            source_reference="synthetic://confluence/templates/solution-intent",
+            revision_kind=DraftingRevisionKind.VERSION,
+            revision="v1.1",
+            content=template,
+        ),
+        _drafting_source_resource(
+            resource_id="payment-notification-repository-main",
+            role=DraftingSourceRole.REPOSITORY,
+            display_name="55390-19-payment-notification-service",
+            source_reference="synthetic://source/architecture-governance/payment-notification-service",
+            revision_kind=DraftingRevisionKind.BRANCH,
+            revision="main",
+            content=source_code_context,
+        ),
+        _drafting_source_resource(
+            resource_id="supporting-context-v1",
+            role=DraftingSourceRole.SUPPORTING_EVIDENCE,
+            display_name="Supporting context package",
+            source_reference="synthetic://evidence/payment-notification/supporting-context",
+            revision_kind=DraftingRevisionKind.VERSION,
+            revision="v1",
+            content=supporting_documents,
+        ),
+    )
+    return DraftingSourceInventory(
+        project_id="digital-payment-notification-service",
+        project_name="Digital Payment Notification Service",
+        governance_reference="ADO Workitem - Solution Intent 12658902",
+        provider_configuration_identity=DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID,
+        resources=resources,
+    )
+
+
+def _drafting_source_resource(
+    *,
+    resource_id: str,
+    role: DraftingSourceRole,
+    display_name: str,
+    source_reference: str,
+    revision_kind: DraftingRevisionKind,
+    revision: str,
+    content: str,
+) -> DraftingSourceResource:
+    """Build one validated local resource with its exact content identity."""
+    return DraftingSourceResource(
+        resource_id=resource_id,
+        role=role,
+        display_name=display_name,
+        source_reference=source_reference,
+        revision_kind=revision_kind,
+        revision=revision,
+        content_fingerprint=hashlib.sha256(content.strip().encode("utf-8")).hexdigest(),
+        validation_status=DraftingValidationStatus.VALIDATED,
+        provenance=DraftingSourceProvenance.SYNTHETIC_LOCAL_FIXTURE,
+        authorized=True,
+        content=content,
+    )
+
+
+def _read_drafting_source(path: Path, label: str) -> str:
+    """Read one bundled source with a user-safe deterministic failure."""
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise ValueError(f"Bundled {label} is unavailable.") from exc
+    if not content.strip():
+        raise ValueError(f"Bundled {label} is empty.")
+    return content
 
 
 def sample_paths() -> SamplePaths:
@@ -414,10 +475,12 @@ def initial_state_values() -> dict[str, object]:
         PROJECT_CONTEXT_KEY: None,
         PROJECT_CONTEXT_CONFIRMED_KEY: False,
         PROJECT_CONTEXT_REFRESHED_KEY: False,
-        CONTEXT_TEMPLATE_SELECTED_KEY: True,
-        CONTEXT_REPOSITORY_SELECTED_KEY: True,
-        CONTEXT_SUPPORTING_SELECTED_KEY: True,
-        CONTEXT_ADO_SELECTED_KEY: True,
+        CONTEXT_TEMPLATE_ID_KEY: None,
+        CONTEXT_REPOSITORY_ID_KEY: None,
+        CONTEXT_EVIDENCE_IDS_KEY: (),
+        LIVE_SOURCE_PACKAGE_KEY: None,
+        CONFIRMED_SOURCE_PACKAGE_KEY: None,
+        CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY: None,
         DRAFT_PROJECT_KEY: "",
         DRAFT_TEMPLATE_KEY: "",
         DRAFT_SOURCE_CODE_KEY: "",
@@ -497,6 +560,7 @@ def current_workflow(state: Mapping[str, Any]) -> Workflow:
 
 def start_workflow(state: MutableMapping[str, Any], workflow: Workflow) -> None:
     """Open one workflow while retaining the other workflow's local state."""
+    state[ERROR_KEY] = None
     if workflow is Workflow.NONE:
         state[ACTIVE_WORKFLOW_KEY] = Workflow.NONE.value
         state[ACTIVE_STAGE_KEY] = HOME_STAGE
@@ -520,10 +584,12 @@ def reset_drafting_workflow(state: MutableMapping[str, Any]) -> None:
         PROJECT_CONTEXT_KEY,
         PROJECT_CONTEXT_CONFIRMED_KEY,
         PROJECT_CONTEXT_REFRESHED_KEY,
-        CONTEXT_TEMPLATE_SELECTED_KEY,
-        CONTEXT_REPOSITORY_SELECTED_KEY,
-        CONTEXT_SUPPORTING_SELECTED_KEY,
-        CONTEXT_ADO_SELECTED_KEY,
+        CONTEXT_TEMPLATE_ID_KEY,
+        CONTEXT_REPOSITORY_ID_KEY,
+        CONTEXT_EVIDENCE_IDS_KEY,
+        LIVE_SOURCE_PACKAGE_KEY,
+        CONFIRMED_SOURCE_PACKAGE_KEY,
+        CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY,
         DRAFT_PROJECT_KEY,
         DRAFT_TEMPLATE_KEY,
         DRAFT_SOURCE_CODE_KEY,
@@ -535,6 +601,9 @@ def reset_drafting_workflow(state: MutableMapping[str, Any]) -> None:
     for key in drafting_keys:
         state[key] = defaults[key]
     for key in (
+        CONTEXT_TEMPLATE_WIDGET_KEY,
+        CONTEXT_REPOSITORY_WIDGET_KEY,
+        CONTEXT_EVIDENCE_WIDGET_KEY,
         DRAFT_PROJECT_WIDGET_KEY,
         DRAFT_TEMPLATE_WIDGET_KEY,
         DRAFT_SOURCE_CODE_WIDGET_KEY,
@@ -613,6 +682,18 @@ def preserve_review_widget_state(state: MutableMapping[str, Any]) -> None:
         if key.startswith(REVIEW_WIDGET_PREFIX):
             values[key] = state[key]
     state[REVIEW_WIDGET_VALUES_KEY] = values
+
+
+def retain_drafting_source_widget_state(state: MutableMapping[str, Any]) -> None:
+    """Retain routed source-widget values from durable source selections."""
+    values = (
+        (CONTEXT_TEMPLATE_WIDGET_KEY, CONTEXT_TEMPLATE_ID_KEY),
+        (CONTEXT_REPOSITORY_WIDGET_KEY, CONTEXT_REPOSITORY_ID_KEY),
+        (CONTEXT_EVIDENCE_WIDGET_KEY, CONTEXT_EVIDENCE_IDS_KEY),
+    )
+    for widget_key, durable_key in values:
+        value = state.get(durable_key)
+        state[widget_key] = list(value) if isinstance(value, tuple) else value
 
 
 def restore_review_widget_state(state: MutableMapping[str, Any]) -> None:
@@ -1163,19 +1244,37 @@ def record_internal_source_load_failure(state: MutableMapping[str, Any]) -> None
 
 def load_drafting_context_into_state(
     state: MutableMapping[str, Any],
-    sample: DraftingSampleContext,
+    inventory: DraftingSourceInventory,
+    manifest: DraftingSourcePackageManifest | None = None,
 ) -> None:
     """Populate synthetic drafting context and clear a previous draft result."""
-    state[PROJECT_CONTEXT_KEY] = sample
+    selected_manifest = manifest or default_drafting_source_package(inventory)
+    resources = {resource.resource_id: resource for resource in inventory.resources}
+    selected = [resources[item.resource_id] for item in selected_manifest.resources]
+    template = _single_selected_resource(selected, DraftingSourceRole.TEMPLATE)
+    repository = _single_selected_resource(selected, DraftingSourceRole.REPOSITORY)
+    evidence = sorted(
+        (
+            resource
+            for resource in selected
+            if resource.role is DraftingSourceRole.SUPPORTING_EVIDENCE
+        ),
+        key=lambda resource: resource.resource_id,
+    )
+    supporting_documents = "\n\n".join(resource.content for resource in evidence)
+    state[PROJECT_CONTEXT_KEY] = inventory
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = True
-    state[DRAFT_PROJECT_KEY] = sample.project_name
-    state[DRAFT_TEMPLATE_KEY] = sample.template
-    state[DRAFT_SOURCE_CODE_KEY] = sample.source_code_context
-    state[DRAFT_SUPPORTING_DOCS_KEY] = sample.supporting_documents
-    state[DRAFT_PROJECT_WIDGET_KEY] = sample.project_name
-    state[DRAFT_TEMPLATE_WIDGET_KEY] = sample.template
-    state[DRAFT_SOURCE_CODE_WIDGET_KEY] = sample.source_code_context
-    state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY] = sample.supporting_documents
+    state[LIVE_SOURCE_PACKAGE_KEY] = selected_manifest
+    state[CONFIRMED_SOURCE_PACKAGE_KEY] = selected_manifest.model_copy(deep=True)
+    state[CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY] = source_package_fingerprint(selected_manifest)
+    state[DRAFT_PROJECT_KEY] = inventory.project_name
+    state[DRAFT_TEMPLATE_KEY] = template.content
+    state[DRAFT_SOURCE_CODE_KEY] = repository.content
+    state[DRAFT_SUPPORTING_DOCS_KEY] = supporting_documents
+    state[DRAFT_PROJECT_WIDGET_KEY] = inventory.project_name
+    state[DRAFT_TEMPLATE_WIDGET_KEY] = template.content
+    state[DRAFT_SOURCE_CODE_WIDGET_KEY] = repository.content
+    state[DRAFT_SUPPORTING_DOCS_WIDGET_KEY] = supporting_documents
     state[DRAFT_CONTENT_WIDGET_KEY] = ""
     state[DRAFT_RESULT_KEY] = None
     state[DRAFT_FINGERPRINT_KEY] = None
@@ -1186,16 +1285,27 @@ def load_drafting_context_into_state(
 
 def open_demonstration_project_into_state(
     state: MutableMapping[str, Any],
-    sample: DraftingSampleContext,
+    inventory: DraftingSourceInventory,
 ) -> None:
     """Open the synthetic workspace without pretending to connect externally."""
-    state[PROJECT_CONTEXT_KEY] = sample
+    state[PROJECT_CONTEXT_KEY] = inventory
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
     state[PROJECT_CONTEXT_REFRESHED_KEY] = False
-    state[CONTEXT_TEMPLATE_SELECTED_KEY] = True
-    state[CONTEXT_REPOSITORY_SELECTED_KEY] = True
-    state[CONTEXT_SUPPORTING_SELECTED_KEY] = True
-    state[CONTEXT_ADO_SELECTED_KEY] = True
+    state[CONTEXT_TEMPLATE_ID_KEY] = _resource_ids_for_role(inventory, DraftingSourceRole.TEMPLATE)[
+        0
+    ]
+    state[CONTEXT_REPOSITORY_ID_KEY] = _resource_ids_for_role(
+        inventory, DraftingSourceRole.REPOSITORY
+    )[0]
+    state[CONTEXT_EVIDENCE_IDS_KEY] = _resource_ids_for_role(
+        inventory, DraftingSourceRole.SUPPORTING_EVIDENCE
+    )
+    state[CONTEXT_TEMPLATE_WIDGET_KEY] = state[CONTEXT_TEMPLATE_ID_KEY]
+    state[CONTEXT_REPOSITORY_WIDGET_KEY] = state[CONTEXT_REPOSITORY_ID_KEY]
+    state[CONTEXT_EVIDENCE_WIDGET_KEY] = list(state[CONTEXT_EVIDENCE_IDS_KEY])
+    state[LIVE_SOURCE_PACKAGE_KEY] = default_drafting_source_package(inventory)
+    state[CONFIRMED_SOURCE_PACKAGE_KEY] = None
+    state[CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY] = None
     state[DRAFT_PROJECT_KEY] = ""
     state[DRAFT_TEMPLATE_KEY] = ""
     state[DRAFT_SOURCE_CODE_KEY] = ""
@@ -1210,23 +1320,64 @@ def open_demonstration_project_into_state(
 
 def project_context_readiness(state: Mapping[str, Any]) -> tuple[str, ...]:
     """Return concise blockers for the currently selected drafting sources."""
-    if not isinstance(state.get(PROJECT_CONTEXT_KEY), DraftingSampleContext):
+    inventory = state.get(PROJECT_CONTEXT_KEY)
+    if not isinstance(inventory, DraftingSourceInventory):
         return ("Open a demonstration project workspace.",)
     blockers: list[str] = []
-    if state.get(CONTEXT_TEMPLATE_SELECTED_KEY) is not True:
+    template_id = state.get(CONTEXT_TEMPLATE_ID_KEY)
+    repository_id = state.get(CONTEXT_REPOSITORY_ID_KEY)
+    evidence_ids = state.get(CONTEXT_EVIDENCE_IDS_KEY)
+    if not isinstance(template_id, str) or not template_id:
         blockers.append("Select the required Solution Intent template.")
-    if state.get(CONTEXT_REPOSITORY_SELECTED_KEY) is not True:
-        blockers.append("Select the required repository context.")
+    if not isinstance(repository_id, str) or not repository_id:
+        blockers.append("Select the required repository revision.")
+    if not isinstance(evidence_ids, (tuple, list)) or not evidence_ids:
+        blockers.append("Select the supporting evidence required by this provider.")
+    inventory_ids = {resource.resource_id for resource in inventory.resources}
+    selected_ids = {
+        resource_id
+        for resource_id in (template_id, repository_id)
+        if isinstance(resource_id, str) and resource_id
+    }
+    if isinstance(evidence_ids, (tuple, list)):
+        selected_ids.update(item for item in evidence_ids if isinstance(item, str))
+    if selected_ids - inventory_ids:
+        blockers.append("Resolve selections that are not in the authorized inventory.")
+    if (
+        inventory.provider_configuration_identity
+        != DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID
+    ):
+        blockers.append("Select a source package compatible with the configured drafter.")
     return tuple(blockers)
 
 
-def refresh_project_context(state: MutableMapping[str, Any]) -> None:
-    """Record a deterministic local validation of the selected source package."""
-    if not isinstance(state.get(PROJECT_CONTEXT_KEY), DraftingSampleContext):
+def refresh_project_context(state: MutableMapping[str, Any]) -> bool:
+    """Reload local facts, invalidating drafting only when exact facts changed."""
+    existing = state.get(PROJECT_CONTEXT_KEY)
+    if not isinstance(existing, DraftingSourceInventory):
         raise ValueError("Open a demonstration project before refreshing context.")
+    refreshed = load_sample_drafting_context()
+    changed = refreshed != existing
+    state[PROJECT_CONTEXT_KEY] = refreshed
+    if changed:
+        _invalidate_drafting_source_confirmation(state)
+        available_ids = {resource.resource_id for resource in refreshed.resources}
+        template_id = state.get(CONTEXT_TEMPLATE_ID_KEY)
+        repository_id = state.get(CONTEXT_REPOSITORY_ID_KEY)
+        evidence_ids = state.get(CONTEXT_EVIDENCE_IDS_KEY)
+        retained_evidence_ids = evidence_ids if isinstance(evidence_ids, (tuple, list)) else ()
+        if template_id not in available_ids:
+            state[CONTEXT_TEMPLATE_ID_KEY] = None
+        if repository_id not in available_ids:
+            state[CONTEXT_REPOSITORY_ID_KEY] = None
+        state[CONTEXT_EVIDENCE_IDS_KEY] = tuple(
+            item for item in retained_evidence_ids if item in available_ids
+        )
     state[PROJECT_CONTEXT_REFRESHED_KEY] = True
+    update_live_drafting_source_package(state)
     state[ERROR_KEY] = None
     state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
+    return changed
 
 
 def confirm_project_context_for_drafting(state: MutableMapping[str, Any]) -> None:
@@ -1234,20 +1385,117 @@ def confirm_project_context_for_drafting(state: MutableMapping[str, Any]) -> Non
     blockers = project_context_readiness(state)
     if blockers:
         raise ValueError(" ".join(blockers))
-    sample = state[PROJECT_CONTEXT_KEY]
-    if not isinstance(sample, DraftingSampleContext):
+    inventory = state[PROJECT_CONTEXT_KEY]
+    if not isinstance(inventory, DraftingSourceInventory):
         raise ValueError("Open a demonstration project workspace.")
-    selected_sample = replace(
-        sample,
-        supporting_documents=(
-            sample.supporting_documents
-            if state.get(CONTEXT_SUPPORTING_SELECTED_KEY) is True
-            else ""
-        ),
-    )
-    load_drafting_context_into_state(state, selected_sample)
+    manifest = build_drafting_source_package(state)
+    load_drafting_context_into_state(state, inventory, manifest)
     state[PROJECT_CONTEXT_REFRESHED_KEY] = True
     state[PROJECT_CONTEXT_CONFIRMED_KEY] = True
+
+
+def default_drafting_source_package(
+    inventory: DraftingSourceInventory,
+) -> DraftingSourcePackageManifest:
+    """Build the complete provider-compatible default package."""
+    selected_ids = tuple(resource.resource_id for resource in inventory.resources)
+    return _manifest_from_inventory(inventory, selected_ids)
+
+
+def build_drafting_source_package(
+    state: Mapping[str, Any],
+) -> DraftingSourcePackageManifest:
+    """Build the exact live package from authorized state selections."""
+    blockers = project_context_readiness(state)
+    if blockers:
+        raise ValueError(" ".join(blockers))
+    inventory = state.get(PROJECT_CONTEXT_KEY)
+    if not isinstance(inventory, DraftingSourceInventory):
+        raise ValueError("Open a demonstration project workspace.")
+    evidence_ids = state.get(CONTEXT_EVIDENCE_IDS_KEY)
+    selected_evidence_ids = evidence_ids if isinstance(evidence_ids, (tuple, list)) else ()
+    selected_ids = (
+        str(state[CONTEXT_TEMPLATE_ID_KEY]),
+        str(state[CONTEXT_REPOSITORY_ID_KEY]),
+        *(str(item) for item in selected_evidence_ids),
+    )
+    return _manifest_from_inventory(inventory, selected_ids)
+
+
+def update_live_drafting_source_package(state: MutableMapping[str, Any]) -> bool:
+    """Project selectors into a manifest and report confirmation invalidation."""
+    try:
+        manifest = build_drafting_source_package(state)
+    except ValueError:
+        manifest = None
+    state[LIVE_SOURCE_PACKAGE_KEY] = manifest
+    confirmed = state.get(CONFIRMED_SOURCE_PACKAGE_KEY)
+    if isinstance(confirmed, DraftingSourcePackageManifest) and confirmed != manifest:
+        _invalidate_drafting_source_confirmation(state)
+        return True
+    return False
+
+
+def source_package_fingerprint(manifest: DraftingSourcePackageManifest) -> str:
+    """Create a stable fingerprint for an exact selected source package."""
+    return hashlib.sha256(manifest.model_dump_json().encode("utf-8")).hexdigest()
+
+
+def _manifest_from_inventory(
+    inventory: DraftingSourceInventory,
+    selected_ids: tuple[str, ...],
+) -> DraftingSourcePackageManifest:
+    resources = {resource.resource_id: resource for resource in inventory.resources}
+    unknown_ids = set(selected_ids) - resources.keys()
+    if unknown_ids:
+        raise ValueError("Selected resources are not in the authorized inventory.")
+    selected = tuple(
+        SelectedDraftingSource(**resources[resource_id].model_dump(exclude={"content"}))
+        for resource_id in sorted(
+            set(selected_ids),
+            key=lambda resource_id: (
+                list(DraftingSourceRole).index(resources[resource_id].role),
+                resource_id,
+            ),
+        )
+    )
+    return DraftingSourcePackageManifest(
+        project_id=inventory.project_id,
+        project_name=inventory.project_name,
+        governance_reference=inventory.governance_reference,
+        provider_configuration_identity=inventory.provider_configuration_identity,
+        offline=True,
+        resources=selected,
+    )
+
+
+def _resource_ids_for_role(
+    inventory: DraftingSourceInventory,
+    role: DraftingSourceRole,
+) -> tuple[str, ...]:
+    return tuple(resource.resource_id for resource in inventory.resources if resource.role is role)
+
+
+def _single_selected_resource(
+    resources: list[DraftingSourceResource],
+    role: DraftingSourceRole,
+) -> DraftingSourceResource:
+    matches = [resource for resource in resources if resource.role is role]
+    if len(matches) != 1:
+        raise ValueError(f"Selected source package requires exactly one {role.value}.")
+    return matches[0]
+
+
+def _invalidate_drafting_source_confirmation(state: MutableMapping[str, Any]) -> None:
+    state[PROJECT_CONTEXT_CONFIRMED_KEY] = False
+    state[CONFIRMED_SOURCE_PACKAGE_KEY] = None
+    state[CONFIRMED_SOURCE_PACKAGE_FINGERPRINT_KEY] = None
+    state[DRAFT_PROJECT_KEY] = ""
+    state[DRAFT_TEMPLATE_KEY] = ""
+    state[DRAFT_SOURCE_CODE_KEY] = ""
+    state[DRAFT_SUPPORTING_DOCS_KEY] = ""
+    clear_stale_si_draft(state)
+    state[ACTIVE_STAGE_KEY] = CONTEXT_STAGE
 
 
 def store_si_draft(
@@ -1265,19 +1513,34 @@ def store_si_draft(
     state[ACTIVE_STAGE_KEY] = DRAFT_STAGE
 
 
-def drafting_input_fingerprint(request: SolutionIntentDraftRequest) -> str:
-    """Create a stable fingerprint for SI-drafting inputs."""
-    return hashlib.sha256(request.model_dump_json().encode("utf-8")).hexdigest()
+def drafting_input_fingerprint(
+    request: SolutionIntentDraftRequest,
+    manifest: DraftingSourcePackageManifest | None = None,
+) -> str:
+    """Bind canonical drafting inputs to their source and provider identities."""
+    payload = {
+        "request": request.model_dump(mode="json"),
+        "source_package_fingerprint": (
+            source_package_fingerprint(manifest) if manifest is not None else None
+        ),
+        "provider_configuration_identity": (
+            manifest.provider_configuration_identity if manifest is not None else None
+        ),
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def drafting_result_is_stale(
     request: SolutionIntentDraftRequest,
     generated_fingerprint: str | None,
+    manifest: DraftingSourcePackageManifest | None = None,
 ) -> bool:
     """Return whether drafting context changed after generation."""
     if generated_fingerprint is None:
         return False
-    return drafting_input_fingerprint(request) != generated_fingerprint
+    return drafting_input_fingerprint(request, manifest) != generated_fingerprint
 
 
 def clear_stale_si_draft(state: MutableMapping[str, Any]) -> None:

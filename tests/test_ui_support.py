@@ -38,11 +38,13 @@ from architecture_governance_copilot.ui_support import (
     ANALYSIS_SUCCESS_KEY,
     ANALYZED_FINGERPRINT_KEY,
     ANALYZED_RESULT_KEY,
+    CONFIRMED_SOURCE_PACKAGE_KEY,
     CONFLUENCE_SNAPSHOT_KEY,
+    CONTEXT_EVIDENCE_IDS_KEY,
     CONTEXT_KEY,
+    CONTEXT_REPOSITORY_ID_KEY,
     CONTEXT_STAGE,
-    CONTEXT_SUPPORTING_SELECTED_KEY,
-    CONTEXT_TEMPLATE_SELECTED_KEY,
+    CONTEXT_TEMPLATE_ID_KEY,
     DRAFT_RESULT_KEY,
     DRAFT_STAGE,
     ERROR_KEY,
@@ -73,6 +75,7 @@ from architecture_governance_copilot.ui_support import (
     Workflow,
     active_stage,
     analysis_is_stale,
+    build_drafting_source_package,
     build_pending_review_changes,
     build_review_change_summary,
     build_reviewed_result,
@@ -100,6 +103,7 @@ from architecture_governance_copilot.ui_support import (
     preserve_review_widget_state,
     project_context_readiness,
     record_internal_source_load_failure,
+    refresh_project_context,
     reset_application_state,
     reset_drafting_workflow,
     reset_review_workflow,
@@ -107,12 +111,15 @@ from architecture_governance_copilot.ui_support import (
     review_input_readiness,
     sample_paths,
     set_active_stage,
+    source_package_fingerprint,
+    start_workflow,
     store_analysis,
     store_metadata_component,
     store_outputs,
     store_review_source_snapshot,
     store_transcript_component,
     switch_review_mode,
+    update_live_drafting_source_package,
     update_review_inputs,
 )
 
@@ -173,17 +180,85 @@ def test_project_context_open_readiness_and_confirmation() -> None:
     assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
     assert project_context_readiness(state) == ()
 
-    state[CONTEXT_TEMPLATE_SELECTED_KEY] = False
+    state[CONTEXT_TEMPLATE_ID_KEY] = None
     assert project_context_readiness(state) == ("Select the required Solution Intent template.",)
-    state[CONTEXT_TEMPLATE_SELECTED_KEY] = True
-    state[CONTEXT_SUPPORTING_SELECTED_KEY] = False
+    state[CONTEXT_TEMPLATE_ID_KEY] = "si-template-v1-1"
+    state[CONTEXT_EVIDENCE_IDS_KEY] = ()
+
+    assert project_context_readiness(state) == (
+        "Select the supporting evidence required by this provider.",
+    )
+    state[CONTEXT_EVIDENCE_IDS_KEY] = ("supporting-context-v1",)
 
     confirm_project_context_for_drafting(state)
 
     assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
     assert state[ACTIVE_STAGE_KEY] == DRAFT_STAGE
     assert state["agc_draft_project"] == sample.project_name
-    assert state["agc_draft_supporting_docs"] == ""
+    assert state["agc_draft_supporting_docs"] == sample.supporting_documents
+    assert state[CONFIRMED_SOURCE_PACKAGE_KEY] is not None
+
+
+def test_drafting_source_manifest_is_stable_and_rejects_unknown_selection() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    inventory = load_sample_drafting_context()
+    open_demonstration_project_into_state(state, inventory)
+
+    first = build_drafting_source_package(state)
+    second = build_drafting_source_package(state)
+
+    assert first == second
+    assert source_package_fingerprint(first) == source_package_fingerprint(second)
+    assert first.provider_configuration_identity == "deterministic-demo-drafter-v1"
+    assert [resource.role.value for resource in first.resources] == [
+        "template",
+        "repository",
+        "supporting_evidence",
+    ]
+
+    state[CONTEXT_REPOSITORY_ID_KEY] = "unauthorized-repository"
+    update_live_drafting_source_package(state)
+
+    assert project_context_readiness(state) == (
+        "Resolve selections that are not in the authorized inventory.",
+    )
+    assert state[CONFIRMED_SOURCE_PACKAGE_KEY] is None
+
+
+def test_source_change_invalidates_only_drafting_and_preserves_review_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    inventory = load_sample_drafting_context()
+    open_demonstration_project_into_state(state, inventory)
+    confirm_project_context_for_drafting(state)
+    state[SOLUTION_INTENT_KEY] = "Independent review source"
+    operation = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="agc-source-refresh",
+        request_binding_fingerprint="binding",
+        message="Manual reconciliation is required.",
+    )
+    state[ADO_PUBLICATION_OPERATION_KEY] = operation
+
+    assert refresh_project_context(state) is False
+    assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is True
+
+    changed = inventory.model_copy(update={"governance_reference": "WORK-CHANGED"})
+    monkeypatch.setattr(
+        "architecture_governance_copilot.ui_support.load_sample_drafting_context",
+        lambda: changed,
+    )
+
+    assert refresh_project_context(state) is True
+    assert state[PROJECT_CONTEXT_CONFIRMED_KEY] is False
+    assert state[CONFIRMED_SOURCE_PACKAGE_KEY] is None
+    assert state[DRAFT_RESULT_KEY] is None
+    assert state[SOLUTION_INTENT_KEY] == "Independent review source"
+    assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+    assert state[ACTIVE_STAGE_KEY] == CONTEXT_STAGE
 
 
 @pytest.mark.parametrize(
@@ -499,6 +574,16 @@ def test_workflow_scoped_resets_preserve_peer_state_and_remote_reconciliation() 
     assert state[SOLUTION_INTENT_KEY] == ""
     assert current_workflow(state) is Workflow.REVIEW
     assert state[ADO_PUBLICATION_OPERATION_KEY] == operation
+
+
+def test_starting_workflow_clears_stale_route_error() -> None:
+    state: dict[str, object] = {}
+    initialize_session_state(state)
+    state[ERROR_KEY] = "A stale route error."
+
+    start_workflow(state, Workflow.DRAFT)
+
+    assert state[ERROR_KEY] is None
 
 
 def test_schema_migration_clears_obsolete_workflow_state_but_preserves_reconciliation() -> None:

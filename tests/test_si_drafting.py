@@ -7,7 +7,9 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+import architecture_governance_copilot.ui_support as ui_support
 from architecture_governance_copilot.models import (
+    DraftingSourcePackageManifest,
     DraftInputType,
     SolutionIntentDraft,
     SolutionIntentDraftRequest,
@@ -20,6 +22,7 @@ from architecture_governance_copilot.si_drafting import (
 )
 from architecture_governance_copilot.ui_support import (
     ANALYZED_RESULT_KEY,
+    CONFIRMED_SOURCE_PACKAGE_KEY,
     CONTEXT_KEY,
     DRAFT_CONFIRMED_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
@@ -35,6 +38,7 @@ from architecture_governance_copilot.ui_support import (
     SOLUTION_INTENT_WIDGET_KEY,
     TRANSCRIPT_KEY,
     TRANSCRIPT_WIDGET_KEY,
+    DraftingSamplePaths,
     clear_stale_si_draft,
     confirm_si_draft_for_review,
     drafting_input_fingerprint,
@@ -45,6 +49,7 @@ from architecture_governance_copilot.ui_support import (
     load_sample_drafting_context,
     load_sample_review,
     load_sample_review_companions_into_state,
+    source_package_fingerprint,
     store_si_draft,
 )
 
@@ -78,6 +83,50 @@ def test_drafting_sample_paths_are_absolute_and_exist(
     assert actual.template.is_file()
     assert actual.source_code_context.is_file()
     assert actual.supporting_documents.is_file()
+
+
+@pytest.mark.parametrize(
+    "missing_name", ["template", "source_code_context", "supporting_documents"]
+)
+def test_drafting_inventory_rejects_missing_local_resource(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    missing_name: str,
+) -> None:
+    paths = {
+        "template": tmp_path / "template.md",
+        "source_code_context": tmp_path / "source.txt",
+        "supporting_documents": tmp_path / "evidence.md",
+    }
+    for name, path in paths.items():
+        if name != missing_name:
+            path.write_text("content", encoding="utf-8")
+    monkeypatch.setattr(
+        ui_support,
+        "drafting_sample_paths",
+        lambda: DraftingSamplePaths(**paths),
+    )
+
+    with pytest.raises(ValueError, match="is unavailable"):
+        load_sample_drafting_context()
+
+
+def test_drafting_inventory_rejects_empty_local_resource(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    paths = DraftingSamplePaths(
+        template=tmp_path / "template.md",
+        source_code_context=tmp_path / "source.txt",
+        supporting_documents=tmp_path / "evidence.md",
+    )
+    paths.template.write_text("# Template", encoding="utf-8")
+    paths.source_code_context.write_text(" ", encoding="utf-8")
+    paths.supporting_documents.write_text("Evidence", encoding="utf-8")
+    monkeypatch.setattr(ui_support, "drafting_sample_paths", lambda: paths)
+
+    with pytest.raises(ValueError, match="source-code context is empty"):
+        load_sample_drafting_context()
 
 
 def test_draft_request_rejects_blank_required_context() -> None:
@@ -158,18 +207,26 @@ def test_drafting_state_load_generate_and_confirm_stays_isolated() -> None:
 
     draft = DeterministicDemoDrafter().draft(_request())
     request = _request()
-    fingerprint = drafting_input_fingerprint(request)
+    manifest = state[CONFIRMED_SOURCE_PACKAGE_KEY]
+    assert isinstance(manifest, DraftingSourcePackageManifest)
+    fingerprint = drafting_input_fingerprint(request, manifest)
     store_si_draft(state, draft, fingerprint)
     stored = state[DRAFT_RESULT_KEY]
     assert isinstance(stored, SolutionIntentDraft)
     assert stored is not draft
     assert state[DRAFT_CONTENT_WIDGET_KEY] == draft.content
     assert state[DRAFT_FINGERPRINT_KEY] == fingerprint
-    assert not drafting_result_is_stale(request, fingerprint)
+    assert not drafting_result_is_stale(request, fingerprint, manifest)
     assert drafting_result_is_stale(
         request.model_copy(update={"project_name": "Changed project"}),
         fingerprint,
+        manifest,
     )
+    changed_manifest = manifest.model_copy(
+        update={"governance_reference": "Different governance work item"}
+    )
+    assert source_package_fingerprint(changed_manifest) != source_package_fingerprint(manifest)
+    assert drafting_result_is_stale(request, fingerprint, changed_manifest)
 
     state[ANALYZED_RESULT_KEY] = object()
     state[OUTPUTS_KEY] = object()

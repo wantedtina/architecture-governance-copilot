@@ -29,9 +29,10 @@ is slow, and findings can lose their SI-section context or supporting evidence.
 
 The implemented deterministic Solution Intent Copilot can:
 
-1. open a synthetic project workspace and let the user inspect and select its SI template,
-   repository context, supporting evidence, and governance metadata;
-2. confirm that source package and generate a known SI draft behind a provider interface;
+1. open an authorized synthetic project inventory and select the exact SI template, repository
+   revision, and supporting evidence while inspecting read-only governance metadata;
+2. validate and confirm a fingerprint-bound source-package manifest, then generate a known SI
+   draft behind a provider interface;
 3. let a human edit, confirm, inspect provenance for, and download that unpublished draft;
 4. independently load a versioned authoritative SI snapshot, transcript, and review metadata in
    any order;
@@ -239,9 +240,9 @@ Check formatting:
 uv run ruff format --check .
 ```
 
-The drafting flow is: **Draft a Solution Intent → Open Demonstration Project → inspect/select
-sources → Confirm Context & Continue → Generate SI Draft → human edit/confirm → inspect provenance
-or download Markdown**.
+The drafting flow is: **Draft a Solution Intent → Open Demonstration Project → select authorized
+sources → inspect the exact Selected Source Package manifest → Confirm Context & Continue →
+Generate SI Draft → human edit/confirm → inspect provenance or download Markdown**.
 
 The review flow is: **Review a Solution Intent → load the authoritative SI, transcript, and metadata
 in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
@@ -261,8 +262,9 @@ Implemented:
 - strict SI-drafting request/result models and a `SolutionIntentDrafter` provider protocol;
 - a deterministic offline drafter for the bundled template, source excerpts, and supporting
   notes;
-- a production-shaped Project Context stage with explicit source selection and simulated local
-  source statuses;
+- a production-shaped Project Context stage with controlled authorized selection, exact resource
+  identities and SHA-256 fingerprints, deterministic local validation, provider compatibility, and
+  explicit source-package manifest confirmation;
 - a first-class routed drafting stage with editable human confirmation;
 - independent drafting and review workflow entry points with local progress and scoped reset;
 - a human-confirmed, downloadable draft with provenance and no review-source handoff;

@@ -21,6 +21,7 @@ _REQUIRED_FILENAMES = (
     _SUPPORTING_CONTEXT_FILENAME,
     _DRAFT_FILENAME,
 )
+DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID = "deterministic-demo-drafter-v1"
 
 
 @runtime_checkable
@@ -40,6 +41,7 @@ class DeterministicDemoDrafter:
     """Return the frozen synthetic SI draft for the matching drafting context."""
 
     provider_name = "Deterministic demo drafter"
+    provider_configuration_id = DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID
 
     def __init__(self, samples_dir: Path | None = None) -> None:
         self._samples_dir = (

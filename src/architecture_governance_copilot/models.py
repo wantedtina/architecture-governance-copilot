@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Annotated, Self
+from typing import Annotated, Literal, Self
 
 from pydantic import (
     BaseModel,
@@ -16,6 +17,10 @@ from pydantic import (
 )
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+Sha256Fingerprint = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, pattern=r"^[0-9a-f]{64}$"),
+]
 
 
 class EvidenceSource(StrEnum):
@@ -90,6 +95,35 @@ class DraftInputType(StrEnum):
     SUPPORTING_DOCUMENTS = "supporting_documents"
 
 
+class DraftingSourceRole(StrEnum):
+    """Roles available in an authorized drafting-source inventory."""
+
+    TEMPLATE = "template"
+    REPOSITORY = "repository"
+    SUPPORTING_EVIDENCE = "supporting_evidence"
+
+
+class DraftingRevisionKind(StrEnum):
+    """Revision selectors supported by the production-shaped source contract."""
+
+    VERSION = "version"
+    BRANCH = "branch"
+    TAG = "tag"
+    COMMIT = "commit"
+
+
+class DraftingValidationStatus(StrEnum):
+    """Truthful local validation states for bundled drafting resources."""
+
+    VALIDATED = "validated"
+
+
+class DraftingSourceProvenance(StrEnum):
+    """Origins supported by the deterministic drafting inventory."""
+
+    SYNTHETIC_LOCAL_FIXTURE = "synthetic_local_fixture"
+
+
 class ReviewInputProvenance(StrEnum):
     """Truthful origins supported by the review-input manifest."""
 
@@ -102,6 +136,125 @@ class _GovernanceModel(BaseModel):
     """Common strict configuration for governance models."""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class _FrozenGovernanceModel(_GovernanceModel):
+    """Strict immutable model used for confirmed source identities."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, frozen=True)
+
+
+class DraftingSourceResource(_FrozenGovernanceModel):
+    """One exact resource in the authorized synthetic drafting inventory."""
+
+    resource_id: NonEmptyString
+    role: DraftingSourceRole
+    display_name: NonEmptyString
+    source_reference: NonEmptyString
+    revision_kind: DraftingRevisionKind
+    revision: NonEmptyString
+    content_fingerprint: Sha256Fingerprint
+    validation_status: DraftingValidationStatus
+    provenance: DraftingSourceProvenance
+    authorized: Literal[True]
+    content: NonEmptyString
+
+    @model_validator(mode="after")
+    def fingerprint_matches_content(self) -> Self:
+        """Reject resource metadata that does not identify its exact content."""
+        actual = hashlib.sha256(self.content.encode("utf-8")).hexdigest()
+        if actual != self.content_fingerprint:
+            raise ValueError("Drafting resource fingerprint does not match its content")
+        return self
+
+
+class DraftingSourceInventory(_FrozenGovernanceModel):
+    """Authorized local project and its deterministic drafting resources."""
+
+    project_id: NonEmptyString
+    project_name: NonEmptyString
+    governance_reference: NonEmptyString
+    provider_configuration_identity: NonEmptyString
+    resources: tuple[DraftingSourceResource, ...]
+
+    def resource_for_role(self, role: DraftingSourceRole) -> DraftingSourceResource:
+        """Return the sole resource for a required deterministic role."""
+        matches = [resource for resource in self.resources if resource.role is role]
+        if len(matches) != 1:
+            raise ValueError(f"Drafting inventory requires exactly one {role.value} resource")
+        return matches[0]
+
+    @property
+    def template(self) -> str:
+        return self.resource_for_role(DraftingSourceRole.TEMPLATE).content
+
+    @property
+    def source_code_context(self) -> str:
+        return self.resource_for_role(DraftingSourceRole.REPOSITORY).content
+
+    @property
+    def supporting_documents(self) -> str:
+        return self.resource_for_role(DraftingSourceRole.SUPPORTING_EVIDENCE).content
+
+    @model_validator(mode="after")
+    def resource_ids_are_unique(self) -> Self:
+        """Reject ambiguous inventories before they reach selection controls."""
+        resource_ids = [resource.resource_id for resource in self.resources]
+        if len(resource_ids) != len(set(resource_ids)):
+            raise ValueError("Drafting inventory resource IDs must be unique")
+        if not self.resources:
+            raise ValueError("Drafting inventory must contain at least one resource")
+        self.resource_for_role(DraftingSourceRole.TEMPLATE)
+        self.resource_for_role(DraftingSourceRole.REPOSITORY)
+        if not any(
+            resource.role is DraftingSourceRole.SUPPORTING_EVIDENCE for resource in self.resources
+        ):
+            raise ValueError("Drafting inventory requires supporting evidence")
+        return self
+
+
+class SelectedDraftingSource(_FrozenGovernanceModel):
+    """Content-independent identity retained in a source-package manifest."""
+
+    resource_id: NonEmptyString
+    role: DraftingSourceRole
+    display_name: NonEmptyString
+    source_reference: NonEmptyString
+    revision_kind: DraftingRevisionKind
+    revision: NonEmptyString
+    content_fingerprint: Sha256Fingerprint
+    validation_status: DraftingValidationStatus
+    provenance: DraftingSourceProvenance
+    authorized: Literal[True]
+
+
+class DraftingSourcePackageManifest(_FrozenGovernanceModel):
+    """Exact source package requiring human confirmation before drafting."""
+
+    project_id: NonEmptyString
+    project_name: NonEmptyString
+    governance_reference: NonEmptyString
+    provider_configuration_identity: NonEmptyString
+    offline: Literal[True]
+    resources: tuple[SelectedDraftingSource, ...] = Field(min_length=3)
+
+    @model_validator(mode="after")
+    def require_unambiguous_provider_package(self) -> Self:
+        """Require one template, one repository, and supporting evidence."""
+        resource_ids = [resource.resource_id for resource in self.resources]
+        if len(resource_ids) != len(set(resource_ids)):
+            raise ValueError("Selected source resource IDs must be unique")
+        role_counts = {
+            role: sum(resource.role is role for resource in self.resources)
+            for role in DraftingSourceRole
+        }
+        if role_counts[DraftingSourceRole.TEMPLATE] != 1:
+            raise ValueError("Selected source package requires exactly one template")
+        if role_counts[DraftingSourceRole.REPOSITORY] != 1:
+            raise ValueError("Selected source package requires exactly one repository revision")
+        if role_counts[DraftingSourceRole.SUPPORTING_EVIDENCE] < 1:
+            raise ValueError("Selected source package requires supporting evidence")
+        return self
 
 
 class SolutionIntentDraftRequest(_GovernanceModel):

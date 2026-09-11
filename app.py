@@ -32,6 +32,10 @@ from architecture_governance_copilot.integrations.confluence import (
 from architecture_governance_copilot.minutes_generator import format_action_item_entry
 from architecture_governance_copilot.models import (
     ActionPriority,
+    DraftingSourceInventory,
+    DraftingSourcePackageManifest,
+    DraftingSourceResource,
+    DraftingSourceRole,
     EvidenceSource,
     FindingSeverity,
     FindingStatus,
@@ -73,13 +77,16 @@ from architecture_governance_copilot.ui_support import (
     ADO_PUBLICATION_OPERATION_KEY,
     ADO_PUBLICATION_PREVIEW_KEY,
     ANALYZED_RESULT_KEY,
+    CONFIRMED_SOURCE_PACKAGE_KEY,
     CONFLUENCE_SNAPSHOT_KEY,
-    CONTEXT_ADO_SELECTED_KEY,
+    CONTEXT_EVIDENCE_IDS_KEY,
+    CONTEXT_EVIDENCE_WIDGET_KEY,
     CONTEXT_KEY,
-    CONTEXT_REPOSITORY_SELECTED_KEY,
+    CONTEXT_REPOSITORY_ID_KEY,
+    CONTEXT_REPOSITORY_WIDGET_KEY,
     CONTEXT_STAGE,
-    CONTEXT_SUPPORTING_SELECTED_KEY,
-    CONTEXT_TEMPLATE_SELECTED_KEY,
+    CONTEXT_TEMPLATE_ID_KEY,
+    CONTEXT_TEMPLATE_WIDGET_KEY,
     DRAFT_CONFIRMED_KEY,
     DRAFT_CONTENT_WIDGET_KEY,
     DRAFT_FINGERPRINT_KEY,
@@ -121,13 +128,13 @@ from architecture_governance_copilot.ui_support import (
     TRANSCRIPT_PROVENANCE_KEY,
     TRANSCRIPT_WIDGET_KEY,
     AnalysisInvalidation,
-    DraftingSampleContext,
     PendingReviewChanges,
     ReviewChangeSummary,
     ReviewFormData,
     ReviewInputReadiness,
     Workflow,
     active_stage,
+    build_drafting_source_package,
     build_pending_review_changes,
     build_review_change_summary,
     build_reviewed_result,
@@ -162,6 +169,7 @@ from architecture_governance_copilot.ui_support import (
     reset_drafting_workflow,
     reset_review_workflow,
     restore_review_widget_state,
+    retain_drafting_source_widget_state,
     retain_review_widget_state,
     review_input_readiness,
     set_active_stage,
@@ -175,6 +183,7 @@ from architecture_governance_copilot.ui_support import (
     store_si_draft,
     store_transcript_component,
     switch_review_mode,
+    update_live_drafting_source_package,
 )
 
 _BRAND_LOGO_DATA_URI = "data:image/png;base64," + b64encode(
@@ -311,6 +320,7 @@ def _render_context_page() -> None:
 
 
 def _render_drafting_page() -> None:
+    retain_drafting_source_widget_state(st.session_state)
     if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is not True:
         _switch_stage(
             CONTEXT_STAGE,
@@ -988,7 +998,7 @@ def _render_sidebar(stage: str) -> None:
             st.markdown("**Review context**")
 
         if workflow is Workflow.DRAFT:
-            if isinstance(project_context, DraftingSampleContext):
+            if isinstance(project_context, DraftingSourceInventory):
                 st.write(project_context.project_name)
                 if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is True:
                     st.caption("Confirmed context package · ready for drafting")
@@ -1120,7 +1130,7 @@ def _render_project_context_stage() -> None:
         refresh_clicked = refresh_column.button(
             "Refresh Context",
             key="agc_refresh_project_context",
-            disabled=not isinstance(project_context, DraftingSampleContext),
+            disabled=not isinstance(project_context, DraftingSourceInventory),
             width="stretch",
         )
         home_clicked = home_column.button(
@@ -1151,14 +1161,23 @@ def _render_project_context_stage() -> None:
             st.rerun()
     if refresh_clicked:
         try:
-            refresh_project_context(st.session_state)
-        except ValueError as exc:
+            context_changed = refresh_project_context(st.session_state)
+        except (OSError, UnicodeError, ValueError) as exc:
             st.session_state[ERROR_KEY] = f"Unable to refresh project context: {exc}"
         else:
-            st.success("Selected local sources validated. No external systems were contacted.")
+            if context_changed:
+                st.warning(
+                    "Local source facts changed. Drafting confirmation and artifacts were "
+                    "cleared; no external systems were contacted."
+                )
+            else:
+                st.success(
+                    "Local source facts are unchanged and validated. No external systems were "
+                    "contacted."
+                )
 
     project_context = st.session_state[PROJECT_CONTEXT_KEY]
-    if not isinstance(project_context, DraftingSampleContext):
+    if not isinstance(project_context, DraftingSourceInventory):
         st.info(
             "No project workspace is open. Select Open Demonstration Project to initialize the "
             "synthetic source package."
@@ -1171,54 +1190,146 @@ def _render_project_context_stage() -> None:
             '<p class="agc-section-label">SOURCE SELECTION</p>',
             unsafe_allow_html=True,
         )
-        template_column, repository_column, evidence_column, ado_column = st.columns(4)
+        resources = {resource.resource_id: resource for resource in project_context.resources}
+        template_ids = tuple(
+            resource.resource_id
+            for resource in project_context.resources
+            if resource.role is DraftingSourceRole.TEMPLATE
+        )
+        repository_ids = tuple(
+            resource.resource_id
+            for resource in project_context.resources
+            if resource.role is DraftingSourceRole.REPOSITORY
+        )
+        evidence_ids = tuple(
+            resource.resource_id
+            for resource in project_context.resources
+            if resource.role is DraftingSourceRole.SUPPORTING_EVIDENCE
+        )
+        st.session_state.setdefault(
+            CONTEXT_TEMPLATE_WIDGET_KEY,
+            st.session_state[CONTEXT_TEMPLATE_ID_KEY],
+        )
+        st.session_state.setdefault(
+            CONTEXT_REPOSITORY_WIDGET_KEY,
+            st.session_state[CONTEXT_REPOSITORY_ID_KEY],
+        )
+        st.session_state.setdefault(
+            CONTEXT_EVIDENCE_WIDGET_KEY,
+            list(st.session_state[CONTEXT_EVIDENCE_IDS_KEY]),
+        )
+
+        template_column, repository_column = st.columns(2)
         with template_column:
-            st.checkbox(
-                "Use SI template",
-                key=CONTEXT_TEMPLATE_SELECTED_KEY,
-                help="Required for deterministic SI generation.",
+            st.selectbox(
+                "Governed SI template",
+                (None, *template_ids),
+                key=CONTEXT_TEMPLATE_WIDGET_KEY,
+                format_func=lambda resource_id: (
+                    "Select a template"
+                    if resource_id is None
+                    else f"{resources[resource_id].display_name} · "
+                    f"{resources[resource_id].revision}"
+                ),
+                help="Required and limited to the authorized synthetic inventory.",
             )
-            st.caption("Confluence · Required")
         with repository_column:
-            st.checkbox(
-                "Use repository context",
-                key=CONTEXT_REPOSITORY_SELECTED_KEY,
-                help="Required for deterministic SI generation.",
+            st.markdown(
+                "**Organization**  \nSynthetic Architecture · authorized synthetic inventory"
             )
-            st.caption("Source repository · Required")
-        with evidence_column:
-            st.checkbox(
-                "Use supporting evidence",
-                key=CONTEXT_SUPPORTING_SELECTED_KEY,
+
+        project_column, repository_column, revision_column = st.columns(3)
+        with project_column:
+            st.markdown(f"**Project**  \n{project_context.project_name}")
+        with repository_column:
+            repository_names = tuple(resources[item].display_name for item in repository_ids)
+            st.markdown(f"**Repository**  \n{repository_names[0]}")
+        with revision_column:
+            st.selectbox(
+                "Repository revision",
+                (None, *repository_ids),
+                key=CONTEXT_REPOSITORY_WIDGET_KEY,
+                format_func=lambda resource_id: (
+                    "Select a revision"
+                    if resource_id is None
+                    else f"{resources[resource_id].revision_kind.value.title()} · "
+                    f"{resources[resource_id].revision}"
+                ),
+                help="The bundled provider supports the exact main branch snapshot only.",
             )
-            st.caption("Approved documents · Optional")
-        with ado_column:
-            st.checkbox(
-                "Use governance metadata",
-                key=CONTEXT_ADO_SELECTED_KEY,
-            )
-            st.caption("ADO reference · Metadata only")
+
+        st.multiselect(
+            "Supporting evidence",
+            evidence_ids,
+            key=CONTEXT_EVIDENCE_WIDGET_KEY,
+            format_func=lambda resource_id: (
+                f"{resources[resource_id].display_name} · {resources[resource_id].revision}"
+            ),
+            help=(
+                "Required by the configured deterministic drafter. Only authorized, "
+                "previewable synthetic resources are listed."
+            ),
+        )
+
+        st.session_state[CONTEXT_TEMPLATE_ID_KEY] = st.session_state[CONTEXT_TEMPLATE_WIDGET_KEY]
+        st.session_state[CONTEXT_REPOSITORY_ID_KEY] = st.session_state[
+            CONTEXT_REPOSITORY_WIDGET_KEY
+        ]
+        st.session_state[CONTEXT_EVIDENCE_IDS_KEY] = tuple(
+            st.session_state[CONTEXT_EVIDENCE_WIDGET_KEY]
+        )
+
+        if update_live_drafting_source_package(st.session_state):
+            st.rerun()
 
         with st.expander("Inspect selected source previews"):
             template_tab, repository_tab, evidence_tab, metadata_tab = st.tabs(
                 ["SI Template", "Repository", "Evidence", "Governance Metadata"]
             )
             with template_tab:
-                st.caption(project_context.template_reference)
-                _render_readonly_markdown_document(project_context.template)
+                selected_template = _selected_drafting_resource(
+                    project_context,
+                    st.session_state[CONTEXT_TEMPLATE_ID_KEY],
+                )
+                if selected_template is None:
+                    st.info("No governed SI template is selected.")
+                else:
+                    _render_drafting_resource_identity(selected_template)
+                    _render_readonly_markdown_document(selected_template.content)
             with repository_tab:
-                st.caption(f"{project_context.repository_reference} · {project_context.branch}")
-                st.code(project_context.source_code_context, language="text")
+                selected_repository = _selected_drafting_resource(
+                    project_context,
+                    st.session_state[CONTEXT_REPOSITORY_ID_KEY],
+                )
+                if selected_repository is None:
+                    st.info("No repository revision is selected.")
+                else:
+                    _render_drafting_resource_identity(selected_repository)
+                    st.code(selected_repository.content, language="text", wrap_lines=True)
             with evidence_tab:
-                _render_readonly_markdown_document(project_context.supporting_documents)
+                selected_evidence_ids = st.session_state[CONTEXT_EVIDENCE_IDS_KEY]
+                selected_evidence = [
+                    resources[resource_id]
+                    for resource_id in selected_evidence_ids
+                    if resource_id in resources
+                ]
+                if not selected_evidence:
+                    st.info("No supporting evidence is selected.")
+                for resource in selected_evidence:
+                    _render_drafting_resource_identity(resource)
+                    _render_readonly_markdown_document(resource.content)
             with metadata_tab:
                 st.json(
                     {
-                        "project": project_context.project_name,
+                        "project_id": project_context.project_id,
+                        "project_name": project_context.project_name,
                         "governance_reference": project_context.governance_reference,
-                        "mode": "synthetic_local_workspace",
+                        "field_control": "source_controlled_read_only",
+                        "validation_status": "validated",
                     }
                 )
+
+    _render_selected_source_package(st.session_state)
 
     blockers = project_context_readiness(st.session_state)
     if blockers:
@@ -1244,16 +1355,13 @@ def _render_project_context_stage() -> None:
         _switch_stage(DRAFT_STAGE)
 
 
-def _render_project_context_summary(project_context: DraftingSampleContext) -> None:
+def _render_project_context_summary(project_context: DraftingSourceInventory) -> None:
     """Render production-shaped metadata without implying live integrations."""
     values = (
         ("Project", project_context.project_name),
         ("Governance reference", project_context.governance_reference),
-        ("SI template", project_context.template_reference),
-        (
-            "Repository",
-            f"{project_context.repository_reference} · {project_context.branch}",
-        ),
+        ("Inventory", f"{len(project_context.resources)} authorized resources"),
+        ("Provider", project_context.provider_configuration_identity),
     )
     cards = "".join(
         (
@@ -1269,9 +1377,45 @@ def _render_project_context_summary(project_context: DraftingSampleContext) -> N
         unsafe_allow_html=True,
     )
     st.caption(
-        "Synthetic demonstration workspace · local fixture-backed sources · simulated source "
-        "statuses · no authentication, synchronization, or external API calls."
+        "Synthetic demonstration workspace · local fixture-backed sources · deterministic local "
+        "validation · no authentication, synchronization, repository scan, or external API calls."
     )
+
+
+def _selected_drafting_resource(
+    inventory: DraftingSourceInventory,
+    resource_id: object,
+) -> DraftingSourceResource | None:
+    """Return an authorized resource selected by its stable identifier."""
+    return next(
+        (resource for resource in inventory.resources if resource.resource_id == resource_id),
+        None,
+    )
+
+
+def _render_drafting_resource_identity(resource: DraftingSourceResource) -> None:
+    """Show exact local identity and validation without implying external access."""
+    st.caption(
+        f"{resource.source_reference} · {resource.revision_kind.value} "
+        f"{resource.revision} · validated local fixture"
+    )
+    st.code(f"SHA-256 {resource.content_fingerprint}", language="text", wrap_lines=True)
+
+
+def _render_selected_source_package(state: Mapping[str, object]) -> None:
+    """Render the exact manifest that the user will confirm."""
+    st.subheader("Selected Source Package")
+    try:
+        manifest = build_drafting_source_package(state)
+    except ValueError:
+        st.info("Complete the required authorized selections to build the exact manifest.")
+        return
+    st.caption(
+        "Synthetic offline manifest · human confirmation records drafting inputs only; it is "
+        "not architecture approval and contacts no external system."
+    )
+    with st.expander("Inspect exact source-package manifest", expanded=True):
+        st.json(manifest.model_dump(mode="json"))
 
 
 def _render_drafting_stage() -> None:
@@ -1285,6 +1429,9 @@ def _render_drafting_stage() -> None:
             st.session_state[DRAFT_TEMPLATE_KEY],
             st.session_state[DRAFT_SOURCE_CODE_KEY],
         )
+    ) and isinstance(
+        st.session_state[CONFIRMED_SOURCE_PACKAGE_KEY],
+        DraftingSourcePackageManifest,
     )
 
     with st.container(border=True):
@@ -1359,6 +1506,7 @@ def _render_drafting_stage() -> None:
             stale_draft = drafting_result_is_stale(
                 current_request,
                 st.session_state[DRAFT_FINGERPRINT_KEY],
+                st.session_state[CONFIRMED_SOURCE_PACKAGE_KEY],
             )
         except ValidationError:
             stale_draft = True
@@ -1756,7 +1904,10 @@ def _generate_si_draft() -> bool:
             store_si_draft(
                 st.session_state,
                 draft,
-                drafting_input_fingerprint(request),
+                drafting_input_fingerprint(
+                    request,
+                    st.session_state[CONFIRMED_SOURCE_PACKAGE_KEY],
+                ),
             )
             st.write("Editable SI draft prepared")
             status.update(
