@@ -237,6 +237,15 @@ def test_dynamic_fake_capability_remains_bound_to_synthetic_source_and_mode():
     bound = configured_delivery_capability(environment, confirmed_manifest=manifest)
     assert bound.transcript_fingerprint == "edited-transcript"
     assert bound.target == canonical.target
+    from architecture_governance_copilot.models import GovernanceResult
+
+    result = GovernanceResult(context=runtime.review_context, review_outcome="not_stated")
+    assert (
+        configured_delivery_capability(
+            environment, confirmed_manifest=manifest, review_result=result
+        )
+        is None
+    )
     for changes in (
         {"source_version": 99},
         {"review_mode": "offline"},
@@ -311,3 +320,13 @@ def test_historical_date_is_not_a_due_date():
         "[09:00] Avery Patel: I will review the report from 2026-09-20.", runtime.review_context
     )
     assert result.action_items[0].due_date is None
+
+
+def test_dynamic_alias_capability_requires_confirmed_matching_metadata():
+    from architecture_governance_copilot.models import GovernanceResult
+    from architecture_governance_copilot.runtime_dependencies import configured_delivery_capability
+
+    environment = {INTERNAL_FAKE_ENABLED_ENV: "1"}
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, environment)
+    result = GovernanceResult(context=runtime.review_context, review_outcome="not_stated")
+    assert configured_delivery_capability(environment, review_result=result) is None

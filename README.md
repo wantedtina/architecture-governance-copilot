@@ -329,8 +329,9 @@ confirmed actions reports **Not applicable**.
 The opt-in Internal fake capability is bound to the exact confirmed synthetic source, provider,
 transcript, metadata, and configured target. Each reviewed action shows its owner, mapped assignee,
 nullable due date, priority, parent, and readiness blockers before request preparation. Review
-ownership remains flexible; an unmapped owner blocks that action and provides **Back to Human
-Review** for correction and renewed confirmation. Parent and target mappings are read-only.
+ownership remains flexible; any nonblank owner receives a local simulated identity. Missing owner
+or date provides **Back to Human Review** for correction and renewed confirmation. Resolved parent
+and target mappings are read-only; edit the governance ticket in Review Inputs.
 
 Select one action independently of the Generated Outputs evidence comparison, then use
 **Preview Azure DevOps request → Confirm request → Create work item**. Peer **Work item summary**
@@ -499,10 +500,10 @@ Internal fake in development/test accepts edited transcript and editable review 
 its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
 changed text uses the same conservative literal grouping as Offline without invoking that provider.
 AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Owner, date and parent mappings remain required:
-use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
-the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
-old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.
+manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
+supported through deterministic local simulated mappings; no sample allowlist is required.
+Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
+no real AIF, Confluence or ADO is used.
 
 
 Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
@@ -512,8 +513,17 @@ An ownership acknowledgement is attached to a preceding action only when speaker
 non-date task words uniquely match; otherwise it remains an unclassified line for human review.
 This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
 
-Human Review labels owner/date as required for configured fake Delivery, offers mapped synthetic
-owner buttons, and names missing delivery fields before confirmation. These are explicit human
+Human Review labels owner/date as required for configured fake Delivery, offers optional sample
+owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
 choices, not automatic assignments. Local output confirmation remains available for incomplete
-or unmapped actions; their fake Delivery stays blocked. Default synthetic provider identities are
+actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
 now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
+
+
+Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
+receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque
+positive local IDs. These IDs do not represent verified enterprise users or existing ADO records.
+Review Inputs shows the simulated parent ID; Human Review shows the simulated assignee. Reviewed
+names and ticket text remain unchanged in outputs. Preview confirmation binds these resolved maps;
+changing a reviewed value revokes the preview while stable correlations retain duplicate guards.
+Offline continues to accept custom review values for local outputs, without a Delivery capability.

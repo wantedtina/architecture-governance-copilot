@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 20 / R24 is completed and verified.
+Execution authority: `NONE` — Batch 21 / R25 is completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -1008,3 +1008,16 @@ requirements-intake update.
 - **Approval:** User approved explicit synthetic owner/date extraction and early Human Review delivery guidance with selectable mapped owners.
 - Preserve manual confirmation, uncertain values, canonical fixtures and production boundaries.
 - **Verification:** Batch 20; 537 tests, full repository checks and desktop/narrow Chrome acceptance passed, including fake Create and GET read-back.
+
+
+### R25 — Free-form synthetic delivery inputs
+
+- **State:** `Verified`
+- **Approval:** User approved removing fixed owner/parent allowlists from Internal fake after
+  testing SYN-205 and reviewing the Offline/Internal fake distinction.
+- Any nonblank editable owner and governance ticket can flow through reviewed outputs and fake
+  delivery using explicit deterministic local aliases. Keep raw reviewed values and traceability.
+- Retain missing-field checks, human confirmation, stale-preview invalidation and duplicate guards.
+  Offline remains local-output only; production and real identity resolution are out of scope.
+- **Verification:** Batch 21; 545 tests and full repository checks passed; desktop/narrow Chrome
+  completed custom transcript, SYN-205 and custom owner through fake Create and read-back.

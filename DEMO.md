@@ -72,9 +72,9 @@ or exclusion before confirmation. On Generated Outputs, select **Continue to Wor
 Verify that both actions are Ready with mapped owners, dates, priorities, and parent 204. Select
 an action, choose **Preview Azure DevOps request**, inspect **Work item summary** and **Request JSON**,
 then **Confirm request → Create work item**. Verify the receipt and GET read-back. Repeat separately
-for the other action and confirm both receipts survive Back/Return navigation. Test an unmapped
-owner and a cleared date by returning to Human Review, regenerating outputs, inspecting the named
-blockers, and restoring the mapped values. Excluding the preceding action must never permit an
+for the other action and confirm both receipts survive Back/Return navigation. Test a custom
+owner and ticket such as SYN-205 and verify successful fake Delivery. Then clear an owner/date,
+regenerate outputs, inspect the named blockers, and restore the required values. Excluding the preceding action must never permit an
 already succeeded or unknown surviving action to be created again. State that
 the entire path is synthetic and no-network; its greater fixture depth does not demonstrate live
 enterprise connectivity or general semantic extraction.
@@ -480,10 +480,10 @@ Internal fake in development/test accepts edited transcript and editable review 
 its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
 changed text uses the same conservative literal grouping as Offline without invoking that provider.
 AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Owner, date and parent mappings remain required:
-use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
-the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
-old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.
+manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
+supported through deterministic local simulated mappings; no sample allowlist is required.
+Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
+no real AIF, Confluence or ADO is used.
 
 
 Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
@@ -493,8 +493,17 @@ An ownership acknowledgement is attached to a preceding action only when speaker
 non-date task words uniquely match; otherwise it remains an unclassified line for human review.
 This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
 
-Human Review labels owner/date as required for configured fake Delivery, offers mapped synthetic
-owner buttons, and names missing delivery fields before confirmation. These are explicit human
+Human Review labels owner/date as required for configured fake Delivery, offers optional sample
+owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
 choices, not automatic assignments. Local output confirmation remains available for incomplete
-or unmapped actions; their fake Delivery stays blocked. Default synthetic provider identities are
+actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
 now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
+
+
+Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
+receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque
+positive local IDs. These IDs do not represent verified enterprise users or existing ADO records.
+Review Inputs shows the simulated parent ID; Human Review shows the simulated assignee. Reviewed
+names and ticket text remain unchanged in outputs. Preview confirmation binds these resolved maps;
+changing a reviewed value revokes the preview while stable correlations retain duplicate guards.
+Offline continues to accept custom review values for local outputs, without a Delivery capability.

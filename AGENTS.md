@@ -101,3 +101,7 @@ transcripts through literal candidate grouping and valid editable metadata, with
 retained for human review. Its SI remains fixture-bound: a materially edited or custom-generated SI
 requires a future approved review provider. Internal fake supports edited transcript/metadata through a request-aware synthetic transport,
 while retaining its separate fixed SI and strict AIF context/evidence contract.
+
+Internal fake accepts free-form nonblank owners and governance tickets via deterministic local
+simulated aliases, never enterprise identity/parent verification. Missing required Delivery fields
+still block publication; Offline remains local-output only.

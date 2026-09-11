@@ -78,6 +78,10 @@ from architecture_governance_copilot.si_drafting import (
     DeterministicDraftingFixtureError,
     SolutionIntentDraftingService,
 )
+from architecture_governance_copilot.synthetic_delivery import (
+    synthetic_owner_identity,
+    synthetic_parent_id,
+)
 from architecture_governance_copilot.ui_support import (
     ADO_FAKE_GATEWAY_KEY,
     ADO_PUBLICATION_CONFIRMATION_KEY,
@@ -2609,6 +2613,19 @@ def _render_review_metadata_editor(
     )
     st.text_input("Domain Architect", key=METADATA_ARCHITECT_WIDGET_KEY)
     st.text_input("Governance ticket", key=METADATA_TICKET_WIDGET_KEY)
+    if current_review_mode(st.session_state) is ReviewMode.INTERNAL_FAKE:
+        target = build_review_runtime(ReviewMode.INTERNAL_FAKE).ado_target
+        parent = synthetic_parent_id(st.session_state[METADATA_TICKET_WIDGET_KEY], target)
+        if parent is None:
+            st.warning(
+                "Before fake Delivery, enter a governance ticket. Local outputs remain available."
+            )
+        else:
+            st.caption(
+                f"Local simulated parent ID: {parent}. Any nonblank ticket reference is supported; "
+                "this does not look up or verify an Azure DevOps work item."
+            )
+
     try:
         edited_context = context.model_copy(
             update={
@@ -3421,20 +3438,21 @@ def _render_action_edits(
         st.caption("None recorded.")
     capability = (
         configured_delivery_capability(
-            confirmed_manifest=current_review_input_manifest(st.session_state)
+            confirmed_manifest=current_review_input_manifest(st.session_state), review_result=result
         )
         if review_input_readiness(st.session_state).confirmed
         else None
     )
     if capability is not None:
         st.info(
-            "For fake Delivery, each selected action needs a mapped owner and a due date. "
+            "For fake Delivery, each selected action needs an owner and a due date. "
+            "Any nonblank owner name is supported through a local synthetic alias. "
             "You can still confirm local outputs without delivering an incomplete action."
         )
-        if result.context.ado_ticket_id not in capability.target.parent_work_item_ids:
+        if not result.context.ado_ticket_id:
             st.warning(
-                "Delivery parent is unmapped. Review Inputs must use a configured "
-                "synthetic parent reference."
+                "Before Delivery, enter a governance ticket in Review Inputs. Any nonblank "
+                "reference is supported through a local synthetic parent ID."
             )
     edits: list[dict[str, object]] = []
     for index, action in enumerate(result.action_items):
@@ -3469,8 +3487,8 @@ def _render_action_edits(
             )
             _render_field_change(pending, "Action item", index, "Owner", target=owner_column)
             if capability is not None:
-                owner_column.caption("Choose a mapped synthetic owner:")
-                for mapped_owner in capability.target.owner_identities:
+                owner_column.caption("Sample owners (optional), or type your own name above:")
+                for mapped_owner in ("Avery Patel", "Riley Chen"):
                     owner_column.button(
                         mapped_owner,
                         key=f"agc_choose_owner_{index}_{mapped_owner}",
@@ -3508,12 +3526,17 @@ def _render_action_edits(
                 _render_field_change(pending, "Action item", index, "Priority")
             if capability is not None and include:
                 missing = []
-                if owner not in capability.target.owner_identities:
-                    missing.append("mapped owner")
+                if not owner.strip():
+                    missing.append("owner")
                 if due_date is None:
                     missing.append("due date")
                 if missing:
                     st.warning("Before Delivery, provide: " + ", ".join(missing) + ".")
+            if capability is not None and owner.strip():
+                st.caption(
+                    "Local simulated assignee (not directory-verified): "
+                    + synthetic_owner_identity(owner, capability.target)
+                )
             _render_evidence(action.evidence, "Supporting evidence")
             edits.append(
                 {
@@ -4019,7 +4042,7 @@ def _delivery_context(reviewed_result: GovernanceResult):
     snapshot = st.session_state.get(CONFLUENCE_SNAPSHOT_KEY)
     manifest = current_review_input_manifest(st.session_state)
     capability = (
-        configured_delivery_capability(confirmed_manifest=manifest)
+        configured_delivery_capability(confirmed_manifest=manifest, review_result=reviewed_result)
         if review_input_readiness(st.session_state).confirmed
         else None
     )
@@ -4093,10 +4116,12 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
             st.caption(blocker)
     else:
         st.warning(
-            "Synthetic target · no network. Create work item uses only an in-memory fake gateway."
+            "Synthetic target · no network. Owners and parent references resolve to local "
+            "simulated identities, not verified enterprise records. Create uses only "
+            "an in-memory fake gateway."
         )
         target = capability.target
-        with st.expander("Configured target and field mappings", expanded=False):
+        with st.expander("Local simulated target and field mappings", expanded=False):
             st.json(target.model_dump(mode="json"))
         st.caption(
             f"Target: {target.project} · Type: {target.work_item_type} · "
@@ -4152,7 +4177,8 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
             st.info(
                 "Use Back to Human Review to correct the named action, "
                 "then confirm the record again. "
-                "Source-controlled parent and target mappings cannot be edited here."
+                "To change the governance ticket, return to Review Inputs "
+                "and confirm the package again."
             )
         if _workflow_action_button(
             "Preview Azure DevOps request",

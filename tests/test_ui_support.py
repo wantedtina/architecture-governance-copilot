@@ -1727,3 +1727,15 @@ def test_explicit_mapped_owner_choice_preserves_other_action_fields():
     choose_review_action_owner(state, 0, "Avery Patel")
     assert state["agc_field_action_0_owner"] == "Avery Patel"
     assert state["agc_field_action_0_title"] == "Reviewed title"
+
+
+def test_custom_owner_is_preserved_in_reviewed_result_and_outputs(sample_result):
+    form = default_review_form_data(sample_result)
+    actions = _editable_mappings(form.action_items)
+    actions[0]["owner"] = "Custom Owner / Team"
+    form = replace(form, action_items=tuple(actions))
+    reviewed = build_reviewed_result(sample_result, form)
+    outputs = GovernanceReviewService(DeterministicDemoExtractor()).generate_outputs(reviewed)
+    assert reviewed.action_items[0].owner == "Custom Owner / Team"
+    assert reviewed.action_items[0].evidence == sample_result.action_items[0].evidence
+    assert "Custom Owner / Team" in outputs.review_minutes

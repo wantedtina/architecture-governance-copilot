@@ -282,8 +282,9 @@ automatically carry findings between rounds.
   facts; never infer capability solely from the visible analysis-mode label. Offline has no target.
 - Report Ready, Not applicable, Unavailable, In progress, Succeeded, Failed, or Needs reconciliation
   separately from local completion. Present every confirmed action with readiness and operation state.
-- Resolve owner identities only through the authorized stable target mapping. Missing required
-  owner/date/parent or unmapped owner/priority/parent blocks preparation with an action-specific
+- Resolve Internal fake owner/parent values through deterministic local mappings, preserving
+  canonical aliases and supporting arbitrary nonblank text. Missing required owner/date/parent
+  or invalid priority mapping blocks preparation with an action-specific
   explanation. Return to Human Review for editable corrections; do not rewrite reviewed ownership.
 - Keep project, type, API version, parent, classifications, identities, and priorities read-only.
 - Maintain independent delivery selection and one active exact request/confirmation. Preserve
@@ -355,8 +356,8 @@ automatically carry findings between rounds.
 - The SI may contain headings and plain text rather than production Confluence markup.
 - The transcript contains synthetic speakers and timestamps or line references.
 - The Domain Architect reviews and owns the final outcome.
-- The ADO ticket identifier is metadata in the offline workflow and a validated parent mapping in
-  the fake publication contract.
+- The ADO ticket identifier is metadata in the offline workflow and an explicitly simulated parent mapping in
+  the fake publication contract. No remote parent existence is asserted.
 - A single Streamlit session is sufficient; no durable state or concurrent use is required.
 - The optional LLM provider is not required for the primary demo.
 
@@ -814,10 +815,10 @@ Internal fake in development/test accepts edited transcript and editable review 
 its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
 changed text uses the same conservative literal grouping as Offline without invoking that provider.
 AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Owner, date and parent mappings remain required:
-use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
-the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
-old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.
+manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
+supported through deterministic local simulated mappings; no sample allowlist is required.
+Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
+no real AIF, Confluence or ADO is used.
 
 
 Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
@@ -827,8 +828,17 @@ An ownership acknowledgement is attached to a preceding action only when speaker
 non-date task words uniquely match; otherwise it remains an unclassified line for human review.
 This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
 
-Human Review labels owner/date as required for configured fake Delivery, offers mapped synthetic
-owner buttons, and names missing delivery fields before confirmation. These are explicit human
+Human Review labels owner/date as required for configured fake Delivery, offers optional sample
+owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
 choices, not automatic assignments. Local output confirmation remains available for incomplete
-or unmapped actions; their fake Delivery stays blocked. Default synthetic provider identities are
+actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
 now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
+
+
+Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
+receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque
+positive local IDs. These IDs do not represent verified enterprise users or existing ADO records.
+Review Inputs shows the simulated parent ID; Human Review shows the simulated assignee. Reviewed
+names and ticket text remain unchanged in outputs. Preview confirmation binds these resolved maps;
+changing a reviewed value revokes the preview while stable correlations retain duplicate guards.
+Offline continues to accept custom review values for local outputs, without a Delivery capability.

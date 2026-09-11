@@ -27,9 +27,14 @@ from architecture_governance_copilot.integrations.confluence import (
     ConfluenceReader,
     FakeConfluenceContentTransport,
 )
-from architecture_governance_copilot.models import ReviewInputManifest, SolutionIntentReviewContext
+from architecture_governance_copilot.models import (
+    GovernanceResult,
+    ReviewInputManifest,
+    SolutionIntentReviewContext,
+)
 from architecture_governance_copilot.publication import AdoDeliveryCapability
 from architecture_governance_copilot.synthetic_aif import SyntheticReviewResponder
+from architecture_governance_copilot.synthetic_delivery import resolve_synthetic_target
 
 INTERNAL_FAKE_ENABLED_ENV = "AGC_INTERNAL_FAKE_ENABLED"
 INTERNAL_FAKE_PROVIDER_ID_ENV = "AGC_INTERNAL_FAKE_PROVIDER_ID"
@@ -263,6 +268,7 @@ def configured_delivery_capability(
     environ: Mapping[str, str] | None = None,
     *,
     confirmed_manifest: ReviewInputManifest | None = None,
+    review_result: GovernanceResult | None = None,
 ) -> AdoDeliveryCapability | None:
     """Resolve the explicitly enabled fake capability independently of the UI mode label."""
     environment = os.environ if environ is None else environ
@@ -316,5 +322,15 @@ def configured_delivery_capability(
                 "transcript_fingerprint": confirmed_manifest.transcript_fingerprint,
                 "metadata_fingerprint": confirmed_manifest.metadata_fingerprint,
             }
+        )
+    if review_result is not None:
+        if (
+            confirmed_manifest is None
+            or hashlib.sha256(review_result.context.model_dump_json().encode()).hexdigest()
+            != confirmed_manifest.metadata_fingerprint
+        ):
+            return None
+        capability = capability.model_copy(
+            update={"target": resolve_synthetic_target(capability.target, review_result)}
         )
     return capability

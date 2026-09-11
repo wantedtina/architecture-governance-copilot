@@ -1491,7 +1491,7 @@ def test_demo_human_outcome_without_transcript_support(outcome, profile, monkeyp
         assert "Reviewer-selected" in app.session_state[OUTPUTS_KEY].review_minutes
 
 
-@pytest.mark.parametrize("ticket", ["SYN-204", "DEMO-UNMAPPED"])
+@pytest.mark.parametrize("ticket", ["SYN-204", "SYN-205", "Custom governance / round two", ""])
 def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket):
     from datetime import date
 
@@ -1520,8 +1520,8 @@ def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket)
     assert app.session_state[ANALYZED_RESULT_KEY].context.domain_architect == "Demo Reviewer"
     app.switch_page("pages/human_review.py").run()
     assert any("Before Delivery" in item.value for item in app.warning)
-    app.button(key="agc_choose_owner_0_Avery Patel").click().run()
-    assert app.text_input(key="agc_field_action_0_owner").value == "Avery Patel"
+    app.text_input(key="agc_field_action_0_owner").input("Taylor Demo / Platform").run()
+    assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Demo / Platform"
     app.date_input(key="agc_field_action_0_due_date").set_value(date(2026, 9, 20)).run()
     app.selectbox(key="agc_field_outcome").set_value("approved").run()
     app.button(key="agc_confirm_review").click().run()
@@ -1530,11 +1530,58 @@ def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket)
     app.button(key="agc_continue_delivery").click().run()
     app.switch_page("pages/work_item_delivery.py").run()
     assert not app.exception
-    if ticket == "SYN-204":
+    if ticket:
         assert not app.button(key="agc_prepare_ado_publication").disabled
         _create_selected(app)
         assert any("Succeeded" in item.value for item in app.caption)
+        assert app.session_state[REVIEWED_RESULT_KEY].context.ado_ticket_id == ticket
+        assert (
+            app.session_state[REVIEWED_RESULT_KEY].action_items[0].owner == "Taylor Demo / Platform"
+        )
+        assert app.button(key="agc_prepare_ado_publication").disabled
+        assert len(app.session_state[ADO_FAKE_GATEWAY_KEY].create_calls) == 1
     else:
         assert app.button(key="agc_prepare_ado_publication").disabled
         assert any("parent" in item.value.lower() for item in app.warning)
     assert not any("fingerprint" in item.value for item in app.warning)
+
+
+def test_offline_custom_review_values_remain_local_only(monkeypatch):
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", "demo")
+    app = _review_inputs_app()
+    for key in ("agc_load_review_source", "agc_load_review_transcript", "agc_load_review_metadata"):
+        app.button(key=key).click().run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input("Action: custom local output.").run()
+    app.text_input(key="agc_metadata_ticket").input("Custom review / offline").run()
+    app.button(key="agc_confirm_review_inputs").click().run()
+    app.button(key="agc_analyze").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("Custom Reviewer").run()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    assert "Custom Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
+    app.button(key="agc_continue_delivery").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert any("No delivery provider" in item.value for item in app.info)
+    assert not any(button.key == "agc_submit_ado_publication" for button in app.button)
+    assert not app.exception
+
+
+def test_custom_owner_edit_revokes_preview_and_requires_confirmation(monkeypatch):
+    app = _fake_delivery_app(monkeypatch)
+    app.button(key="agc_prepare_ado_publication").click().run()
+    app.button(key="agc_confirm_ado_publication").click().run()
+    original = app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY]
+    app.button(key="agc_delivery_back_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("New custom owner").run()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/work_item_delivery.py").run()
+    assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    app.button(key="agc_prepare_ado_publication").click().run()
+    current = app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY]
+    assert current.request.correlation_id == original.request.correlation_id
+    assert current.mapping_fingerprint != original.mapping_fingerprint
+    assert app.button(key="agc_confirm_ado_publication")
+    assert not app.exception
