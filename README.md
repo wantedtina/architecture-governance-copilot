@@ -226,6 +226,34 @@ AGC_INTERNAL_FAKE_ENABLED=1 uv run streamlit run app.py
 This flag enables only in-memory fakes. It does not accept credentials or connect to Confluence,
 AIF, Microsoft Teams, or Azure DevOps.
 
+### Local environment file
+
+To keep local settings together, copy the committed template once, only if you do not already
+have a local `.env`:
+
+```bash
+cp -n .env.example .env
+uv run --env-file .env streamlit run app.py
+```
+
+The template uses `demo` with fake disabled. For local fake development, change these two values
+in `.env` together:
+
+```dotenv
+AGC_DEPLOYMENT_PROFILE=development
+AGC_INTERNAL_FAKE_ENABLED=true
+```
+
+The template also documents the optional processing delay and fake provider identity. Restart the
+application after editing `.env`. The application does not automatically read this file; `uv`
+loads it only when requested with `--env-file`. Existing shell environment variables take precedence
+over file values, so unset conflicting exported `AGC_` settings before using the file.
+
+Keep `.env` local; Git ignores it and `.env.*` except the documented `.env.example` template.
+Commit only synthetic defaults and comments in the template, never credentials or confidential
+values. Plain `uv run streamlit run app.py` remains the zero-configuration offline entry point
+when no overriding environment is set. No additional dotenv dependency is required.
+
 ### Deployment profiles
 
 Set `AGC_DEPLOYMENT_PROFILE` before starting the process. Restart after changing configuration;
