@@ -170,6 +170,7 @@ from architecture_governance_copilot.ui_support import (
     delivery_original_action_index,
     delivery_outputs_available,
     delivery_status,
+    drafting_evidence_is_saved,
     drafting_input_fingerprint,
     drafting_result_is_stale,
     edit_drafting_evidence,
@@ -194,6 +195,7 @@ from architecture_governance_copilot.ui_support import (
     retain_drafting_source_widget_state,
     retain_review_widget_state,
     review_input_readiness,
+    save_drafting_evidence,
     select_delivery_action,
     set_active_stage,
     start_workflow,
@@ -1465,6 +1467,8 @@ def _render_project_context_stage() -> None:
     _render_selected_source_package(st.session_state)
 
     blockers = project_context_readiness(st.session_state)
+    if not drafting_evidence_is_saved(st.session_state):
+        blockers += ("Save evidence before confirming the context.",)
     if blockers:
         st.warning("Context not ready: " + " ".join(blockers))
     else:
@@ -1547,7 +1551,16 @@ def _render_drafting_evidence_inputs() -> None:
             )
             if (text or "") != item.text:
                 edit_drafting_evidence(st.session_state, item.evidence_id, text or "")
-                st.rerun()
+
+    if st.button("Save evidence", key="agc_evidence_save", type="primary"):
+        try:
+            save_drafting_evidence(st.session_state)
+        except ValueError as exc:
+            st.error(str(exc))
+    if drafting_evidence_is_saved(st.session_state):
+        st.success("Evidence saved for this session. You can confirm the context below.")
+    else:
+        st.info("Evidence not saved. Add or edit the text, then select Save evidence.")
 
 
 def _render_project_context_summary(project_context: DraftingSourceInventory) -> None:
@@ -1629,6 +1642,10 @@ def _render_drafting_stage() -> None:
         DraftingSourcePackageManifest,
     )
 
+    generation_blockers = project_context_readiness(st.session_state, check_provider=True)
+    for blocker in generation_blockers:
+        st.warning(blocker)
+
     with st.container(border=True):
         st.markdown(
             '<p class="agc-section-label">DRAFTING ACTIONS</p>',
@@ -1641,7 +1658,7 @@ def _render_drafting_stage() -> None:
             "Regenerate SI Draft" if draft_available else "Generate SI Draft",
             key="agc_generate_si_draft",
             type="primary",
-            disabled=not drafting_context_ready,
+            disabled=not drafting_context_ready or bool(generation_blockers),
             help=(
                 "Provide a project name, SI template, and source-code context before "
                 "generating a draft."

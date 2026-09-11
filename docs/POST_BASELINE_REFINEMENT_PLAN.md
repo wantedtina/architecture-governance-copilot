@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 08 completed and verified.
+Execution authority: `NONE` — Batch 09 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -852,6 +852,15 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - The user explicitly requested implementation and verification. Batch 08 records bounded details;
   this correction supersedes Batch 04's inventory-only evidence interaction, not its historical
   completion evidence. Live ADO discovery remains deferred.
+
+### R12 — Separate evidence saving, context confirmation, and generation eligibility
+
+- **State:** `Verified`
+- **Approval:** The user explicitly approved the proposed correction.
+- Provide explicit evidence saving and visible saved/unsaved status. Valid saved custom evidence
+  permits Context confirmation and navigation. Enforce deterministic compatibility at generation.
+- Preserve inputs, traceability, human confirmation, and source-change invalidation. No new provider.
+- Supersedes R11's pre-confirmation provider blocker; Batch 08 remains historical evidence.
 
 ## 6. Accepted intake and dependency sequencing
 

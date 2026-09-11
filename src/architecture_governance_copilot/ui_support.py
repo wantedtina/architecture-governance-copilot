@@ -1363,7 +1363,7 @@ def open_demonstration_project_into_state(
 
 
 def project_context_readiness(
-    state: Mapping[str, Any], *, check_provider: bool = True
+    state: Mapping[str, Any], *, check_provider: bool = False
 ) -> tuple[str, ...]:
     """Return concise blockers for the currently selected drafting sources."""
     try:
@@ -1449,6 +1449,8 @@ def refresh_project_context(state: MutableMapping[str, Any]) -> bool:
 def confirm_project_context_for_drafting(state: MutableMapping[str, Any]) -> None:
     """Confirm selected synthetic sources and hand them to SI drafting."""
     blockers = project_context_readiness(state)
+    if DRAFT_EVIDENCE_KEY in state and not drafting_evidence_is_saved(state):
+        blockers += ("Save evidence before confirming the context.",)
     if blockers:
         raise ValueError(" ".join(blockers))
     inventory = drafting_inventory_with_evidence(state)
@@ -2665,3 +2667,17 @@ def drafting_inventory_with_evidence(state: Mapping[str, Any]) -> DraftingSource
             )
         )
     return DraftingSourceInventory(**{**inventory.model_dump(), "resources": tuple(resources)})
+
+
+def drafting_evidence_is_saved(state: Mapping[str, Any]) -> bool:
+    """Compare the current evidence with the last explicitly saved snapshot."""
+    items = state.get(DRAFT_EVIDENCE_KEY, ())
+    return bool(items) and state.get("agc_evidence_saved") == items
+
+
+def save_drafting_evidence(state: MutableMapping[str, Any]) -> None:
+    """Validate and save evidence locally without checking generation eligibility."""
+    if not state.get(DRAFT_EVIDENCE_KEY):
+        raise ValueError("Add evidence before saving.")
+    drafting_inventory_with_evidence(state)
+    state["agc_evidence_saved"] = tuple(state[DRAFT_EVIDENCE_KEY])

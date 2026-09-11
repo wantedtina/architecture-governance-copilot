@@ -445,3 +445,8 @@ confidential architecture information, meeting transcript, personal data, secret
 credential. It is not production-ready and does not provide live Confluence, Microsoft Teams,
 or Azure DevOps connectivity. The opt-in fakes make no network request and do not change this
 statement.
+
+Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
+the session; the visible status changes back to unsaved after editing, adding, or removing content.
+Valid saved custom evidence can reach the drafting step. There, unsupported inputs disable
+**Generate SI Draft** with an explanation; no sample output is substituted.

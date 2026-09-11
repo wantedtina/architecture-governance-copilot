@@ -373,6 +373,7 @@ def test_drafted_si_confirmation_ends_drafting_before_separate_review() -> None:
 
     app.button(key="agc_open_demonstration_project").click().run()
     app.button(key="agc_evidence_sample").click().run()
+    app.button(key="agc_evidence_save").click().run()
     app.switch_page("pages/project_context.py").run()
 
     _assert_active_step(app, "Project Context")
@@ -464,6 +465,7 @@ def test_project_context_blocks_incomplete_provider_package() -> None:
     app.switch_page("pages/project_context.py").run()
     app.button(key="agc_open_demonstration_project").click().run()
     app.button(key="agc_evidence_sample").click().run()
+    app.button(key="agc_evidence_save").click().run()
     app.switch_page("pages/project_context.py").run()
 
     app.button(key="agc_evidence_remove_supporting-context-v1").click().run()
@@ -1263,7 +1265,13 @@ def test_project_context_user_notes_are_retained_and_never_generate_sample():
         "Synthetic custom constraints"
     ).run()
     assert app.button(key="agc_confirm_project_context").disabled
+    app.button(key="agc_evidence_save").click().run()
+    assert not app.button(key="agc_confirm_project_context").disabled
+    app.button(key="agc_confirm_project_context").click().run()
+    app.switch_page("pages/solution_intent_drafting.py").run()
+    assert app.button(key="agc_generate_si_draft").disabled
     assert any("Custom-input drafting" in item.value for item in app.warning)
+    app.switch_page("pages/project_context.py").run()
     app.button(key="agc_refresh_project_context").click().run()
     assert (
         app.text_area(key="agc_evidence_text_user-evidence-0001").value
@@ -1277,6 +1285,7 @@ def test_project_context_user_notes_are_retained_and_never_generate_sample():
     )
     app.button(key="agc_evidence_remove_user-evidence-0001").click().run()
     app.button(key="agc_evidence_sample").click().run()
+    app.button(key="agc_evidence_save").click().run()
     assert not app.button(key="agc_confirm_project_context").disabled
     app.button(key="agc_confirm_project_context").click().run()
     app.switch_page("pages/solution_intent_drafting.py").run()
@@ -1298,6 +1307,7 @@ def test_repository_selector_filters_revisions_and_rejects_unsupported_content()
     app.switch_page("pages/project_context.py").run()
     app.button(key="agc_open_demonstration_project").click().run()
     app.button(key="agc_evidence_sample").click().run()
+    app.button(key="agc_evidence_save").click().run()
     inventory = app.session_state[ui_support.PROJECT_CONTEXT_KEY]
     repository = inventory.resource_for_role(DraftingSourceRole.REPOSITORY)
     alternate = repository.model_copy(
@@ -1317,6 +1327,9 @@ def test_repository_selector_filters_revisions_and_rejects_unsupported_content()
     assert app.selectbox(key="agc_context_repository_widget").value is None
     app.selectbox(key="agc_context_repository_widget").set_value(alternate.resource_id).run()
     assert app.session_state[ui_support.CONTEXT_REPOSITORY_ID_KEY] == alternate.resource_id
-    assert app.button(key="agc_confirm_project_context").disabled
+    assert not app.button(key="agc_confirm_project_context").disabled
+    app.button(key="agc_confirm_project_context").click().run()
+    app.switch_page("pages/solution_intent_drafting.py").run()
+    assert app.button(key="agc_generate_si_draft").disabled
     assert any("Custom-input" in item.value for item in app.warning)
     assert not app.exception

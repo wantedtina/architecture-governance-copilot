@@ -89,6 +89,7 @@ from architecture_governance_copilot.ui_support import (
     current_review_mode,
     current_workflow,
     default_review_form_data,
+    drafting_evidence_is_saved,
     humanize,
     initialize_session_state,
     input_fingerprint,
@@ -110,6 +111,7 @@ from architecture_governance_copilot.ui_support import (
     restore_review_widget_state,
     review_input_readiness,
     sample_paths,
+    save_drafting_evidence,
     set_active_stage,
     source_package_fingerprint,
     start_workflow,
@@ -1531,11 +1533,19 @@ def test_user_drafting_evidence_is_preserved_in_manifest_and_blocks_fake_generat
     evidence = manifest.resources[-1]
     assert evidence.provenance.value == "user_uploaded"
     assert "sha256" in evidence.source_reference
-    assert any("Custom-input" in item for item in project_context_readiness(state))
-    with pytest.raises(ValueError, match="Custom-input"):
+    assert project_context_readiness(state) == ()
+    assert any(
+        "Custom-input" in item for item in project_context_readiness(state, check_provider=True)
+    )
+    with pytest.raises(ValueError, match="Save evidence"):
         confirm_project_context_for_drafting(state)
+    save_drafting_evidence(state)
+    confirm_project_context_for_drafting(state)
+    assert drafting_evidence_is_saved(state)
     reference = evidence.source_reference
     edit_drafting_evidence(state, evidence.resource_id, "Edited synthetic constraints")
+    assert not drafting_evidence_is_saved(state)
+    assert not state[PROJECT_CONTEXT_CONFIRMED_KEY]
     edited = build_drafting_source_package(state).resources[-1]
     assert edited.provenance.value == "user_entered"
     assert edited.source_reference == reference
@@ -1577,6 +1587,7 @@ def test_explicit_sample_evidence_can_be_confirmed_but_edit_revokes_only_draftin
     open_demonstration_project_into_state(state, load_sample_drafting_context())
     state[DRAFT_EVIDENCE_KEY] = ()
     load_drafting_sample_evidence(state)
+    save_drafting_evidence(state)
     confirm_project_context_for_drafting(state)
     state[OUTPUTS_KEY] = "independent review"
     edit_drafting_evidence(state, "supporting-context-v1", "User modification")

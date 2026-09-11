@@ -82,7 +82,7 @@ The drafting journey is:
 2. Open the bundled synthetic project workspace and inspect its available source package.
 3. Inspect the read-only governed template and governance metadata; select a repository and
    revision from the authorized synthetic inventory. Add or upload editable supporting evidence,
-   then confirm the exact fingerprint-bound source-package manifest.
+   select **Save evidence**, then confirm the exact fingerprint-bound source-package manifest.
 4. Generate a deterministic SI draft behind the drafting-provider interface.
 5. Let a project-team reviewer edit and confirm the draft, inspect its provenance, and download the
    unpublished Markdown artifact for manual transfer.
@@ -129,7 +129,7 @@ automatically carry findings between rounds.
 - Offer **Add sample evidence** explicitly; never replace custom input with sample content. Record
   user-entered/uploaded provenance, original upload SHA-256 reference, and current content SHA-256.
   User content is not externally verified. Refresh and navigation preserve evidence; reset clears it.
-- Block unsupported custom packages before confirmation, while retaining their content. The current
+- Allow valid saved custom packages to be confirmed; block unsupported generation on the drafting page. The current
   deterministic provider accepts only its exact sample inputs. Source edits invalidate drafting
   confirmation and artifacts without clearing independent review or publication history.
 - Show stable resource IDs, canonical synthetic references, versions or revisions, exact SHA-256
@@ -752,3 +752,8 @@ approval and a bounded execution plan.
 
 Multi-round tracking, version comparison, and finding resolution are deliberately absent from
 this plan's MVP phases.
+
+Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
+the session; the visible status changes back to unsaved after editing, adding, or removing content.
+Valid saved custom evidence can reach the drafting step. There, unsupported inputs disable
+**Generate SI Draft** with an explanation; no sample output is substituted.
