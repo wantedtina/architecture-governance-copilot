@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 16 completed and verified.
+Execution authority: `NONE` — Batch 17 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -922,6 +922,13 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
 - **Approval:** User approved correcting off-screen error feedback across workflow steps.
 - Keep persistent errors visible near primary actions, retain contextual detail and inputs, and
   clear stale feedback after correction. Preserve validation, invalidation and delivery safeguards.
+
+### R21 — Bind missing review outcome evidence before confirmation
+
+- **State:** `Verified`
+- **Approval:** User approved selecting current transcript evidence for a stated outcome, immediate
+  field-level validation and a useful error message. Not stated remains valid without evidence.
+- Preserve evidence validation and immutable original quotes; never fabricate outcome support.
 
 ## 6. Accepted intake and dependency sequencing
 

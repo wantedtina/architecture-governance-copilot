@@ -201,6 +201,7 @@ from architecture_governance_copilot.ui_support import (
     review_input_readiness,
     save_drafting_evidence,
     select_delivery_action,
+    selected_outcome_evidence,
     set_active_stage,
     start_workflow,
     store_analysis,
@@ -212,6 +213,7 @@ from architecture_governance_copilot.ui_support import (
     store_si_draft,
     store_transcript_component,
     switch_review_mode,
+    transcript_evidence_options,
     update_live_drafting_source_package,
 )
 
@@ -2958,16 +2960,43 @@ def _render_human_review_stage(
                 key="agc_field_outcome",
             )
         _render_field_change(pending, "Review outcome", None, "Outcome", target=outcome_column)
+        outcome_evidence = None
         with evidence_column:
+            if not analyzed_result.outcome_evidence:
+                options = transcript_evidence_options(str(st.session_state[TRANSCRIPT_KEY]))
+                lines = st.multiselect(
+                    "Supporting transcript lines",
+                    options=list(options),
+                    format_func=lambda line: f"Line {line}: {options[line]}",
+                    key="agc_field_outcome_lines",
+                    help=(
+                        "Select original text that supports your chosen outcome. "
+                        "Quotes remain read-only."
+                    ),
+                )
+                outcome_evidence = selected_outcome_evidence(
+                    str(st.session_state[TRANSCRIPT_KEY]), lines
+                )
             _render_evidence(
-                analyzed_result.outcome_evidence,
+                analyzed_result.outcome_evidence if outcome_evidence is None else outcome_evidence,
                 "Outcome supporting evidence",
             )
+            missing_outcome_evidence = review_outcome != ReviewOutcome.NOT_STATED.value and not (
+                analyzed_result.outcome_evidence or outcome_evidence
+            )
+            if missing_outcome_evidence:
+                st.warning("Select supporting transcript evidence for the review outcome.")
+            elif not analyzed_result.outcome_evidence:
+                st.caption(
+                    "Not stated can be confirmed without outcome evidence. "
+                    "Selecting evidence does not constitute formal architecture approval."
+                )
 
     submitted = _workflow_action_button(
         "Confirm Reviewed Record & Generate Outputs",
         summary=_pending_change_caption(pending),
         key="agc_confirm_review",
+        disabled=missing_outcome_evidence,
         type="primary",
         width="stretch",
     )
@@ -3015,6 +3044,7 @@ def _render_human_review_stage(
     return (
         ReviewFormData(
             review_outcome=review_outcome,
+            outcome_evidence=outcome_evidence,
             decisions=tuple(decisions),
             findings=tuple(findings),
             risks=tuple(risks),

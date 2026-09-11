@@ -1644,3 +1644,34 @@ def test_delivery_selection_clears_feedback_without_clearing_history():
     clear_stale_operation_error(state)
     assert state["agc_error"] is None
     assert state["agc_ado_publication_history"] is history
+
+
+def test_outcome_evidence_binding_and_guard():
+    from dataclasses import replace
+
+    from architecture_governance_copilot.evidence_validation import validate_governance_evidence
+    from architecture_governance_copilot.models import GovernanceResult, ReviewOutcome
+    from architecture_governance_copilot.ui_support import (
+        build_reviewed_result,
+        default_review_form_data,
+        selected_outcome_evidence,
+    )
+
+    root = Path(__file__).resolve().parents[1] / "samples"
+    canonical = GovernanceResult.model_validate_json((root / "expected_result.json").read_text())
+    analyzed = canonical.model_copy(
+        update={"review_outcome": ReviewOutcome.NOT_STATED, "outcome_evidence": []}
+    )
+    form = default_review_form_data(analyzed)
+    assert build_reviewed_result(analyzed, form).review_outcome is ReviewOutcome.NOT_STATED
+    stated = replace(form, review_outcome="changes_requested")
+    with pytest.raises(ValueError, match="Select supporting transcript evidence"):
+        build_reviewed_result(analyzed, stated)
+    transcript = (root / "review_transcript.txt").read_text()
+    bound = replace(stated, outcome_evidence=selected_outcome_evidence(transcript, [29]))
+    reviewed = build_reviewed_result(analyzed, bound)
+    validate_governance_evidence(reviewed, (root / "solution_intent.md").read_text(), transcript)
+    assert reviewed.outcome_evidence[0].reference == "transcript-line-29"
+    assert analyzed.outcome_evidence == []
+    with pytest.raises(ValueError, match="Select evidence from the current transcript"):
+        selected_outcome_evidence("New source", [29])

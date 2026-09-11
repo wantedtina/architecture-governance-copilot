@@ -26,9 +26,11 @@ from architecture_governance_copilot.models import (
     DraftingSourceResource,
     DraftingSourceRole,
     DraftingValidationStatus,
+    EvidenceSource,
     GovernanceResult,
     ReviewInputManifest,
     ReviewInputProvenance,
+    ReviewOutcome,
     SelectedDraftingSource,
     SolutionIntentDraft,
     SolutionIntentDraftRequest,
@@ -226,6 +228,7 @@ class ReviewFormData:
     action_items: tuple[Mapping[str, object], ...]
     open_questions: tuple[Mapping[str, object], ...]
     missing_evidence: tuple[Mapping[str, object], ...]
+    outcome_evidence: tuple[SourceEvidence, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -2006,6 +2009,14 @@ def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult)
         action_items=collection_values(defaults.action_items, "action"),
         open_questions=collection_values(defaults.open_questions, "question"),
         missing_evidence=collection_values(defaults.missing_evidence, "missing"),
+        outcome_evidence=(
+            selected_outcome_evidence(
+                str(state.get(TRANSCRIPT_KEY, "")),
+                state.get("agc_field_outcome_lines", []),
+            )
+            if not result.outcome_evidence
+            else None
+        ),
     )
 
 
@@ -2019,6 +2030,32 @@ def build_pending_review_changes(
     validation_issues: list[ReviewValidationIssue] = []
 
     outcome = form_data.review_outcome.strip()
+    evidence = (
+        form_data.outcome_evidence
+        if form_data.outcome_evidence is not None
+        else tuple(analyzed_result.outcome_evidence)
+    )
+    if outcome != ReviewOutcome.NOT_STATED.value and not evidence:
+        validation_issues.append(
+            ReviewValidationIssue(
+                collection="Review outcome",
+                item_index=None,
+                item_name="Governance outcome",
+                field="Supporting evidence",
+                message="Select supporting transcript evidence for the review outcome.",
+            )
+        )
+    if tuple(analyzed_result.outcome_evidence) != evidence:
+        field_changes.append(
+            ReviewFieldChange(
+                collection="Review outcome",
+                item_index=None,
+                item_name="Governance outcome",
+                field="Supporting evidence",
+                before=_evidence_summary(analyzed_result.outcome_evidence),
+                after=_evidence_summary(evidence),
+            )
+        )
     if outcome != analyzed_result.review_outcome.value:
         field_changes.append(
             ReviewFieldChange(
@@ -2162,10 +2199,17 @@ def build_reviewed_result(
         len(analyzed_result.missing_evidence),
     )
 
+    evidence = (
+        form_data.outcome_evidence
+        if form_data.outcome_evidence is not None
+        else analyzed_result.outcome_evidence
+    )
+    if form_data.review_outcome != ReviewOutcome.NOT_STATED.value and not evidence:
+        raise ValueError("Select supporting transcript evidence for the review outcome.")
     payload: dict[str, object] = {
         "context": analyzed_result.context.model_copy(deep=True),
         "review_outcome": form_data.review_outcome,
-        "outcome_evidence": _copy_evidence(analyzed_result.outcome_evidence),
+        "outcome_evidence": _copy_evidence(evidence),
         "decisions": [
             {
                 "statement": _required_text(edit, "statement"),
@@ -2276,6 +2320,18 @@ def build_review_change_summary(
                 field="Outcome",
                 before=_summary_value(analyzed_result.review_outcome),
                 after=_summary_value(reviewed_result.review_outcome),
+            )
+        )
+
+    if analyzed_result.outcome_evidence != reviewed_result.outcome_evidence:
+        field_changes.append(
+            ReviewFieldChange(
+                collection="Review",
+                item_index=None,
+                item_name="Governance outcome",
+                field="Supporting evidence",
+                before=_evidence_summary(analyzed_result.outcome_evidence),
+                after=_evidence_summary(reviewed_result.outcome_evidence),
             )
         )
 
@@ -2724,3 +2780,28 @@ def clear_stale_operation_error(state: MutableMapping[str, Any]) -> None:
     ):
         state[ERROR_KEY] = None
         state.pop("agc_operation_error_revision", None)
+
+
+def transcript_evidence_options(transcript: str) -> dict[int, str]:
+    """Use the same normalization and one-based line positions as evidence validation."""
+    normalized = transcript.replace("\r\n", "\n").replace("\r", "\n").strip()
+    return {i: line.strip() for i, line in enumerate(normalized.splitlines(), 1) if line.strip()}
+
+
+def selected_outcome_evidence(transcript: str, lines: list[int]) -> tuple[SourceEvidence, ...]:
+    """Resolve selections from source text, never from user-authored evidence quotes."""
+    options = transcript_evidence_options(transcript)
+    if any(line not in options for line in lines):
+        raise ValueError("Outcome evidence changed. Select evidence from the current transcript.")
+    return tuple(
+        SourceEvidence(
+            source_type=EvidenceSource.MEETING_TRANSCRIPT,
+            quote=options[line],
+            reference=f"transcript-line-{line}",
+        )
+        for line in sorted(set(lines))
+    )
+
+
+def _evidence_summary(evidence) -> str:
+    return " | ".join(f"{item.reference or 'Source'}: {item.quote}" for item in evidence) or "None"

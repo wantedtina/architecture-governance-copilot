@@ -468,3 +468,9 @@ Edit Domain Architect or review round, confirm the input manifest, and analyze. 
 line evidence, assign the action owner/date during Human Review, and confirm before generating
 outputs. Unclassified content can be clarified in the transcript and reanalyzed after confirming
 the changed manifest. No automatic approval or real API call is demonstrated.
+
+When an analyzed outcome has no evidence, Human Review offers Supporting transcript lines.
+Selecting a stated outcome requires at least one original transcript line before confirmation;
+Not stated remains valid without evidence. Selected quotes are read-only and retain line references.
+Evidence binding is recorded as a human change and is cleared with a new analysis. Users must judge
+whether the selected text supports the outcome; selection does not confer formal approval.

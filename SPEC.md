@@ -800,3 +800,9 @@ The canonical transcript retains its original result with current editable metad
 severity, priority, owner, date and outcome still require human inspection and confirmation.
 Shared operation failures remain visible above the persistent action area, including on narrow
 screens. Input corrections clear stale errors; delivery history and protected results remain intact.
+
+When an analyzed outcome has no evidence, Human Review offers Supporting transcript lines.
+Selecting a stated outcome requires at least one original transcript line before confirmation;
+Not stated remains valid without evidence. Selected quotes are read-only and retain line references.
+Evidence binding is recorded as a human change and is cleared with a new analysis. Users must judge
+whether the selected text supports the outcome; selection does not confer formal approval.
