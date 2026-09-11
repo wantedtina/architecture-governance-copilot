@@ -163,7 +163,7 @@ def test_content_api_reader_maps_one_expanded_response_explicitly(
     assert snapshot.page_id == "synthetic-page-204"
     assert snapshot.title == "Solution Intent - Synthetic Order Routing Service"
     assert snapshot.space == "SYNTHETIC"
-    assert snapshot.version == 7
+    assert snapshot.version == 8
     assert snapshot.url == (
         "https://example.invalid/wiki/spaces/SYNTHETIC/pages/synthetic-page-204"
     )
@@ -183,14 +183,14 @@ def test_same_version_with_changed_storage_body_changes_content_identity() -> No
     original_body = _api_body()
     changed_body = copy.deepcopy(original_body)
     changed_body["body"]["storage"]["value"] = changed_body["body"]["storage"]["value"].replace(
-        "The service currently runs in a single availability zone.",
-        "The synthetic service now has a documented recovery option.",
+        "no failover exercise has been scheduled",
+        "a failover exercise has been scheduled",
     )
 
     original = _api_reader(original_body)[0].get_page("synthetic-page-204")
     changed = _api_reader(changed_body)[0].get_page("synthetic-page-204")
 
-    assert original.version == changed.version == 7
+    assert original.version == changed.version == 8
     assert original.raw_body != changed.raw_body
     assert original.content_fingerprint != changed.content_fingerprint
 

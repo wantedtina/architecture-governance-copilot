@@ -1,12 +1,35 @@
 # Solution Intent - Synthetic Order Routing Service
-Synthetic fake-integration content. This document describes no real system.
-## 1. Resilience
-The service currently runs in a single availability zone.
-## 2. Operations
-Production support ownership has not been assigned.
-### Review controls
+Synthetic fake-integration content. This document describes no real organization, customer, production system, or enterprise connection. The scenario exists only to exercise deterministic governance-review contracts with human confirmation.
+## 1. Context and Goals
+The Synthetic Order Routing Service receives fictional commerce orders after checkout and selects one of three synthetic fulfilment providers. The service is intended to isolate provider-specific rules from the fictional storefront while giving operators one traceable view of routing attempts. It does not process real orders, payment credentials, personal data, or production traffic.
+The first release aims to route accepted orders within two seconds under the agreed synthetic load, record every routing decision, and expose a stable status for the calling storefront. Business success is measured through deterministic sample events, not live telemetry. Cost optimization and provider-contract negotiation are outside the architecture decision.
+## 2. Scope
+In scope are order validation, routing-policy evaluation, asynchronous provider submission, status reconciliation, idempotency, operational dashboards, and recovery procedures. The service accepts only the fictional order identifier, destination region, fulfilment class, and non-sensitive package attributes required by the synthetic policy.
+Inventory reservation, payment authorization, customer communications, warehouse scheduling, and provider billing remain upstream or downstream responsibilities. The service does not store customer names, addresses, card data, authentication secrets, or provider credentials in the synthetic scenario. Manual bulk rerouting and long-term analytics are not part of the first release.
+## 3. Architecture Overview
+The proposed design uses a stateless routing API, a durable synthetic order-topic, a routing worker pool, one adapter per fulfilment provider, and a managed relational store for routing state. The API validates requests and writes an accepted command. Workers evaluate the versioned routing policy, persist the selected provider, and invoke the corresponding adapter asynchronously.
+An event-driven asynchronous routing model with provider-specific adapters is the proposed architecture decision. Adapters normalize fictional provider acknowledgements into accepted, rejected, or unknown states. The storefront reads the stable routing status through the API and does not depend directly on a provider response. No component in this fixture contacts an external endpoint.
+## 4. Routing and Data
+Routing policy version synthetic-policy-8 ranks providers by destination region, fulfilment class, declared capacity, and a deterministic tie-break rule. Each command carries a unique synthetic order identifier. The relational store keeps the selected provider, policy version, attempt number, outcome, and timestamps for audit and reconciliation.
+The worker uses the synthetic order identifier as its idempotency key. A repeated command with the same normalized payload returns the prior routing state; a conflicting payload is rejected for review. Routing records are retained for 30 synthetic days, but formal approval of that retention period has not been recorded. Payload bodies are deliberately small and contain no personal information.
+## 5. Integration Behavior
+Each provider adapter has a bounded request timeout and maps its fictional response into the common routing state. A clear rejection may be evaluated against the next eligible provider. An accepted response completes routing. An ambiguous timeout remains unknown until reconciliation checks the provider reference or an operator applies an approved recovery step.
+The current design does not define the retry budget, exponential-backoff limits, or the point at which an unknown response must stop automatic processing. Without those controls, repeated submission after an ambiguous provider response could create duplicate fulfilment. Provider calls in the demonstration are represented only by deterministic local fixtures.
+## 6. Resilience and Recovery
+The routing API and workers are designed for two synthetic availability zones in one region. Durable commands remain on the topic when a worker stops, and another worker may resume processing after the visibility interval. Database backups are retained in the local scenario, and restoration steps are described at a high level.
+Regional recovery uses a warm standby design, but no failover exercise has been scheduled and no measured recovery result exists. The target recovery time is four hours and the target recovery point is fifteen minutes for synthetic routing records. These targets are scenario assumptions until a successful exercise provides evidence.
+## 7. Security and Privacy
+The design assumes workload identity between fictional components, least-privilege access to routing state, encrypted transport, encrypted storage, and centrally managed synthetic secrets. Provider credentials are represented only as absent configuration boundaries; none are included in this repository. Administrative actions require a separate operator role and are recorded in the audit stream.
+The service intentionally excludes personal and payment information. Security logs contain synthetic order identifiers, policy versions, adapters, outcomes, and correlation identifiers. The proposed 30-day routing-record retention period requires governance confirmation before the design can be treated as release ready.
+## 8. Observability
+The service emits request acceptance, routing latency, policy evaluation, provider outcome, retry, unknown-state age, reconciliation, and dead-letter metrics. Logs use correlation identifiers and exclude payload content. Dashboards group synthetic results by provider, region, policy version, and outcome so reviewers can follow the scenario without implying live operational visibility.
+Alert categories have been identified for sustained unknown states, exhausted retries, dead-letter growth, and database availability. Approved numeric alert thresholds and an evidence-backed on-call response target are not yet available. Dashboard color choices and a proposed 90-day aggregate trend are ordinary implementation discussion, not governance decisions in this review.
+## 9. Deployment and Operations
+The release uses an immutable synthetic container image promoted through development, test, and demonstration environments. Schema changes must be backward compatible for one application version. Deployment proceeds through a small synthetic canary before the remaining worker instances are updated, and rollback restores the prior image while leaving durable commands intact.
+The Service Owner is accountable for release readiness, and the Reliability Engineer maintains recovery procedures. A named production support escalation roster and approved after-hours handoff are missing. The current runbook covers worker restart, queue inspection, and reconciliation entry points but does not yet document the complete escalation path.
+## 10. Decisions, Assumptions, and Gaps
+The review is expected to decide whether the event-driven model and provider-adapter boundary are acceptable. The maximum duration for a manual routing override remains an open question because a long override could bypass current capacity signals. Any override must be explicit, time bounded, attributable, and reversible.
+Release readiness depends on documenting retry and backoff controls, scheduling the regional failover exercise, approving routing-record retention, defining alert thresholds, and naming the support escalation roster. Human reviewers must confirm or edit all proposed governance items before any output is generated. External publication remains disabled except for the separately confirmed in-memory fake Azure DevOps path.
 - Synthetic evidence only
 - Human confirmation required
-| Control | State |
-| --- | --- |
-| External publication | Disabled |
+- No live enterprise request

@@ -109,9 +109,11 @@ reviewed record, generated outputs, stale-input fingerprint, and active route st
 database.
 
 An opt-in internal fake mode exercises Confluence read, AIF analysis, and guarded ADO Create
-contracts entirely in memory without network access. It is an integration-development aid, not
-evidence of live enterprise connectivity. Microsoft Teams ingestion and every real transport
-remain deferred.
+contracts entirely in memory without network access. Its separate Synthetic Order Routing Service
+package contains a 1,083-word SI, a 28-line four-participant transcript, and representative
+nonempty findings, decisions, risks, actions, questions, and missing evidence. It is an
+integration-development aid, not evidence of live enterprise connectivity or general semantic
+extraction. Microsoft Teams ingestion and every real transport remain deferred.
 
 See [SPEC.md](SPEC.md) for the complete domain and technical design and [DEMO.md](DEMO.md) for
 the planned recording flow.
@@ -248,10 +250,9 @@ The review flow is: **Review a Solution Intent → load the authoritative SI, tr
 in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
 Reviewed Record & Generate Outputs**.
 The application is fixture-backed and supports only the bundled synthetic drafting and review
-scenario. Human draft edits are preserved in the drafting workflow, but the current deterministic
-review extractor can analyze only the unchanged bundled authoritative SI snapshot; arbitrary SI
-analysis requires a future
-approved provider.
+scenarios. Human draft edits are preserved in the drafting workflow, but the deterministic offline
+extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts
+only its separate fixed package; arbitrary SI analysis requires a future approved provider.
 
 ## Current implementation status
 
@@ -280,6 +281,8 @@ Implemented:
 - enriched mock ADO work-item preview fields;
 - comprehensive model validation tests;
 - a 1,136-word synthetic Solution Intent and 32-line matching review transcript;
+- a distinct 1,083-word Internal fake SI and 28-line matching transcript with representative
+  coverage across every review collection;
 - validated review metadata, expected governance result, and evidence-consistency tests;
 - a synchronous `GovernanceExtractor` protocol; and
 - a fixture-validated `DeterministicDemoExtractor` for offline tests and demo fallback;

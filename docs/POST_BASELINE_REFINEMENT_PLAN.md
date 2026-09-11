@@ -221,7 +221,7 @@ Open decisions to resolve before moving R2 to `Ready`:
 
 ### R3 — Realistic synthetic scenario for the internal fake workflow
 
-- **State:** `Accepted`
+- **State:** `Verified`
 - **Origin:** User acceptance testing of the Internal fake path after the 14 September baseline was
   completed.
 - **Observed behavior:** The primary offline fixture contains a 1,661-word SI and a 32-line review
@@ -272,6 +272,20 @@ Open decisions to resolve before moving R3 to `Ready`:
   replaced by the realistic primary demo package.
 - How fixture changes will remain synchronized across the Confluence storage response, canonical SI,
   transcript, metadata, fake AIF response, runtime wiring, and validation tests.
+
+Readiness resolution proposed in Batch 05 and subject to approval with that plan:
+
+- Retain and expand the distinct `Synthetic Order Routing Service` scenario instead of reusing the
+  offline fixture; keep its existing fictional page, space, and ticket lineage while advancing the
+  page and SI versions together.
+- Target a 900–1,300-word SI and 24–32-line transcript across Domain Architect, Solution Architect,
+  Service Owner, and Reliability Engineer roles.
+- Populate the primary result with three findings, one decision, one risk, two actions, one open
+  question, and two missing-evidence items, all grounded in exact source quotes.
+- Preserve the current minimal successful package under `tests/fixtures/`; keep the existing
+  dedicated zero-item and malformed-response tests outside the primary demo.
+- Assert exact canonical equivalence between the fake Confluence storage body and committed
+  Markdown SI, plus package-wide identity, version, evidence, and runtime synchronization.
 
 ### R4 — Show pending human-review changes before confirmation
 
@@ -800,7 +814,7 @@ new explicit decision and sole active plan.
 | Batch 02 | R2, R5, R8 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_02.md`. |
 | Batch 03 | R4, R6 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_03.md`. |
 | Batch 04 | R1 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_04.md`. |
-| Candidate 05 | R3 | The realistic Internal fake fixture must align with the authoritative review-source contract and revised review workflow from Candidate 02. Scenario-content decisions remain. |
+| Batch 05 | R3 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_05.md`. |
 | Candidate 06 | R7 | Governed work-item delivery depends on the review workflow, authoritative source manifest, confirmed actions, and the rendered-versus-exact presentation policy. Delivery queue, mapping, and recovery decisions remain. |
 | Readiness-gated | R9 | Deployment policy remains accepted but cannot become ready until separately approved live capabilities and their release authority exist; no live connector is authorized by this intake. |
 

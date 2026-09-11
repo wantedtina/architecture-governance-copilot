@@ -2,7 +2,7 @@
   "context": {
     "project_name": "Synthetic Order Routing Service",
     "si_title": "Solution Intent - Synthetic Order Routing Service",
-    "si_version": "0.7",
+    "si_version": "0.8",
     "current_si_status": "under_review",
     "review_round": 1,
     "ado_ticket_id": "SYN-204",
@@ -13,70 +13,210 @@
   "outcome_evidence": [
     {
       "source_type": "meeting_transcript",
-      "quote": "The outcome is changes requested.",
+      "quote": "The review outcome is changes requested until the findings and missing evidence are resolved.",
       "speaker": "Morgan Lee",
-      "timestamp": "09:00",
-      "reference": "provider-reference-1"
+      "timestamp": "09:50",
+      "reference": "provider-reference-outcome"
     }
   ],
   "findings": [
     {
-      "title": "Single-zone recovery option is not documented",
-      "description": "The current design identifies one availability zone without a documented recovery option.",
-      "category": "Resilience",
-      "si_section": "Resilience",
+      "title": "Retry controls are undefined",
+      "description": "The design does not define the retry budget, backoff limits, or automatic-processing stop condition for ambiguous provider responses.",
+      "category": "Integration Resilience",
+      "si_section": "Integration Behavior",
       "severity": "high",
       "status": "open",
-      "recommended_change": "Document the agreed recovery option and its operating procedure.",
-      "owner": "Casey Wong",
-      "due_date": "2026-09-12",
+      "recommended_change": "Document a bounded retry budget, exponential-backoff limits, and the stop condition before another provider submission.",
       "evidence": [
         {
           "source_type": "solution_intent",
-          "quote": "The service currently runs in a single availability zone.",
-          "section": "Resilience",
-          "reference": "provider-reference-2"
+          "quote": "The current design does not define the retry budget, exponential-backoff limits, or the point at which an unknown response must stop automatic processing.",
+          "section": "Integration Behavior",
+          "reference": "provider-reference-finding-1-si"
         },
         {
           "source_type": "meeting_transcript",
-          "quote": "The single-zone design requires a documented recovery option.",
+          "quote": "The retry budget and exponential-backoff limits are not defined, so that is a high-severity finding.",
           "speaker": "Morgan Lee",
-          "timestamp": "09:03",
-          "reference": "provider-reference-3"
+          "timestamp": "09:12",
+          "reference": "provider-reference-finding-1-transcript"
+        }
+      ]
+    },
+    {
+      "title": "Regional failover evidence is missing",
+      "description": "The warm standby design has neither a scheduled exercise nor a measured recovery result.",
+      "category": "Resilience",
+      "si_section": "Resilience and Recovery",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Schedule the regional exercise and record measured recovery results against the draft targets.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Regional recovery uses a warm standby design, but no failover exercise has been scheduled and no measured recovery result exists.",
+          "section": "Resilience and Recovery",
+          "reference": "provider-reference-finding-2-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The warm standby design has no scheduled regional failover exercise or measured recovery result.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:16",
+          "reference": "provider-reference-finding-2-transcript"
+        }
+      ]
+    },
+    {
+      "title": "Routing-record retention lacks approval",
+      "description": "The proposed 30-day routing-record retention period has not received formal governance confirmation.",
+      "category": "Security and Privacy",
+      "si_section": "Security and Privacy",
+      "severity": "medium",
+      "status": "open",
+      "recommended_change": "Obtain and record governance approval for the retention period before release readiness.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "The proposed 30-day routing-record retention period requires governance confirmation before the design can be treated as release ready.",
+          "section": "Security and Privacy",
+          "reference": "provider-reference-finding-3-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Formal approval of the 30-day routing-record retention period is missing, so the privacy control remains open.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:24",
+          "reference": "provider-reference-finding-3-transcript"
         }
       ]
     }
   ],
-  "decisions": [],
-  "risks": [],
+  "decisions": [
+    {
+      "statement": "Use an event-driven asynchronous routing model with provider-specific adapters.",
+      "rationale": "The boundary keeps the storefront independent from provider response formats and timing.",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I confirm the event-driven asynchronous routing model with provider-specific adapters as the architecture decision for this review.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:08",
+          "reference": "provider-reference-decision-1"
+        }
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "description": "An ambiguous provider timeout followed by an unsafe retry could create duplicate fulfilment.",
+      "severity": "high",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Without those controls, repeated submission after an ambiguous provider response could create duplicate fulfilment.",
+          "section": "Integration Behavior",
+          "reference": "provider-reference-risk-1-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "An ambiguous provider timeout followed by an unsafe retry could create duplicate fulfilment, which is a high risk.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:20",
+          "reference": "provider-reference-risk-1-transcript"
+        }
+      ]
+    }
+  ],
   "action_items": [
     {
-      "title": "Document the recovery option",
-      "owner": "Casey Wong",
-      "due_date": "2026-09-12",
+      "title": "Document retry and backoff controls",
+      "owner": "Riley Chen",
+      "due_date": "2026-09-18",
       "priority": "high",
       "evidence": [
         {
           "source_type": "meeting_transcript",
-          "quote": "I will document a recovery option by 12 September 2026.",
-          "speaker": "Casey Wong",
-          "timestamp": "09:05",
-          "reference": "provider-reference-4"
+          "quote": "I will document the retry budget, backoff limits, and stop condition by 18 September 2026.",
+          "speaker": "Riley Chen",
+          "timestamp": "09:14",
+          "reference": "provider-reference-action-1"
+        }
+      ]
+    },
+    {
+      "title": "Schedule and document the regional failover exercise",
+      "owner": "Avery Patel",
+      "due_date": "2026-09-21",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "I will schedule and document the regional failover exercise by 21 September 2026.",
+          "speaker": "Avery Patel",
+          "timestamp": "09:18",
+          "reference": "provider-reference-action-2"
         }
       ]
     }
   ],
-  "open_questions": [],
-  "missing_evidence": [
+  "open_questions": [
     {
-      "item": "Confirmed production support ownership",
-      "reason": "An accountable production support owner is required before readiness review.",
+      "question": "What is the maximum duration for a manual routing override?",
       "evidence": [
         {
           "source_type": "solution_intent",
-          "quote": "Production support ownership has not been assigned.",
-          "section": "Operations",
-          "reference": "provider-reference-5"
+          "quote": "The maximum duration for a manual routing override remains an open question because a long override could bypass current capacity signals.",
+          "section": "Decisions, Assumptions, and Gaps",
+          "reference": "provider-reference-question-1-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "We need to decide the maximum duration for a manual routing override before release readiness.",
+          "speaker": "Avery Patel",
+          "timestamp": "09:26",
+          "reference": "provider-reference-question-1-transcript"
+        }
+      ]
+    }
+  ],
+  "missing_evidence": [
+    {
+      "item": "Approved alert thresholds and response target",
+      "reason": "Operational readiness cannot be assessed without numeric thresholds and an evidence-backed response target.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Approved numeric alert thresholds and an evidence-backed on-call response target are not yet available.",
+          "section": "Observability",
+          "reference": "provider-reference-missing-1-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "Approved numeric alert thresholds and an evidence-backed on-call response target are not available yet.",
+          "speaker": "Riley Chen",
+          "timestamp": "09:28",
+          "reference": "provider-reference-missing-1-transcript"
+        }
+      ]
+    },
+    {
+      "item": "Production support escalation roster",
+      "reason": "A named escalation roster and approved after-hours handoff are required for release readiness.",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "A named production support escalation roster and approved after-hours handoff are missing.",
+          "section": "Deployment and Operations",
+          "reference": "provider-reference-missing-2-si"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "The runbook does not identify the production support escalation roster or approved after-hours handoff.",
+          "speaker": "Casey Wong",
+          "timestamp": "09:30",
+          "reference": "provider-reference-missing-2-transcript"
         }
       ]
     }

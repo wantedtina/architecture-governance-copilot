@@ -279,7 +279,8 @@ automatically carry findings between rounds.
 ## Assumptions
 
 - The demo runs locally with Python 3.12 and `uv`.
-- One bundled SI and one matching transcript are sufficient for the recorded scenario.
+- One bundled SI and matching transcript are sufficient for the recorded offline scenario; the
+  opt-in Internal fake path uses a separate synchronized synthetic package.
 - The SI may contain headings and plain text rather than production Confluence markup.
 - The transcript contains synthetic speakers and timestamps or line references.
 - The Domain Architect reviews and owns the final outcome.
@@ -629,6 +630,14 @@ The deterministic review extractor:
 
 If either source differs, deterministic mode must report its limitation rather than fabricate an
 analysis. It requires no network, credential, model SDK, Confluence page, Teams API, or ADO API.
+
+The opt-in Internal fake runtime uses a distinct 1,083-word Synthetic Order Routing Service SI,
+28 timestamped transcript lines across four fictional roles, and a fixed fake AIF response. The
+response contains three findings, one decision, one risk, two actions, one open question, and two
+missing-evidence items. The fake Confluence storage body canonicalizes exactly to the committed
+Markdown snapshot, and every proposed item is validated against exact SI or transcript evidence
+before locally trusted references are assigned. The richer package exercises the provider-shaped
+contracts and Human Review surface; it does not make a network request or support arbitrary input.
 
 ## Main technical and demo risks
 

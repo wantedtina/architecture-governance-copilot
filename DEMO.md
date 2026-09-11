@@ -58,6 +58,21 @@ The review scenario must yield:
 The record may contain more supporting detail, but the recording should focus on these items. All
 names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
 
+### Optional Internal fake acceptance rehearsal
+
+The opt-in Internal fake path uses a separate **Synthetic Order Routing Service** package and is
+not part of the primary four-minute recording. Its 1,083-word version 0.8 SI is represented by fake
+Confluence page `synthetic-page-204` version 8, and its 28-line transcript contains four fictional
+roles. The fixed fake AIF result proposes three findings, one decision, one risk, two actions, one
+open question, and two missing-evidence items.
+
+When rehearsing this path, enable it explicitly, load the three input components in a non-default
+order, confirm the exact manifest, inspect every Human Review collection, and restore any test edit
+or exclusion before confirmation. Prepare and confirm one exact fake Azure DevOps request, submit
+it once to the in-memory gateway, and verify the deterministic receipt and read-back. State that
+the entire path is synthetic and no-network; its greater fixture depth does not demonstrate live
+enterprise connectivity or general semantic extraction.
+
 ## Preconditions
 
 - Use a clean local checkout with the finalized synthetic fixtures.

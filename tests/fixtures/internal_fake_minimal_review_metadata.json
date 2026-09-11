@@ -1,7 +1,7 @@
 {
   "project_name": "Synthetic Order Routing Service",
   "si_title": "Solution Intent - Synthetic Order Routing Service",
-  "si_version": "0.8",
+  "si_version": "0.7",
   "current_si_status": "under_review",
   "review_round": 1,
   "ado_ticket_id": "SYN-204",

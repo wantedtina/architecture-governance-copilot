@@ -21,6 +21,7 @@ from architecture_governance_copilot.integrations.aif import (
 from architecture_governance_copilot.models import SolutionIntentReviewContext
 
 SAMPLES = Path(__file__).resolve().parents[1] / "samples"
+CONTRACT_FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 @pytest.fixture
@@ -74,7 +75,35 @@ def test_nonbundled_fake_response_is_context_checked_and_referenced_locally(
     assert all(reference and "provider-reference" not in reference for reference in references)
     assert references[0].startswith("transcript-")
     assert references[1].startswith("si-")
-    assert references[-1].startswith("si-")
+    assert any(reference.startswith("si-") for reference in references)
+    assert any(reference.startswith("transcript-") for reference in references)
+
+
+def test_minimal_success_contract_fixture_remains_supported() -> None:
+    solution_intent = (CONTRACT_FIXTURES / "internal_fake_minimal_solution_intent.md").read_text(
+        encoding="utf-8"
+    )
+    transcript = (CONTRACT_FIXTURES / "internal_fake_minimal_review_transcript.txt").read_text(
+        encoding="utf-8"
+    )
+    context = SolutionIntentReviewContext.model_validate_json(
+        (CONTRACT_FIXTURES / "internal_fake_minimal_review_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    response = json.loads(
+        (CONTRACT_FIXTURES / "internal_fake_minimal_aif_result.json").read_text(encoding="utf-8")
+    )
+
+    result, transport = _extract((solution_intent, transcript, context, response), response)
+
+    assert len(transport.calls) == 1
+    assert len(result.findings) == 1
+    assert len(result.action_items) == 1
+    assert len(result.missing_evidence) == 1
+    assert result.decisions == []
+    assert result.risks == []
+    assert result.open_questions == []
 
 
 def test_json_string_and_zero_item_response_are_supported(

@@ -1,3 +1,28 @@
-[09:00] Morgan Lee: The outcome is changes requested.
-[09:03] Morgan Lee: The single-zone design requires a documented recovery option.
-[09:05] Casey Wong: I will document a recovery option by 12 September 2026.
+[09:00] Morgan Lee: This is a synthetic Domain Architecture review; no statement refers to a real system or live provider.
+[09:02] Casey Wong: The routing API accepts a fictional order and places a durable command on the synthetic order-topic.
+[09:04] Avery Patel: The first release excludes payment authorization, inventory reservation, and customer communications.
+[09:06] Riley Chen: Operations will use correlation identifiers and synthetic routing status rather than payload content.
+[09:08] Morgan Lee: I confirm the event-driven asynchronous routing model with provider-specific adapters as the architecture decision for this review.
+[09:10] Casey Wong: That boundary keeps the storefront independent from fictional provider response formats and timing.
+[09:12] Morgan Lee: The retry budget and exponential-backoff limits are not defined, so that is a high-severity finding.
+[09:14] Riley Chen: I will document the retry budget, backoff limits, and stop condition by 18 September 2026.
+[09:16] Morgan Lee: The warm standby design has no scheduled regional failover exercise or measured recovery result.
+[09:18] Avery Patel: I will schedule and document the regional failover exercise by 21 September 2026.
+[09:20] Morgan Lee: An ambiguous provider timeout followed by an unsafe retry could create duplicate fulfilment, which is a high risk.
+[09:22] Casey Wong: The order identifier is the idempotency key, but unknown responses still need reconciliation before another submission.
+[09:24] Morgan Lee: Formal approval of the 30-day routing-record retention period is missing, so the privacy control remains open.
+[09:26] Avery Patel: We need to decide the maximum duration for a manual routing override before release readiness.
+[09:28] Riley Chen: Approved numeric alert thresholds and an evidence-backed on-call response target are not available yet.
+[09:30] Casey Wong: The runbook does not identify the production support escalation roster or approved after-hours handoff.
+[09:32] Morgan Lee: Record both alert thresholds and the support escalation roster as missing evidence, not assumed facts.
+[09:34] Riley Chen: Dashboard color choices can be settled during implementation and do not need a governance action.
+[09:36] Avery Patel: A 90-day aggregate trend was discussed for future analytics, but it is outside this release.
+[09:38] Casey Wong: The service carries only synthetic identifiers and deliberately excludes personal and payment information.
+[09:40] Riley Chen: The draft recovery targets are four hours RTO and fifteen minutes RPO until the exercise measures them.
+[09:42] Avery Patel: I accept ownership of the failover exercise action and its 21 September 2026 due date.
+[09:44] Riley Chen: I accept ownership of the retry-control action and its 18 September 2026 due date.
+[09:46] Morgan Lee: The three findings are retry controls, failover evidence, and retention approval.
+[09:48] Casey Wong: The manual override question must stay open rather than being represented as a decision.
+[09:50] Morgan Lee: The review outcome is changes requested until the findings and missing evidence are resolved.
+[09:52] Avery Patel: No output should be published before a person reviews and confirms the structured record.
+[09:54] Morgan Lee: Agreed; the evidence package is synthetic, the fake integrations make no network requests, and human confirmation remains mandatory.

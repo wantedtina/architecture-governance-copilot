@@ -173,7 +173,8 @@ def internal_fake_ado_target() -> AdoTargetConfiguration:
             },
         ),
         owner_identities={
-            "Casey Wong": "casey.wong.synthetic@example.invalid",
+            "Avery Patel": "avery.patel.synthetic@example.invalid",
+            "Riley Chen": "riley.chen.synthetic@example.invalid",
         },
         parent_work_item_ids={"SYN-204": 204},
         priority_values={"high": 1, "medium": 2, "low": 3},

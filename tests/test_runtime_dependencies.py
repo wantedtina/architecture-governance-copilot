@@ -73,6 +73,10 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     assert runtime.ado_target.fields.classification_values == {
         "Custom.GovernanceClassification": "Architecture"
     }
+    assert runtime.ado_target.owner_identities == {
+        "Avery Patel": "avery.patel.synthetic@example.invalid",
+        "Riley Chen": "riley.chen.synthetic@example.invalid",
+    }
 
     snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)
     result = runtime.extractor.extract(
@@ -82,8 +86,12 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     )
 
     assert snapshot.body_format.value == "storage"
-    assert snapshot.version == 7
-    assert "| Control | State |" in snapshot.canonical_text
+    assert snapshot.version == 8
+    assert "## 10. Decisions, Assumptions, and Gaps" in snapshot.canonical_text
     assert result.context == runtime.review_context
-    assert len(result.findings) == 1
-    assert len(result.action_items) == 1
+    assert len(result.findings) == 3
+    assert len(result.decisions) == 1
+    assert len(result.risks) == 1
+    assert len(result.action_items) == 2
+    assert len(result.open_questions) == 1
+    assert len(result.missing_evidence) == 2

@@ -1,0 +1,3 @@
+[09:00] Morgan Lee: The outcome is changes requested.
+[09:03] Morgan Lee: The single-zone design requires a documented recovery option.
+[09:05] Casey Wong: I will document a recovery option by 12 September 2026.

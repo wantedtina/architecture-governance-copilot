@@ -49,8 +49,8 @@ def _target(**updates: object) -> AdoTargetConfiguration:
             classification_values={"Custom.GovernanceClassification": "Architecture"},
         ),
         "owner_identities": {
-            "Casey Wong": "casey.wong.synthetic@example.invalid",
-            "Morgan Lee": "morgan.lee.synthetic@example.invalid",
+            "Avery Patel": "avery.patel.synthetic@example.invalid",
+            "Riley Chen": "riley.chen.synthetic@example.invalid",
         },
         "parent_work_item_ids": {"SYN-204": 204},
         "priority_values": {"high": 1, "medium": 2, "low": 3},
@@ -97,8 +97,8 @@ def test_preview_is_exact_encoded_and_contains_no_mock_disclaimer() -> None:
         for operation in preview.request.operations
         if operation.path.startswith("/fields/")
     }
-    assert fields["System.Title"] == "Document the recovery option"
-    assert fields["System.AssignedTo"] == "casey.wong.synthetic@example.invalid"
+    assert fields["System.Title"] == "Document retry and backoff controls"
+    assert fields["System.AssignedTo"] == "riley.chen.synthetic@example.invalid"
     assert fields["Microsoft.VSTS.Common.Priority"] == 1
     assert fields["Custom.GovernanceClassification"] == "Architecture"
     assert fields["Custom.GovernanceCorrelation"] == preview.request.correlation_id
