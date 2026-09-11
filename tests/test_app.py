@@ -111,9 +111,8 @@ def test_review_mode_is_offline_only_without_internal_configuration(
     monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
     app = _review_inputs_app()
 
-    control = app.segmented_control(key="agc_review_mode_widget")
-    assert control.value == "offline"
-    assert control.options == ["Offline demo"]
+    assert not app.segmented_control
+    assert any("Review capability: Offline demo" in item.value for item in app.text)
     assert app.button(key="agc_load_review_source")
     assert all(item.key != "agc_prepare_ado_publication" for item in app.button)
     assert any("Zero-configuration deterministic mode" in item.value for item in app.caption)
@@ -1141,4 +1140,111 @@ def test_delivery_mapping_change_revokes_preview_confirmation_but_keeps_outputs(
     assert app.session_state[ui_support.ADO_PUBLICATION_PREVIEW_KEY] is None
     assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
     assert app.session_state[OUTPUTS_KEY] == outputs
+    assert not app.exception
+
+
+@pytest.mark.parametrize("route", sorted((REPOSITORY_ROOT / "pages").glob("*.py")))
+@pytest.mark.parametrize("profile", ["production", "invalid"])
+def test_deployment_guard_blocks_every_route(route, profile, monkeypatch) -> None:
+    app = _initial_app()
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", profile)
+    app.switch_page(f"pages/{route.name}").run()
+    expected = (
+        "Production capabilities unavailable"
+        if profile == "production"
+        else "Deployment configuration error"
+    )
+    assert [item.value for item in app.header] == [expected]
+    assert not app.button
+    assert not app.segmented_control
+    assert not app.get("download_button")
+    assert not app.exception
+
+
+@pytest.mark.parametrize("profile", ["demo", "development", "test"])
+def test_single_mode_profile_has_status_without_selector(profile, monkeypatch) -> None:
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", profile)
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED", raising=False)
+    app = _review_inputs_app()
+    assert not app.segmented_control
+    assert any(item.value == f"Environment: {profile}" for item in app.caption)
+    assert app.button(key="agc_load_review_source")
+
+
+def test_removed_fake_policy_requires_explicit_recovery_from_delivery(monkeypatch) -> None:
+    app = _fake_delivery_app(monkeypatch)
+    app.button(key="agc_prepare_ado_publication").click().run()
+    app.button(key="agc_confirm_ado_publication").click().run()
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED")
+    app.run()
+    assert [item.value for item in app.header] == ["Choose an allowed review mode"]
+    assert app.session_state[ui_support.REVIEW_MODE_KEY] is None
+    assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    assert app.session_state[ui_support.ADO_FAKE_GATEWAY_KEY] is None
+    assert not any(item.key == "agc_submit_ado_publication" for item in app.button)
+    app.button(key="agc_recover_offline").click().run()
+    assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
+    assert app.session_state[ui_support.REVIEW_MODE_KEY] == "offline"
+    assert not app.exception
+
+
+def test_production_transition_retains_verified_receipt_without_reusing_output(monkeypatch) -> None:
+    app = _fake_delivery_app(monkeypatch)
+    for key in (
+        "agc_prepare_ado_publication",
+        "agc_confirm_ado_publication",
+        "agc_submit_ado_publication",
+    ):
+        app.button(key=key).click().run()
+    operation = app.session_state[ADO_PUBLICATION_OPERATION_KEY]
+    gateway = app.session_state[ADO_FAKE_GATEWAY_KEY]
+    monkeypatch.delenv("AGC_INTERNAL_FAKE_ENABLED")
+    monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", "production")
+    app.run()
+    assert [item.value for item in app.header] == ["Production capabilities unavailable"]
+    assert app.session_state[OUTPUTS_KEY] is None
+    assert app.session_state[ADO_PUBLICATION_HISTORY_KEY][operation.correlation_id] == operation
+    assert len(gateway.create_calls) == 1
+    assert not app.button
+    assert not app.exception
+
+
+def test_fake_provider_failure_does_not_call_offline_fallback(monkeypatch) -> None:
+    from architecture_governance_copilot.integrations.aif import (
+        AifErrorCategory,
+        AifTransportFailure,
+    )
+
+    monkeypatch.setenv("AGC_INTERNAL_FAKE_ENABLED", "true")
+    app = _review_inputs_app()
+    app.segmented_control(key="agc_review_mode_widget").set_value("internal_fake").run()
+    for key in (
+        "agc_load_review_metadata",
+        "agc_load_review_source",
+        "agc_load_review_transcript",
+        "agc_confirm_review_inputs",
+    ):
+        app.button(key=key).click().run()
+    calls = []
+
+    def fail(*args, **kwargs):
+        calls.append("fake")
+        raise AifTransportFailure(AifErrorCategory.TIMEOUT)
+
+    def forbidden(*args, **kwargs):
+        calls.append("offline")
+        raise AssertionError("Unexpected fallback")
+
+    monkeypatch.setattr(
+        "architecture_governance_copilot.integrations.aif.FakeAifTransport.analyze", fail
+    )
+    monkeypatch.setattr(
+        "architecture_governance_copilot.extractors.DeterministicDemoExtractor.extract", forbidden
+    )
+    app.button(key="agc_analyze").click().run()
+    assert calls == ["fake"]
+    assert app.session_state[ANALYZED_RESULT_KEY] is None
+    assert app.session_state[ui_support.REVIEW_MODE_KEY] == "internal_fake"
+    assert app.error
     assert not app.exception

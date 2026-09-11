@@ -83,7 +83,10 @@ enterprise connectivity or general semantic extraction.
 
 - Use a clean local checkout with the finalized synthetic fixtures.
 - Complete `uv sync` before recording.
-- Start the app with `uv run streamlit run app.py`.
+- Start the app with `uv run streamlit run app.py` in the default demo profile.
+- For fake rehearsal, use development/test with explicit `AGC_INTERNAL_FAKE_ENABLED=1`.
+  The legacy flag-only command also resolves to development. Do not enable fake in explicit demo.
+- Production is an unavailable policy screen, not a demonstration or a production-ready deployment.
 - Use **Deterministic demo mode**.
 - Reset Streamlit session state before the take.
 - Use the rehearsed browser resolution and zoom.
@@ -343,7 +346,7 @@ or every output field.
 | An edit is lost | Stop; repair session-state behavior before making the human-review claim. |
 | Confirmation is blocked | Restore the rehearsed valid edit or reanalyze; never bypass validation. |
 | Outputs ignore the edit | Stop; fix generation from reviewed state before recording. |
-| Optional LLM fails | Return to deterministic mode; the primary path never depends on it. |
+| Provider fails | Stop the affected review. Never substitute synthetic results; begin a separately labelled demo session deliberately if needed. |
 | Layout hides evidence | Restore rehearsed zoom and collapse unrelated sections. |
 | Runtime approaches 3:35 | Stop and record a shorter take; preserve evidence and confirmation steps. |
 | Network disconnects | Continue; deterministic mode is offline. |

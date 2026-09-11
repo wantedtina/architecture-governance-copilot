@@ -292,6 +292,26 @@ automatically carry findings between rounds.
   per-correlation history independently. This is session-local protection, not durable or exactly-once
   delivery. No live connector, bulk Create, automatic retry, Update, or administration surface exists.
 
+### Deployment-policy foundation
+
+- Resolve immutable environment policy for demo, development, test, or production at application
+  entry; normalize profile names and accepted boolean spellings, reject invalid explicit settings,
+  and require operator restart for configuration changes. Do not add an administrative surface.
+- Preserve the default zero-configuration demo. An absent profile with explicit enabled fake flag
+  resolves to development; explicit demo/production with enabled fake is invalid. Development/test
+  require the same opt-in flag for fake. Training uses a separate demo deployment.
+- Show truthful environment and synthetic status. Hide single-option review selectors.
+- Enforce policy before every stage renderer reads state or redirects, and at review runtime and
+  delivery capability resolution. Production has no currently accepted providers and exposes only
+  an unavailable status, with no synthetic drafting, review, export, or publication path.
+- Distinguish invalid configuration from valid-but-unavailable production. Do not echo environment
+  values, fabricate live capabilities, or substitute synthetic output on provider failure.
+- Retain policy identity in session state; revalidate selected mode and provider identity each
+  rerun. Invalidate incompatible packages, analyses, outputs, and confirmations while preserving
+  compatible independent workflow state and protected publication history. Require explicit review
+  recovery after a disallowed mode; do not silently select Offline from stale state.
+- R9a foundation verification does not complete R9b live capability acceptance or authorize release.
+
 ## Non-functional requirements
 
 - **Reliability:** the bundled scenario must work offline without credentials or an LLM API.

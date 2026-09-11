@@ -4,7 +4,8 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE`. Batch 06 completed and verified on 2026-09-11.
+Execution authority: `NONE`. Batch 07 completed and verified on 2026-09-11.
+The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
 
@@ -742,9 +743,11 @@ Confirmed direction to preserve during refinement:
    controlled demonstration, integration development, and failure-path testing after live
    integration is introduced. Hiding them from ordinary users is not authorization to delete their
    code, fixtures, provider boundaries, or tests.
-6. Gate production hiding on end-to-end acceptance of the relevant live path, including source
-   retrieval, validated analysis, human review, delivery preview and confirmation, Create behavior,
-   verification, and recoverable failure handling. Connecting an endpoint alone is not sufficient.
+6. Implement production synthetic-mode denial before live integration, with unavailable operations
+   blocked explicitly. Gate actual production capability activation and release on end-to-end live
+   acceptance: source retrieval, validated analysis, human review, delivery preview and confirmation,
+   Create behavior, verification, and recoverable failure handling. A configured profile or connected
+   endpoint alone is not production acceptance.
 7. Ensure route state, saved session state, direct navigation, and stale browser state cannot expose
    or continue using a mode that the active deployment policy disallows. Mode-policy changes must
    invalidate incompatible source, analysis, confirmation, and delivery state according to the
@@ -765,6 +768,19 @@ Open decisions to resolve before moving R9 to `Ready`:
   application, and what synthetic-data banner and environment identity it requires.
 - How R9 composes with the R2 workflow split, R5 input-source manifest, and R7 delivery capability
   without coupling one provider choice to unrelated workflow steps.
+
+Approved sequencing revision:
+
+- The user approved separating R9 into R9a (deployment-policy foundation now) and R9b (live
+  capability acceptance and production release later). This supersedes the earlier whole-item
+  readiness gate; it does not authorize live connectors or assert production readiness.
+- **R9a state:** `Verified`. Batch 07 passed 486 tests, repository checks, and desktop/narrow
+  real-browser acceptance on 2026-09-11.
+- **R9b state:** `Deferred` until separately approved live integration and release authority exist.
+- Parent R9 remains `Accepted` until both phases are verified. Batch 07 completion may mark only
+  R9a `Verified`; it must not close the full R9 requirement.
+- Implemented profile, configuration, compatibility, and stale-session decisions are recorded in
+  Batch 07. No authentication, administrative UI, database, or real enterprise connection is added.
 
 ### R10 — Deliberate light-only application theme
 
@@ -837,7 +853,8 @@ new explicit decision and sole active plan.
 | Batch 04 | R1 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_04.md`. |
 | Batch 05 | R3 | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_05.md`. |
 | Batch 06 | R7 | Completed and verified on 2026-09-11 in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_06.md`, including the explicitly approved stable action-identity repair. All 433 tests and desktop/narrow browser acceptance passed. |
-| Readiness-gated | R9 | Deployment policy remains accepted but cannot become ready until separately approved live capabilities and their release authority exist; no live connector is authorized by this intake. |
+| Batch 07 | R9a | Completed and verified in `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_07.md`; 486 tests and desktop/narrow browser acceptance passed. Parent R9 remains Accepted; R9b remains Deferred. |
+| Deferred release acceptance | R9b | Real capability activation and production release require separately approved live integration and release authority. |
 
 ## 7. Register maintenance and execution handoff
 

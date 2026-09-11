@@ -66,33 +66,92 @@ class ReviewRuntime:
     ado_target: AdoTargetConfiguration | None = None
 
 
+DEPLOYMENT_PROFILE_ENV = "AGC_DEPLOYMENT_PROFILE"
+
+
+class DeploymentProfile(StrEnum):
+    DEMO = "demo"
+    DEVELOPMENT = "development"
+    TEST = "test"
+    PRODUCTION = "production"
+
+
+class DeploymentConfigurationError(ValueError):
+    """Invalid explicit deployment configuration; never a fallback trigger."""
+
+
+@dataclass(frozen=True, slots=True)
+class DeploymentPolicy:
+    profile: DeploymentProfile
+    review_modes: tuple[ReviewModeDescriptor, ...]
+
+    @property
+    def drafting_allowed(self) -> bool:
+        return self.profile is not DeploymentProfile.PRODUCTION
+
+    @property
+    def identity(self) -> str:
+        facts = (
+            self.profile.value,
+            tuple(
+                (item.mode.value, item.provider_configuration_identity)
+                for item in self.review_modes
+            ),
+        )
+        return hashlib.sha256(repr(facts).encode()).hexdigest()
+
+
+def resolve_deployment_policy(environ: Mapping[str, str] | None = None) -> DeploymentPolicy:
+    """Resolve only explicit operator settings; never inspect or contact a live provider."""
+    environment = os.environ if environ is None else environ
+    raw_flag = environment.get(INTERNAL_FAKE_ENABLED_ENV)
+    enabled = False
+    if raw_flag is not None:
+        normalized = raw_flag.strip().lower()
+        if normalized not in {"1", "true", "yes", "on", "0", "false", "no", "off"}:
+            raise DeploymentConfigurationError("AGC_INTERNAL_FAKE_ENABLED must be a valid boolean.")
+        enabled = normalized in {"1", "true", "yes", "on"}
+    raw_profile = environment.get(DEPLOYMENT_PROFILE_ENV)
+    try:
+        profile = (
+            DeploymentProfile(raw_profile.strip().lower())
+            if raw_profile is not None
+            else (DeploymentProfile.DEVELOPMENT if enabled else DeploymentProfile.DEMO)
+        )
+    except ValueError as exc:
+        raise DeploymentConfigurationError(
+            "AGC_DEPLOYMENT_PROFILE must be demo, development, test, or production."
+        ) from exc
+    if enabled and profile in {DeploymentProfile.DEMO, DeploymentProfile.PRODUCTION}:
+        raise DeploymentConfigurationError(
+            "Internal fake requires the development or test deployment profile."
+        )
+    descriptors = []
+    if profile is not DeploymentProfile.PRODUCTION:
+        descriptors.append(
+            ReviewModeDescriptor(
+                ReviewMode.OFFLINE, "Offline demo", OFFLINE_PROVIDER_CONFIGURATION_ID
+            )
+        )
+    if enabled:
+        identity = environment.get(
+            INTERNAL_FAKE_PROVIDER_ID_ENV, DEFAULT_INTERNAL_FAKE_PROVIDER_ID
+        ).strip()
+        if not identity:
+            raise DeploymentConfigurationError(
+                "AGC_INTERNAL_FAKE_PROVIDER_ID must not be blank when Internal fake is enabled."
+            )
+        descriptors.append(
+            ReviewModeDescriptor(ReviewMode.INTERNAL_FAKE, "Internal fake · no network", identity)
+        )
+    return DeploymentPolicy(profile, tuple(descriptors))
+
+
 def available_review_modes(
     environ: Mapping[str, str] | None = None,
 ) -> tuple[ReviewModeDescriptor, ...]:
-    """Expose internal fake mode only when explicitly enabled."""
-    environment = os.environ if environ is None else environ
-    descriptors = [
-        ReviewModeDescriptor(
-            mode=ReviewMode.OFFLINE,
-            label="Offline demo",
-            provider_configuration_identity=OFFLINE_PROVIDER_CONFIGURATION_ID,
-        )
-    ]
-    if _is_enabled(environment.get(INTERNAL_FAKE_ENABLED_ENV)):
-        configured_identity = environment.get(
-            INTERNAL_FAKE_PROVIDER_ID_ENV,
-            DEFAULT_INTERNAL_FAKE_PROVIDER_ID,
-        ).strip()
-        if not configured_identity:
-            configured_identity = DEFAULT_INTERNAL_FAKE_PROVIDER_ID
-        descriptors.append(
-            ReviewModeDescriptor(
-                mode=ReviewMode.INTERNAL_FAKE,
-                label="Internal fake · no network",
-                provider_configuration_identity=configured_identity,
-            )
-        )
-    return tuple(descriptors)
+    """Return only capabilities allowed by the validated deployment policy."""
+    return resolve_deployment_policy(environ).review_modes
 
 
 def review_mode_descriptor(
@@ -183,16 +242,15 @@ def internal_fake_ado_target() -> AdoTargetConfiguration:
     )
 
 
-def _is_enabled(value: str | None) -> bool:
-    return value is not None and value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 def configured_delivery_capability(
     environ: Mapping[str, str] | None = None,
 ) -> AdoDeliveryCapability | None:
     """Resolve the explicitly enabled fake capability independently of the UI mode label."""
     environment = os.environ if environ is None else environ
-    if not _is_enabled(environment.get(INTERNAL_FAKE_ENABLED_ENV)):
+    if not any(
+        item.mode is ReviewMode.INTERNAL_FAKE
+        for item in resolve_deployment_policy(environment).review_modes
+    ):
         return None
     runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, environment)
     snapshot = runtime.confluence_reader.get_page(runtime.confluence_page_id)

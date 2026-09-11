@@ -1403,3 +1403,111 @@ def test_delivery_status_never_overstates_unknown_or_partial_success() -> None:
     assert delivery_status(ready, (success, None)) is DeliveryStatus.IN_PROGRESS
     assert delivery_status(ready, (success, success)) is DeliveryStatus.SUCCEEDED
     assert delivery_status(ready, (success, unknown)) is DeliveryStatus.NEEDS_RECONCILIATION
+
+
+@pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
+def test_policy_revokes_fake_work_without_erasing_drafting_or_operations(status) -> None:
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import (
+        REVIEW_POLICY_RECOVERY_KEY,
+        apply_deployment_policy,
+        recover_review_policy,
+    )
+
+    state = {}
+    fake = resolve_deployment_policy({"AGC_INTERNAL_FAKE_ENABLED": "true"})
+    demo = resolve_deployment_policy({})
+    apply_deployment_policy(state, fake)
+    state[REVIEW_MODE_KEY] = ReviewMode.INTERNAL_FAKE.value
+    state[DRAFT_RESULT_KEY] = "independent draft"
+    state[OUTPUTS_KEY] = "stale output"
+    state[ADO_PUBLICATION_CONFIRMATION_KEY] = "stale confirmation"
+    operation = AdoPublicationOperation(
+        correlation_id="agc-policy",
+        request_binding_fingerprint="fingerprint",
+        status=status,
+        message="Retained operation fact.",
+    )
+    state[ADO_PUBLICATION_HISTORY_KEY] = {operation.correlation_id: operation}
+    apply_deployment_policy(state, demo)
+    assert state[REVIEW_POLICY_RECOVERY_KEY] is True
+    assert state[REVIEW_MODE_KEY] is None
+    assert state[OUTPUTS_KEY] is None
+    assert state[ADO_PUBLICATION_CONFIRMATION_KEY] is None
+    assert state[DRAFT_RESULT_KEY] == "independent draft"
+    assert state[ADO_PUBLICATION_HISTORY_KEY][operation.correlation_id] == operation
+    apply_deployment_policy(state, fake)
+    assert state[REVIEW_POLICY_RECOVERY_KEY] is True
+    recover_review_policy(state, fake, ReviewMode.INTERNAL_FAKE)
+    assert state[REVIEW_MODE_KEY] == "internal_fake"
+    assert state[ADO_PUBLICATION_HISTORY_KEY][operation.correlation_id] == operation
+
+
+def test_policy_production_blocks_both_workflows_and_requires_explicit_recovery() -> None:
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import (
+        REVIEW_POLICY_RECOVERY_KEY,
+        apply_deployment_policy,
+        recover_review_policy,
+    )
+
+    state = {}
+    demo = resolve_deployment_policy({})
+    apply_deployment_policy(state, demo)
+    state[DRAFT_RESULT_KEY] = "draft"
+    state[OUTPUTS_KEY] = "outputs"
+    production = resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": "production"})
+    apply_deployment_policy(state, production)
+    assert state[DRAFT_RESULT_KEY] is None
+    assert state[OUTPUTS_KEY] is None
+    with pytest.raises(ValueError, match="not allowed"):
+        recover_review_policy(state, production, ReviewMode.OFFLINE)
+    apply_deployment_policy(state, demo)
+    assert state[REVIEW_POLICY_RECOVERY_KEY] is True
+    recover_review_policy(state, demo, ReviewMode.OFFLINE)
+    assert state[REVIEW_POLICY_RECOVERY_KEY] is False
+
+
+def test_compatible_policy_change_preserves_work_and_identity_change_revokes_review() -> None:
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import apply_deployment_policy
+
+    state = {}
+    apply_deployment_policy(state, resolve_deployment_policy({}))
+    state[OUTPUTS_KEY] = "offline output"
+    state[DRAFT_RESULT_KEY] = "draft"
+    apply_deployment_policy(state, resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": "test"}))
+    assert state[OUTPUTS_KEY] == "offline output"
+    state[REVIEW_MODE_KEY] = "internal_fake"
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = "old-id"
+    apply_deployment_policy(state, resolve_deployment_policy({"AGC_INTERNAL_FAKE_ENABLED": "1"}))
+    assert state[OUTPUTS_KEY] is None
+    assert state[DRAFT_RESULT_KEY] == "draft"
+
+
+def test_migration_cannot_turn_disallowed_mode_into_offline() -> None:
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import (
+        REVIEW_POLICY_RECOVERY_KEY,
+        apply_deployment_policy,
+    )
+
+    state = {STATE_SCHEMA_VERSION_KEY: 1, REVIEW_MODE_KEY: "internal_fake"}
+    apply_deployment_policy(state, resolve_deployment_policy({}))
+    assert state[REVIEW_MODE_KEY] is None
+    assert state[REVIEW_POLICY_RECOVERY_KEY] is True
+
+
+def test_policy_identity_is_compared_without_resetting_compatible_session() -> None:
+    from architecture_governance_copilot.runtime_dependencies import resolve_deployment_policy
+    from architecture_governance_copilot.ui_support import apply_deployment_policy
+
+    state = {}
+    demo = resolve_deployment_policy({})
+    assert apply_deployment_policy(state, demo) is True
+    state[OUTPUTS_KEY] = "compatible output"
+    assert apply_deployment_policy(state, demo) is False
+    assert state[OUTPUTS_KEY] == "compatible output"
+    development = resolve_deployment_policy({"AGC_DEPLOYMENT_PROFILE": "development"})
+    assert apply_deployment_policy(state, development) is True
+    assert state[OUTPUTS_KEY] == "compatible output"

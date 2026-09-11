@@ -226,6 +226,42 @@ AGC_INTERNAL_FAKE_ENABLED=1 uv run streamlit run app.py
 This flag enables only in-memory fakes. It does not accept credentials or connect to Confluence,
 AIF, Microsoft Teams, or Azure DevOps.
 
+### Deployment profiles
+
+Set `AGC_DEPLOYMENT_PROFILE` before starting the process. Restart after changing configuration;
+there is no in-app policy editor. The validated policy is checked before every routed workflow and
+provider action. Training uses a separate demo deployment.
+
+| Profile | Offline review / synthetic drafting | Internal fake | Current production capability |
+| --- | --- | --- | --- |
+| `demo` (default) | Available | Not allowed | None |
+| `development` | Available | Explicit fake flag required | None |
+| `test` | Available | Explicit fake flag required | None |
+| `production` | Disabled | Not allowed | Unavailable until separately approved live acceptance |
+
+With no profile and no enabled fake flag, launch remains the zero-configuration demo. The existing
+`AGC_INTERNAL_FAKE_ENABLED=1` command without a profile resolves to development. An explicit demo
+or production profile combined with an enabled fake flag fails configuration validation.
+
+Boolean settings accept `1/true/yes/on` and `0/false/no/off`, ignoring surrounding whitespace and
+case. An absent fake flag is false. Explicit blank/unknown profiles or booleans fail closed; an
+explicit blank `AGC_INTERNAL_FAKE_PROVIDER_ID` is rejected when fake is enabled. Diagnostics do not
+print environment dumps. Only development/test can enable fake; the flag alone never connects a
+real service.
+
+Production currently shows **Production capabilities unavailable** and offers no synthetic input,
+draft, analysis, confirmation, export, or delivery controls, including through direct page URLs.
+This is a verified policy foundation, not live integration acceptance or production readiness.
+Invalid configuration instead shows **Deployment configuration error** with operator guidance.
+
+One allowed review mode is shown as capability status; a selector appears only when both modes
+are allowed. If an existing mode is removed, incompatible inputs, outputs, and confirmations are
+revoked and the user must explicitly start an allowed review. There is no automatic Offline
+fallback. Compatible independent drafting work and protected session-local delivery facts are
+retained; production invalidates both synthetic workflows and hides their controls. Changing the
+provider identity invalidates its bound review package. A new process may lose all session state;
+this is not durable recovery or proof that a prior Create did not happen.
+
 Run tests:
 
 ```bash

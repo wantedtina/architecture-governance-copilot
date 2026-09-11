@@ -45,6 +45,7 @@ from architecture_governance_copilot.publication import (
 )
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
+    DeploymentPolicy,
     ReviewMode,
 )
 from architecture_governance_copilot.si_drafting import (
@@ -52,6 +53,8 @@ from architecture_governance_copilot.si_drafting import (
 )
 
 STATE_PREFIX = "agc_"
+DEPLOYMENT_POLICY_ID_KEY = f"{STATE_PREFIX}deployment_policy_id"
+REVIEW_POLICY_RECOVERY_KEY = f"{STATE_PREFIX}review_policy_recovery"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
 STATE_SCHEMA_VERSION = 4
 STATE_SCHEMA_VERSION_KEY = f"{STATE_PREFIX}state_schema_version"
@@ -2446,3 +2449,53 @@ def clear_review_action_due_date(state: MutableMapping[str, Any], index: int) ->
     key = f"{REVIEW_WIDGET_PREFIX}action_{index}_due_date"
     state[key] = None
     preserve_review_widget_state(state)
+
+
+def apply_deployment_policy(state: MutableMapping[str, Any], policy: DeploymentPolicy) -> bool:
+    """Revoke incompatible state before routing; report whether deployment identity changed."""
+    policy_changed = state.get(DEPLOYMENT_POLICY_ID_KEY) != policy.identity
+    previous_mode = state.get(REVIEW_MODE_KEY, ReviewMode.OFFLINE.value)
+    recovery = bool(state.get(REVIEW_POLICY_RECOVERY_KEY))
+    initialize_session_state(state)
+    descriptors = {item.mode.value: item for item in policy.review_modes}
+    old_stage = state.get(ACTIVE_STAGE_KEY)
+    old_workflow = state.get(ACTIVE_WORKFLOW_KEY)
+    if previous_mode not in descriptors or recovery:
+        reset_review_workflow(state)
+        state[REVIEW_MODE_KEY] = None
+        state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = None
+        state[REVIEW_POLICY_RECOVERY_KEY] = True
+        state[ACTIVE_STAGE_KEY] = old_stage
+        state[ACTIVE_WORKFLOW_KEY] = old_workflow
+    else:
+        descriptor = descriptors[previous_mode]
+        if state.get(REVIEW_PROVIDER_CONFIGURATION_ID_KEY) != (
+            descriptor.provider_configuration_identity
+        ):
+            reset_review_workflow(state)
+            state[REVIEW_MODE_KEY] = descriptor.mode.value
+            state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = descriptor.provider_configuration_identity
+            if old_workflow != Workflow.REVIEW.value:
+                state[ACTIVE_STAGE_KEY] = old_stage
+                state[ACTIVE_WORKFLOW_KEY] = old_workflow
+        state[REVIEW_POLICY_RECOVERY_KEY] = False
+    if not policy.drafting_allowed:
+        reset_drafting_workflow(state)
+        state[ACTIVE_STAGE_KEY] = HOME_STAGE
+        state[ACTIVE_WORKFLOW_KEY] = Workflow.NONE.value
+    state[DEPLOYMENT_POLICY_ID_KEY] = policy.identity
+    return policy_changed
+
+
+def recover_review_policy(
+    state: MutableMapping[str, Any], policy: DeploymentPolicy, mode: ReviewMode
+) -> None:
+    """Start an allowed review only after the user's explicit recovery action."""
+    descriptor = next((item for item in policy.review_modes if item.mode is mode), None)
+    if descriptor is None:
+        raise ValueError("The requested review mode is not allowed by deployment policy.")
+    reset_review_workflow(state)
+    state[REVIEW_MODE_KEY] = descriptor.mode.value
+    state[REVIEW_PROVIDER_CONFIGURATION_ID_KEY] = descriptor.provider_configuration_identity
+    state[REVIEW_POLICY_RECOVERY_KEY] = False
+    state[DEPLOYMENT_POLICY_ID_KEY] = policy.identity

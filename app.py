@@ -63,11 +63,14 @@ from architecture_governance_copilot.publication import (
     publication_request_summary,
 )
 from architecture_governance_copilot.runtime_dependencies import (
+    DeploymentConfigurationError,
+    DeploymentPolicy,
+    DeploymentProfile,
     ReviewMode,
     available_review_modes,
     build_review_runtime,
     configured_delivery_capability,
-    review_mode_descriptor,
+    resolve_deployment_policy,
 )
 from architecture_governance_copilot.si_drafting import (
     DeterministicDemoDrafter,
@@ -124,6 +127,7 @@ from architecture_governance_copilot.ui_support import (
     REVIEW_CHANGE_SUMMARY_KEY,
     REVIEW_INPUT_FEEDBACK_KEY,
     REVIEW_MODE_WIDGET_KEY,
+    REVIEW_POLICY_RECOVERY_KEY,
     REVIEW_PROVIDER_CONFIGURATION_ID_KEY,
     REVIEW_STAGE,
     REVIEWED_RESULT_KEY,
@@ -140,6 +144,7 @@ from architecture_governance_copilot.ui_support import (
     ReviewInputReadiness,
     Workflow,
     active_stage,
+    apply_deployment_policy,
     build_drafting_source_package,
     build_pending_review_changes,
     build_review_change_summary,
@@ -165,7 +170,6 @@ from architecture_governance_copilot.ui_support import (
     drafting_input_fingerprint,
     drafting_result_is_stale,
     humanize,
-    initialize_session_state,
     load_internal_review_into_state,
     load_sample_drafting_context,
     load_sample_review,
@@ -175,6 +179,7 @@ from architecture_governance_copilot.ui_support import (
     project_context_readiness,
     record_internal_source_load_failure,
     record_publication_operation,
+    recover_review_policy,
     refresh_project_context,
     reset_application_state,
     reset_drafting_workflow,
@@ -224,7 +229,6 @@ def main() -> None:
         layout="wide",
     )
     _apply_visual_theme()
-    initialize_session_state(st.session_state)
 
     home_page = st.Page(
         _ROUTE_FILES[HOME_STAGE],
@@ -290,7 +294,55 @@ def main() -> None:
     selected_page.run()
 
 
+def _enforce_deployment_policy(route: str) -> None:
+    """Apply deployment eligibility before any routed workflow reads or renders state."""
+    try:
+        policy = resolve_deployment_policy()
+    except DeploymentConfigurationError as exc:
+        apply_deployment_policy(
+            st.session_state, DeploymentPolicy(DeploymentProfile.PRODUCTION, ())
+        )
+        st.header("Deployment configuration error")
+        st.error(str(exc))
+        st.info(
+            "Ask the deployment operator to correct the configuration and restart the application."
+        )
+        st.stop()
+    apply_deployment_policy(st.session_state, policy)
+    st.caption(f"Environment: {policy.profile.value}")
+    if not policy.drafting_allowed:
+        st.header("Production capabilities unavailable")
+        st.info(
+            "No accepted live capabilities are configured for this deployment. "
+            "Synthetic drafting, review, and delivery are disabled."
+        )
+        st.caption(
+            "The deployment operator must complete separately approved live integration and "
+            "release acceptance before enabling production workflows. "
+            "This profile does not certify readiness."
+        )
+        st.stop()
+    if st.session_state.get(REVIEW_POLICY_RECOVERY_KEY) and route not in {
+        HOME_STAGE,
+        CONTEXT_STAGE,
+        DRAFT_STAGE,
+    }:
+        st.header("Choose an allowed review mode")
+        st.warning(
+            "The previous review mode is no longer available. Its inputs and confirmations were "
+            "revoked. No fallback analysis was performed; delivery history remains session-local."
+        )
+        for descriptor in policy.review_modes:
+            if st.button(
+                f"Start a new {descriptor.label} review", key=f"agc_recover_{descriptor.mode.value}"
+            ):
+                recover_review_policy(st.session_state, policy, descriptor.mode)
+                _switch_stage(INPUT_STAGE)
+        st.stop()
+
+
 def _render_home_page() -> None:
+    _enforce_deployment_policy(HOME_STAGE)
     _render_page_shell(HOME_STAGE)
     st.header("Choose a governance workflow")
     st.caption(
@@ -342,12 +394,14 @@ def _render_home_page() -> None:
 
 
 def _render_context_page() -> None:
+    _enforce_deployment_policy(CONTEXT_STAGE)
     _render_page_shell(CONTEXT_STAGE)
     _render_project_context_stage()
     _render_error()
 
 
 def _render_drafting_page() -> None:
+    _enforce_deployment_policy(DRAFT_STAGE)
     retain_drafting_source_widget_state(st.session_state)
     if st.session_state[PROJECT_CONTEXT_CONFIRMED_KEY] is not True:
         _switch_stage(
@@ -360,6 +414,7 @@ def _render_drafting_page() -> None:
 
 
 def _render_input_page() -> None:
+    _enforce_deployment_policy(INPUT_STAGE)
     route_source = st.session_state.pop(ROUTE_SOURCE_STAGE_KEY, None)
     restore_input_widgets = (
         active_stage(st.session_state) != INPUT_STAGE
@@ -372,6 +427,7 @@ def _render_input_page() -> None:
 
 
 def _render_review_page() -> None:
+    _enforce_deployment_policy(REVIEW_STAGE)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
     if not isinstance(analyzed_result, GovernanceResult):
         _switch_stage(
@@ -399,6 +455,7 @@ def _render_review_page() -> None:
 
 
 def _render_output_page() -> None:
+    _enforce_deployment_policy(OUTPUT_STAGE)
     retain_review_widget_state(st.session_state)
     invalidation = current_analysis_invalidation(st.session_state)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
@@ -429,6 +486,7 @@ def _render_output_page() -> None:
 
 
 def _render_delivery_page() -> None:
+    _enforce_deployment_policy(DELIVERY_STAGE)
     retain_review_widget_state(st.session_state)
     if current_analysis_invalidation(st.session_state) is not None:
         _switch_stage(REVIEW_STAGE)
@@ -476,6 +534,8 @@ def _render_header() -> None:
         if review_mode is ReviewMode.INTERNAL_FAKE
         else "● Offline demo ready"
     )
+    if st.session_state.get(REVIEW_POLICY_RECOVERY_KEY):
+        service_status = "Review mode selection required"
     st.markdown(
         f"""
             <div class="agc-brandbar">
@@ -1068,7 +1128,10 @@ def _render_sidebar(stage: str) -> None:
 
         st.divider()
         st.markdown("**System status**")
-        if current_review_mode(st.session_state) is ReviewMode.INTERNAL_FAKE:
+        if st.session_state.get(REVIEW_POLICY_RECOVERY_KEY):
+            st.warning("Review mode selection required")
+            st.caption("Synthetic drafting remains available · no network")
+        elif current_review_mode(st.session_state) is ReviewMode.INTERNAL_FAKE:
             st.warning("Internal fake mode · no network")
             st.caption("● Synthetic Confluence snapshot")
             st.caption("● Fake AIF analysis")
@@ -1996,14 +2059,6 @@ def _render_review_mode_control() -> None:
     descriptors = available_review_modes()
     available_values = [descriptor.mode.value for descriptor in descriptors]
     current_mode = current_review_mode(st.session_state)
-    if current_mode.value not in available_values:
-        offline_descriptor = review_mode_descriptor(ReviewMode.OFFLINE)
-        switch_review_mode(
-            st.session_state,
-            ReviewMode.OFFLINE,
-            offline_descriptor.provider_configuration_identity,
-        )
-        current_mode = ReviewMode.OFFLINE
     current_descriptor = next(
         descriptor for descriptor in descriptors if descriptor.mode is current_mode
     )
@@ -2026,26 +2081,29 @@ def _render_review_mode_control() -> None:
             '<p class="agc-section-label">REVIEW MODE</p>',
             unsafe_allow_html=True,
         )
-        selected_value = st.segmented_control(
-            "Review source and analysis mode",
-            options=available_values,
-            format_func=lambda value: next(
-                descriptor.label for descriptor in descriptors if descriptor.mode.value == value
-            ),
-            key=REVIEW_MODE_WIDGET_KEY,
-            required=True,
-        )
-        selected_mode = ReviewMode(selected_value or current_mode.value)
-        if selected_mode is not current_mode:
-            selected_descriptor = next(
-                descriptor for descriptor in descriptors if descriptor.mode is selected_mode
+        if len(descriptors) == 1:
+            st.text(f"Review capability: {current_descriptor.label}")
+        else:
+            selected_value = st.segmented_control(
+                "Review source and analysis mode",
+                options=available_values,
+                format_func=lambda value: next(
+                    descriptor.label for descriptor in descriptors if descriptor.mode.value == value
+                ),
+                key=REVIEW_MODE_WIDGET_KEY,
+                required=True,
             )
-            switch_review_mode(
-                st.session_state,
-                selected_mode,
-                selected_descriptor.provider_configuration_identity,
-            )
-            st.rerun()
+            selected_mode = ReviewMode(selected_value or current_mode.value)
+            if selected_mode is not current_mode:
+                selected_descriptor = next(
+                    descriptor for descriptor in descriptors if descriptor.mode is selected_mode
+                )
+                switch_review_mode(
+                    st.session_state,
+                    selected_mode,
+                    selected_descriptor.provider_configuration_identity,
+                )
+                st.rerun()
         if current_mode is ReviewMode.INTERNAL_FAKE:
             st.warning(
                 "Configured fake only · Confluence and AIF operations remain local and make no "
