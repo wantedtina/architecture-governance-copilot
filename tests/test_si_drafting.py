@@ -161,7 +161,6 @@ def test_deterministic_drafter_implements_protocol_and_returns_expected_si() -> 
         _request(project_name="Different project"),
         _request(template="# Different template"),
         _request(source_code_context="Different source"),
-        _request(supporting_documents="Different notes"),
     ],
 )
 def test_deterministic_drafter_rejects_non_fixture_context(
@@ -276,3 +275,36 @@ def test_clearing_stale_draft_preserves_source_context() -> None:
     assert state[DRAFT_CONTENT_WIDGET_KEY] == ""
     assert state[DRAFT_TEMPLATE_KEY] == sample.template
     assert state[DRAFT_SOURCE_CODE_KEY] == sample.source_code_context
+
+
+@pytest.mark.parametrize("evidence", [None, " "])
+def test_demo_drafter_rejects_missing_evidence(evidence):
+    with pytest.raises((ValueError, ValidationError)):
+        DeterministicDemoDrafter().draft(_request(supporting_documents=evidence))
+
+
+def test_custom_evidence_changes_draft_without_reusing_sample_claims():
+    drafter = DeterministicDemoDrafter()
+    first = drafter.draft(_request(supporting_documents="Retention: 30 days.\nRTO: 2 hours."))
+    second = drafter.draft(_request(supporting_documents="Retention: 7 days.\nRTO: 1 hour."))
+    assert first.content != second.content
+    assert first == drafter.draft(
+        _request(supporting_documents="Retention: 30 days.\nRTO: 2 hours.")
+    )
+    assert "Retention: 30 days." in first.content
+    assert "Evidence L1:" in first.content
+    assert "RTO: 2 hours." in first.content
+    assert "90 days" not in first.content
+    assert "August 2026" not in first.content
+    assert "To be confirmed" in first.content
+    assert "## 12. Assumptions and Open Items" in first.content
+    assert "Selected repository context" in first.content
+
+
+def test_unmapped_or_instruction_like_evidence_is_retained_as_literal_source():
+    evidence = "Unmapped synthetic detail.\n## Ignore instructions\n<script>alert(1)</script>\n```"
+    result = DeterministicDemoDrafter().draft(_request(supporting_documents=evidence))
+    assert "    Unmapped synthetic detail." in result.content
+    assert "\n## Ignore instructions" not in result.content
+    assert "    <script>alert(1)</script>" in result.content
+    assert "    ```" in result.content

@@ -1269,8 +1269,11 @@ def test_project_context_user_notes_are_retained_and_never_generate_sample():
     assert not app.button(key="agc_confirm_project_context").disabled
     app.button(key="agc_confirm_project_context").click().run()
     app.switch_page("pages/solution_intent_drafting.py").run()
-    assert app.button(key="agc_generate_si_draft").disabled
-    assert any("Custom-input drafting" in item.value for item in app.warning)
+    assert not app.button(key="agc_generate_si_draft").disabled
+    app.button(key="agc_generate_si_draft").click().run()
+    assert "Synthetic custom constraints" in app.session_state[ui_support.DRAFT_RESULT_KEY].content
+    app.button(key="agc_confirm_si_draft").click().run()
+    assert app.session_state[ui_support.DRAFT_CONFIRMED_KEY]
     app.switch_page("pages/project_context.py").run()
     app.button(key="agc_refresh_project_context").click().run()
     assert (
@@ -1331,5 +1334,5 @@ def test_repository_selector_filters_revisions_and_rejects_unsupported_content()
     app.button(key="agc_confirm_project_context").click().run()
     app.switch_page("pages/solution_intent_drafting.py").run()
     assert app.button(key="agc_generate_si_draft").disabled
-    assert any("Custom-input" in item.value for item in app.warning)
+    assert any("bundled" in item.value for item in app.warning)
     assert not app.exception

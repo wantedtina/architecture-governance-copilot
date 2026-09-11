@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 09 completed and verified.
+Execution authority: `NONE` — Batch 10 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -861,6 +861,15 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
   permits Context confirmation and navigation. Enforce deterministic compatibility at generation.
 - Preserve inputs, traceability, human confirmation, and source-change invalidation. No new provider.
 - Supersedes R11's pre-confirmation provider blocker; Batch 08 remains historical evidence.
+
+### R13 — Generate demo drafts from user-supplied evidence
+
+- **State:** `Verified`
+- **Approval:** User explicitly confirmed extending the existing demo drafter, with no API or new mode.
+- Saved custom evidence must allow generation and appear in the generated SI. Preserve the exact
+  canonical sample result, traceability, editable drafts, and mandatory human confirmation.
+- Keep generation deterministic and offline; do not claim semantic AI inference. Real enterprise
+  and model integration remain deferred. Supersedes R12's custom-evidence generation blocker.
 
 ## 6. Accepted intake and dependency sequencing
 

@@ -85,6 +85,7 @@ Run tests and both Ruff checks after application changes. Run `git diff --check`
 
 ## Current implementation caveat
 
-The deterministic providers support only the bundled synthetic scenario. Do not describe them as
-general semantic extraction or drafting. A materially edited SI will not match the deterministic
-review fixture; arbitrary-input support requires a future approved provider.
+The demo drafter supports user-supplied evidence within the bundled synthetic workspace using
+deterministic topic grouping and literal source excerpts. It is not general semantic AI drafting.
+The exact canonical package still produces its frozen draft. The review extractor remains
+fixture-bound: a materially edited or custom-generated SI requires a future approved review provider.

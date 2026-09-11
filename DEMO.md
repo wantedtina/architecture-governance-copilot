@@ -407,7 +407,7 @@ synthetic inventory; this does not connect to ADO or discover live permissions.
 Supporting evidence starts empty. Use **Add notes** or upload synthetic UTF-8 `.txt`/`.md` files and
 click **Add uploaded documents**. Inspect, edit, or remove their text. Each item is limited to 1 MiB,
 with at most 10 items. Custom text is retained across refresh and navigation, but the deterministic
-provider blocks generation outside its exact sample contract on the next step. No sample is silently substituted.
+provider assembles custom Evidence into a template-shaped offline draft. No sample is silently substituted.
 
 For the offline generation walkthrough, remove custom items and choose **Add sample evidence**.
 Click **Save evidence**, inspect the source manifest, then click **Confirm Context & Continue**, generate the draft, and complete
@@ -416,5 +416,12 @@ confirmation and artifacts. Uploaded content remains session-local and is not ex
 
 Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
 the session; the visible status changes back to unsaved after editing, adding, or removing content.
-Valid saved custom evidence can reach the drafting step. There, unsupported inputs disable
-**Generate SI Draft** with an explanation; no sample output is substituted.
+Valid saved custom evidence can reach the drafting step. The existing offline demo drafter accepts custom Evidence and reflects it in the draft.
+No API or additional mode is required.
+
+Custom Evidence drafting uses the existing demo workflow: save, confirm Context, generate, edit,
+and human-confirm. English keyword grouping places literal source excerpts into template chapters;
+unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
+This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
+sample package retains its canonical output. Custom drafts do not become supported inputs for the
+separate fixture-bound governance review extractor.

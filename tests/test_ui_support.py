@@ -187,9 +187,7 @@ def test_project_context_open_readiness_and_confirmation() -> None:
     state[CONTEXT_TEMPLATE_ID_KEY] = "si-template-v1-1"
     state[CONTEXT_EVIDENCE_IDS_KEY] = ()
 
-    assert project_context_readiness(state) == (
-        "Add supporting evidence; the sample provider requires its exact supporting context.",
-    )
+    assert project_context_readiness(state) == ("Add supporting evidence before continuing.",)
     state[CONTEXT_EVIDENCE_IDS_KEY] = ("supporting-context-v1",)
 
     confirm_project_context_for_drafting(state)
@@ -1534,9 +1532,7 @@ def test_user_drafting_evidence_is_preserved_in_manifest_and_blocks_fake_generat
     assert evidence.provenance.value == "user_uploaded"
     assert "sha256" in evidence.source_reference
     assert project_context_readiness(state) == ()
-    assert any(
-        "Custom-input" in item for item in project_context_readiness(state, check_provider=True)
-    )
+    assert project_context_readiness(state, check_provider=True) == ()
     with pytest.raises(ValueError, match="Save evidence"):
         confirm_project_context_for_drafting(state)
     save_drafting_evidence(state)

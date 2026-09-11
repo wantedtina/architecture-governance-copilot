@@ -315,8 +315,8 @@ Generate SI Draft → human edit/confirm → inspect provenance or download Mark
 The review flow is: **Review a Solution Intent → load the authoritative SI, transcript, and metadata
 in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
 Reviewed Record & Generate Outputs**.
-The application is fixture-backed and supports only the bundled synthetic drafting and review
-scenarios. Human draft edits are preserved in the drafting workflow, but the deterministic offline
+The application uses a synthetic workspace. Drafting accepts custom Evidence through offline
+topic grouping; governance review remains fixture-bound. Human draft edits are preserved in the drafting workflow, but the deterministic offline
 extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts
 only its separate fixed package; arbitrary SI analysis requires a future approved provider.
 
@@ -418,7 +418,7 @@ Not yet implemented:
 - Confluence review-page write-back; or
 - any multi-round workflow behavior.
 
-The deterministic drafting and review providers support only the bundled synthetic scenarios;
+Drafting supports custom Evidence in the synthetic workspace; review remains fixture-bound;
 they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Offline
 ADO work items remain local previews. Internal fake mode can submit one preview to an in-memory
 gateway only; it never reaches Azure DevOps. Draft confirmation creates an unpublished artifact;
@@ -448,5 +448,12 @@ statement.
 
 Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
 the session; the visible status changes back to unsaved after editing, adding, or removing content.
-Valid saved custom evidence can reach the drafting step. There, unsupported inputs disable
-**Generate SI Draft** with an explanation; no sample output is substituted.
+Valid saved custom evidence can reach the drafting step. The existing offline demo drafter accepts custom Evidence and reflects it in the draft.
+No API or additional mode is required.
+
+Custom Evidence drafting uses the existing demo workflow: save, confirm Context, generate, edit,
+and human-confirm. English keyword grouping places literal source excerpts into template chapters;
+unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
+This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
+sample package retains its canonical output. Custom drafts do not become supported inputs for the
+separate fixture-bound governance review extractor.

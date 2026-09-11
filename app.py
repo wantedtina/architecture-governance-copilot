@@ -2093,7 +2093,7 @@ def _generate_si_draft() -> bool:
                 _processing_overlay_markup(
                     "DRAFT SOLUTION INTENT",
                     "Structuring architecture content",
-                    "Mapping known design context into the required SI sections.",
+                    "Mapping the confirmed inputs into the required SI sections.",
                     step=2,
                     total_steps=3,
                 ),
@@ -2101,7 +2101,7 @@ def _generate_si_draft() -> bool:
             )
             service = SolutionIntentDraftingService(DeterministicDemoDrafter())
             draft = service.generate_draft(request)
-            st.write("Known context and explicit gaps mapped into the SI structure")
+            st.write("Confirmed inputs and explicit gaps mapped into the SI structure")
             _demo_pause()
             processing_overlay.markdown(
                 _processing_overlay_markup(

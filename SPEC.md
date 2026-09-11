@@ -129,8 +129,8 @@ automatically carry findings between rounds.
 - Offer **Add sample evidence** explicitly; never replace custom input with sample content. Record
   user-entered/uploaded provenance, original upload SHA-256 reference, and current content SHA-256.
   User content is not externally verified. Refresh and navigation preserve evidence; reset clears it.
-- Allow valid saved custom packages to be confirmed; block unsupported generation on the drafting page. The current
-  deterministic provider accepts only its exact sample inputs. Source edits invalidate drafting
+- Allow valid saved custom Evidence to be confirmed and used for offline draft generation. The current
+  deterministic provider accepts custom Evidence within the synthetic workspace. Source edits invalidate drafting
   confirmation and artifacts without clearing independent review or publication history.
 - Show stable resource IDs, canonical synthetic references, versions or revisions, exact SHA-256
   fingerprints, local validation status, and configured-provider compatibility.
@@ -524,7 +524,7 @@ Collection defaults use independent factories. All models serialize with
   identities for the exact human-confirmed provider package.
 - `SolutionIntentDraftRequest` contains required `project_name`, required template text,
   required selected source-code context, and structurally optional supporting-document context.
-  The configured deterministic provider requires the exact bundled supporting context.
+  The demo drafter accepts custom supporting evidence in the bundled workspace.
 - `SolutionIntentDraft` contains the project name, generated Markdown content, provider name,
   input-type provenance, and explicit assumptions.
 - `DraftInputType` distinguishes template, source-code, and supporting-document context.
@@ -646,8 +646,9 @@ SolutionIntentDrafter.draft(
 ```
 
 `SolutionIntentDraftingService` receives the provider explicitly. The current
-`DeterministicDemoDrafter` accepts only the bundled synthetic template, source context, and
-supporting notes. It returns the known synthetic SI plus explicit assumptions. It does not scan
+`DeterministicDemoDrafter` requires the bundled project, template, and source context. The exact
+sample Evidence returns the canonical SI; custom Evidence produces a template-shaped draft with
+lexically grouped excerpts, line references, complete source context, and explicit gaps. It does not scan
 repositories, execute source, call an LLM, publish to Confluence, or approve architecture.
 Draft eligibility and stale-result detection additionally bind the canonical request to the
 confirmed source-package fingerprint and provider configuration identity without changing this
@@ -685,7 +686,8 @@ approval flag, UI state, or governance authority.
 The deterministic drafter:
 
 1. loads the bundled synthetic template, source context, supporting notes, and expected SI;
-2. checks normalized inputs against those fixtures;
+2. validates the synthetic workspace and nonempty Evidence; preserves the canonical sample output
+   and assembles custom Evidence using deterministic topic grouping;
 3. returns a validated independent `SolutionIntentDraft`; and
 4. requires human confirmation before review handoff.
 
@@ -755,5 +757,12 @@ this plan's MVP phases.
 
 Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
 the session; the visible status changes back to unsaved after editing, adding, or removing content.
-Valid saved custom evidence can reach the drafting step. There, unsupported inputs disable
-**Generate SI Draft** with an explanation; no sample output is substituted.
+Valid saved custom evidence can reach the drafting step. The existing offline demo drafter accepts custom Evidence and reflects it in the draft.
+No API or additional mode is required.
+
+Custom Evidence drafting uses the existing demo workflow: save, confirm Context, generate, edit,
+and human-confirm. English keyword grouping places literal source excerpts into template chapters;
+unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
+This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
+sample package retains its canonical output. Custom drafts do not become supported inputs for the
+separate fixture-bound governance review extractor.

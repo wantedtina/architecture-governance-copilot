@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
@@ -38,7 +40,7 @@ class DeterministicDraftingFixtureError(ValueError):
 
 
 class DeterministicDemoDrafter:
-    """Return the frozen synthetic SI draft for the matching drafting context."""
+    """Draft locally from the synthetic workspace and supplied evidence."""
 
     provider_name = "Deterministic demo drafter"
     provider_configuration_id = DETERMINISTIC_DRAFTING_PROVIDER_CONFIGURATION_ID
@@ -88,19 +90,20 @@ class DeterministicDemoDrafter:
             raise ValueError(
                 "Source-code context does not match the deterministic drafting fixture."
             )
-        if _normalize_document(request.supporting_documents or "") != _normalize_document(
-            self._supporting_context
-        ):
-            raise ValueError(
-                "Supporting-document context does not match the deterministic drafting fixture."
-            )
+        if not _normalize_document(request.supporting_documents or ""):
+            raise ValueError("Supporting evidence must not be empty.")
 
     def draft(self, request: SolutionIntentDraftRequest) -> SolutionIntentDraft:
-        """Return an independent known draft only when every input matches."""
+        """Preserve the canonical sample; otherwise assemble an evidence-aware demo draft."""
         self.validate_request(request)
         return SolutionIntentDraft(
             project_name=request.project_name,
-            content=self._draft,
+            content=(
+                self._draft
+                if _normalize_document(request.supporting_documents or "")
+                == _normalize_document(self._supporting_context)
+                else _draft_from_evidence(request)
+            ),
             provider_name=self.provider_name,
             input_types=[
                 DraftInputType.TEMPLATE,
@@ -140,3 +143,82 @@ def _read_text(path: Path, filename: str) -> str:
 
 def _normalize_document(document: str) -> str:
     return document.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+# Lexical grouping offers a reproducible demo, never a claim of semantic interpretation.
+_SECTION_TERMS = {
+    3: ("scope", "channel", "customer", "payment"),
+    4: ("architecture", "component", "broker", "event"),
+    5: ("interface", "api", "retry", "idempot"),
+    6: ("data", "retention", "postgres", "storage"),
+    7: ("rto", "rpo", "recover", "availability", "resilien"),
+    8: ("security", "encrypt", "secret", "token", "auth"),
+    9: ("log", "metric", "monitor", "alert", "observab"),
+    10: ("deploy", "release", "kubernetes", "replica"),
+    11: ("support", "owner", "runbook", "escalat"),
+}
+
+
+def _quoted_text(text: str) -> str:
+    """Indent source text so Markdown/HTML cannot become generated instructions or headings."""
+    return "\n".join("    " + line for line in text.splitlines())
+
+
+def _draft_from_evidence(request: SolutionIntentDraftRequest) -> str:
+    evidence = _normalize_document(request.supporting_documents or "")
+    lines = [(index, line) for index, line in enumerate(evidence.splitlines(), 1) if line.strip()]
+    digest = hashlib.sha256(evidence.encode()).hexdigest()
+    parts = [
+        f"# Solution Intent - {request.project_name}",
+        "> Offline demo draft assembled from the confirmed inputs. Human review required. "
+        "No model or external service was called.",
+    ]
+    for heading in re.findall(r"^## \d+\. .+$", request.template, re.MULTILINE):
+        number = int(heading.split()[1].rstrip("."))
+        parts.append(heading)
+        if number == 1:
+            parts.append(
+                "Status: Draft — awaiting human review. No architecture approval recorded."
+            )
+        elif number == 2:
+            parts.append(
+                f"This draft records the supplied evidence for {request.project_name}. "
+                "Topic excerpts below are grouped by keywords and remain unverified source claims. "
+                "Complete evidence and selected repository context appear in the appendix."
+            )
+        elif number == 12:
+            parts.append(
+                "- Confirm the relevance and consistency of every source claim.\n"
+                "- Resolve contradictory or missing information before approval.\n"
+                "- Complete the sections marked To be confirmed; no design decisions are inferred."
+            )
+        else:
+            matches = [
+                (index, line)
+                for index, line in lines
+                if any(term in line.lower() for term in _SECTION_TERMS.get(number, ()))
+            ]
+            if matches:
+                parts.append("Proposed inputs for this section — confirm applicability:")
+                for index, line in matches:
+                    parts.extend([f"Evidence L{index}:", _quoted_text(line)])
+                parts.append(
+                    "To be confirmed: validate these inputs and complete the design narrative."
+                )
+            else:
+                parts.append(
+                    "To be confirmed: supply and review the design details for this section."
+                )
+    parts.extend(
+        [
+            "## Appendix — Confirmed source context",
+            "### Supporting evidence",
+            f"SHA-256: `{digest}`. Line references use this normalized evidence text. "
+            "Document identities and hashes remain in the source-package manifest.",
+            _quoted_text(evidence),
+            "### Selected repository context",
+            "Source excerpt only; not proof of deployment or operational readiness.",
+            _quoted_text(request.source_code_context),
+        ]
+    )
+    return "\n\n".join(parts)

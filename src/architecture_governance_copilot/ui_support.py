@@ -1381,9 +1381,7 @@ def project_context_readiness(
     if not isinstance(repository_id, str) or not repository_id:
         blockers.append("Select the required repository revision.")
     if not isinstance(evidence_ids, (tuple, list)) or not evidence_ids:
-        blockers.append(
-            "Add supporting evidence; the sample provider requires its exact supporting context."
-        )
+        blockers.append("Add supporting evidence before continuing.")
     inventory_ids = {resource.resource_id for resource in inventory.resources}
     selected_ids = {
         resource_id
@@ -1411,8 +1409,8 @@ def project_context_readiness(
             DeterministicDemoDrafter().validate_request(request)
         except ValueError:
             blockers.append(
-                "Your inputs are retained, but this deterministic provider only supports its exact "
-                "sample package. Custom-input drafting requires a separately approved provider."
+                "Your inputs are retained, but this demo drafter requires the bundled "
+                "project, template, and repository context. Custom evidence is supported."
             )
     return tuple(blockers)
 
