@@ -15,6 +15,7 @@ from pathlib import Path
 import streamlit as st
 from pydantic import ValidationError
 
+from architecture_governance_copilot.demo_review import DEMO_REVIEW_GUIDANCE
 from architecture_governance_copilot.extractors import DeterministicFixtureError
 from architecture_governance_copilot.governance_service import (
     GovernanceOutputs,
@@ -156,6 +157,7 @@ from architecture_governance_copilot.ui_support import (
     clear_outputs,
     clear_publication_preview,
     clear_review_action_due_date,
+    clear_stale_operation_error,
     clear_stale_si_draft,
     confirm_project_context_for_drafting,
     confirm_review_input_manifest,
@@ -187,6 +189,7 @@ from architecture_governance_copilot.ui_support import (
     record_publication_operation,
     recover_review_policy,
     refresh_project_context,
+    remember_operation_error,
     remove_drafting_evidence,
     reset_application_state,
     reset_drafting_workflow,
@@ -492,6 +495,7 @@ def _render_output_page() -> None:
     st.header("Review step 3 — Generated Outputs")
     _render_output_navigation()
     _render_output_stage(outputs, change_summary)
+    _render_error()
 
 
 def _render_delivery_page() -> None:
@@ -517,6 +521,7 @@ def _render_delivery_page() -> None:
 
 
 def _render_page_shell(stage: str) -> None:
+    clear_stale_operation_error(st.session_state)
     set_active_stage(st.session_state, stage)
     _render_sidebar(stage)
     _render_header()
@@ -897,6 +902,18 @@ def _apply_visual_theme() -> None:
             font-weight: 600;
             line-height: 1.25;
         }
+        .st-key-agc_operation_error {
+            position: fixed;
+            bottom: 10rem;
+            right: 2rem;
+            width: min(34rem, calc(100vw - 2rem));
+            max-height: 25vh;
+            overflow-y: auto;
+            z-index: 1001;
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 20px #0002;
+        }
         .st-key-agc_primary_action {
             position: fixed;
             right: 2rem;
@@ -1081,6 +1098,9 @@ def _apply_visual_theme() -> None:
             }
             .agc-brand-actions {
                 align-items: flex-start;
+            }
+            .st-key-agc_operation_error {
+                right: 1rem;
             }
             .st-key-agc_primary_action {
                 right: 1rem;
@@ -2460,6 +2480,8 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
         else:
             st.rerun()
 
+    if review_mode is ReviewMode.OFFLINE:
+        st.caption(DEMO_REVIEW_GUIDANCE)
     processing_placeholder = st.empty()
     if analyze_clicked:
         with processing_placeholder.container():
@@ -2892,13 +2914,23 @@ def _analyze_current_inputs() -> bool:
 def _render_error() -> None:
     error = st.session_state[ERROR_KEY]
     if isinstance(error, str) and error:
-        st.error(error)
+        remember_operation_error(st.session_state)
+        with st.container(key="agc_operation_error"):
+            st.error(error)
+            st.caption(
+                "Your inputs are retained. Follow delivery status and reconciliation guidance; "
+                "do not retry a protected operation."
+                if active_stage(st.session_state) == DELIVERY_STAGE
+                else "Your inputs are retained. Correct the indicated input, then retry the action."
+            )
 
 
 def _render_human_review_stage(
     analyzed_result: GovernanceResult,
 ) -> tuple[ReviewFormData, bool]:
     st.subheader("Draft Structured Review")
+    if current_review_mode(st.session_state) is ReviewMode.OFFLINE:
+        st.info(DEMO_REVIEW_GUIDANCE)
     st.caption(
         "Edit or exclude proposed items. Supporting evidence is read-only. "
         "This stage does not formally approve the Solution Intent."
@@ -4033,6 +4065,11 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
         preview = st.session_state.get(ADO_PUBLICATION_PREVIEW_KEY)
         row = readiness.actions[selected_index]
         operation = operations[selected_index]
+        if operation is not None and operation.status in {
+            PublicationStatus.DEFINITELY_FAILED,
+            PublicationStatus.UNKNOWN_RESULT,
+        }:
+            st.session_state[ERROR_KEY] = operation.message
         protected = operation is not None and operation.status in PROTECTED_PUBLICATION_STATUSES
         if protected:
             st.info(
@@ -4142,6 +4179,7 @@ def _submit_fake_ado_publication(
     snapshot: ConfluencePageSnapshot,
 ) -> None:
     """Revalidate package capability and exact source immediately before guarded submission."""
+    st.session_state[ERROR_KEY] = None
     try:
         if current_analysis_invalidation(st.session_state) is not None:
             raise PublicationValidationError("The confirmed review package changed.")

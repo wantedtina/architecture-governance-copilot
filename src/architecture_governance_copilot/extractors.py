@@ -8,6 +8,7 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import ValidationError
 
+from architecture_governance_copilot.demo_review import group_transcript_candidates
 from architecture_governance_copilot.models import (
     GovernanceResult,
     SolutionIntentReviewContext,
@@ -44,7 +45,7 @@ class DeterministicFixtureError(ValueError):
 
 
 class DeterministicDemoExtractor:
-    """Return the frozen result only for the matching bundled synthetic review."""
+    """Review the bundled SI with fixed or edited offline transcript evidence."""
 
     def __init__(self, samples_dir: Path | None = None) -> None:
         self._samples_dir = (
@@ -85,19 +86,27 @@ class DeterministicDemoExtractor:
         review_transcript: str,
         context: SolutionIntentReviewContext,
     ) -> GovernanceResult:
-        """Return an independent result when all inputs match the demo fixture."""
+        """Return canonical results or literal candidates with current review metadata."""
         if not solution_intent.strip():
             raise ValueError("Solution Intent input must not be blank.")
         if not review_transcript.strip():
             raise ValueError("Review transcript input must not be blank.")
         if _normalize_document(solution_intent) != _normalize_document(self._solution_intent):
             raise ValueError("Solution Intent does not match the deterministic demo fixture.")
-        if _normalize_document(review_transcript) != _normalize_document(self._review_transcript):
-            raise ValueError("Review transcript does not match the deterministic demo fixture.")
-        if context != self._context:
-            raise ValueError("Review context does not match the deterministic demo fixture.")
-
-        return self._expected_result.model_copy(deep=True)
+        identity_fields = ("project_name", "si_title", "si_version", "current_si_status")
+        if any(
+            getattr(context, field) != getattr(self._context, field) for field in identity_fields
+        ):
+            raise ValueError(
+                "Review context does not match the bundled SI identity. "
+                "Reload the authoritative SI snapshot."
+            )
+        context = SolutionIntentReviewContext.model_validate(context.model_dump())
+        if _normalize_document(review_transcript) == _normalize_document(self._review_transcript):
+            result = self._expected_result.model_copy(deep=True)
+            result.context = context.model_copy(deep=True)
+            return result
+        return group_transcript_candidates(review_transcript, context)
 
 
 def _read_text(path: Path, filename: str) -> str:

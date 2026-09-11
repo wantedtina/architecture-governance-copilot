@@ -215,17 +215,35 @@ def test_substantive_solution_intent_change_is_rejected(
         )
 
 
-def test_substantive_transcript_change_is_rejected(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> None:
-    solution_intent, transcript, context = sample_inputs
+def test_changed_transcript_uses_current_literal_evidence(sample_inputs) -> None:
+    from architecture_governance_copilot.evidence_validation import validate_governance_evidence
 
-    with pytest.raises(ValueError, match="Review transcript.*does not match"):
-        DeterministicDemoExtractor().extract(
-            solution_intent,
-            transcript.replace("changes requested", "approved"),
-            context,
-        )
+    si, _, context = sample_inputs
+    transcript = (
+        "Action: prepare a synthetic failover test.\n"
+        "Risk: capacity is uncertain.\nUnclassified synthetic note."
+    )
+    result = DeterministicDemoExtractor().extract(si, transcript, context)
+    assert result.review_outcome is ReviewOutcome.NOT_STATED
+    assert result.action_items[0].title == "Action: prepare a synthetic failover test."
+    assert result.action_items[0].owner is None
+    assert result.action_items[0].due_date is None
+    assert len(result.risks) == 1
+    assert result.missing_evidence[0].evidence[0].reference == "transcript-line-3"
+    assert not result.findings
+    validate_governance_evidence(result, si, transcript)
+    assert result == DeterministicDemoExtractor().extract(si, transcript, context)
+
+
+def test_editable_metadata_is_carried_into_results(sample_inputs) -> None:
+    si, transcript, context = sample_inputs
+    changed = context.model_copy(
+        update={"review_round": 3, "domain_architect": "Demo Reviewer", "ado_ticket_id": "DEMO-123"}
+    )
+    result = DeterministicDemoExtractor().extract(si, transcript, changed)
+    assert result.context == changed
+    assert result.context is not changed
+    assert result.findings == DeterministicDemoExtractor().extract(*sample_inputs).findings
 
 
 @pytest.mark.parametrize(
@@ -233,7 +251,6 @@ def test_substantive_transcript_change_is_rejected(
     [
         ("project_name", "Different Project"),
         ("si_version", "1.3"),
-        ("review_round", 3),
     ],
 )
 def test_changed_context_is_rejected(
@@ -442,3 +459,38 @@ def test_serialization_matches_expected_fixture(extracted_result: GovernanceResu
     action_items = serialized["action_items"]
     assert isinstance(action_items, list)
     assert action_items[0]["due_date"] == "2026-07-24"
+
+
+@pytest.mark.parametrize("ending", ["\n", "\r\n", "\r"])
+def test_custom_grouping_covers_every_line_and_never_infers_approval(sample_inputs, ending):
+    from architecture_governance_copilot.evidence_validation import validate_governance_evidence
+
+    si, _, context = sample_inputs
+    lines = [
+        "Decision: adopt a synthetic queue.",
+        "Finding: recovery is not defined.",
+        "Risk: capacity uncertainty.",
+        "Action: test recovery.",
+        "Question: who owns support?",
+        "The outcome is approved.",
+        "Unclassified note.",
+    ]
+    transcript = ending.join(lines)
+    result = DeterministicDemoExtractor().extract(si, transcript, context)
+    validate_governance_evidence(result, si, transcript)
+    quotes = [
+        e.quote
+        for name in (
+            "decisions",
+            "findings",
+            "risks",
+            "action_items",
+            "open_questions",
+            "missing_evidence",
+        )
+        for item in getattr(result, name)
+        for e in item.evidence
+    ]
+    assert sorted(quotes) == sorted(lines)
+    assert result.review_outcome is ReviewOutcome.NOT_STATED
+    assert len(result.missing_evidence) == 2

@@ -32,7 +32,7 @@ from architecture_governance_copilot.publication import AdoDeliveryCapability
 
 INTERNAL_FAKE_ENABLED_ENV = "AGC_INTERNAL_FAKE_ENABLED"
 INTERNAL_FAKE_PROVIDER_ID_ENV = "AGC_INTERNAL_FAKE_PROVIDER_ID"
-OFFLINE_PROVIDER_CONFIGURATION_ID = "offline-deterministic-v1"
+OFFLINE_PROVIDER_CONFIGURATION_ID = "offline-deterministic-v2"
 DEFAULT_INTERNAL_FAKE_PROVIDER_ID = "internal-fake-aif-v1"
 INTERNAL_FAKE_PAGE_ID = "synthetic-page-204"
 

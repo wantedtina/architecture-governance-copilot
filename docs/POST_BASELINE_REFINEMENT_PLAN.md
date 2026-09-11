@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 15 completed and verified.
+Execution authority: `NONE` — Batch 16 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -908,6 +908,21 @@ Readiness decisions proposed in Batch 01 and subject to approval with that plan:
   category while preserving dynamic counts, edit comparisons, evidence and confirmation semantics.
 - No unresolved product decision; no provider or integration expansion.
 
+### R19 — Review edited demo transcripts and metadata
+
+- **State:** `Verified`
+- **Approval:** User approved deterministic review of edited transcript and valid metadata.
+- Preserve the original sample result; derive edited-transcript candidates from current literal
+  evidence, with unclassified content retained for human review. No real API or semantic AI claim.
+- The authoritative SI remains fixture-bound; Internal fake keeps its separate fixed contract.
+
+### R20 — Keep operation errors visible beside workflow actions
+
+- **State:** `Verified`
+- **Approval:** User approved correcting off-screen error feedback across workflow steps.
+- Keep persistent errors visible near primary actions, retain contextual detail and inputs, and
+  clear stale feedback after correction. Preserve validation, invalidation and delivery safeguards.
+
 ## 6. Accepted intake and dependency sequencing
 
 The user accepted R1-R10 as subsequent implementation intent on 2026-09-10. Acceptance does not
@@ -944,7 +959,7 @@ During the current user-testing period:
 6. After accepted-scope planning is authorized, create the smallest coherent execution plan using
    `docs/exec-plans/README.md` and set the active-plan pointer at the top of this register. Keep the
    plan in `PROPOSED_AWAITING_USER_APPROVAL` and its items no higher than `Ready` until the user
-   explicitly approves the plan; move included items to `In progress` only when implementation
+   explicitly approves the plan; move included items to `Verified` only when implementation
    actually starts.
 7. Keep component details, implementation steps, detailed tests, progress, discoveries, and
    verification evidence in that execution plan rather than this register.

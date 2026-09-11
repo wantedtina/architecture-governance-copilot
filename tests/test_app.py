@@ -808,7 +808,12 @@ def test_returning_from_outputs_restores_sources_without_false_invalidation() ->
     assert app.button(key="agc_return_to_review")
 
 
-def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice() -> None:
+def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice(monkeypatch) -> None:
+    from architecture_governance_copilot.extractors import DeterministicDemoExtractor
+
+    def fail_analysis(*args):
+        raise ValueError("Synthetic analysis failure for recovery test")
+
     app = _analyzed_app()
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
@@ -821,6 +826,7 @@ def test_edit_revert_and_failed_reanalysis_keep_invalidation_notice() -> None:
     assert any("Inputs changed → analysis invalidated" in item.value for item in app.warning)
     assert all(item.key != "agc_return_to_review" for item in app.button)
 
+    monkeypatch.setattr(DeterministicDemoExtractor, "extract", fail_analysis)
     app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(f"{original}\nUnsupported edit").run()
     app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
@@ -1359,3 +1365,60 @@ def test_repository_selector_filters_revisions_and_rejects_unsupported_content()
     assert app.button(key="agc_generate_si_draft").disabled
     assert any("bundled" in item.value for item in app.warning)
     assert not app.exception
+
+
+def test_custom_review_inputs_reach_human_review_and_outputs() -> None:
+    app = _review_inputs_app()
+    for key in ("agc_load_review_source", "agc_load_review_transcript", "agc_load_review_metadata"):
+        app.button(key=key).click().run()
+    app.text_area(key=TRANSCRIPT_WIDGET_KEY).input(
+        "Action: test synthetic recovery.\nUnclassified note."
+    ).run()
+    app.text_input(key="agc_metadata_domain_architect").input("Demo Reviewer").run()
+    app.button(key="agc_confirm_review_inputs").click().run()
+    app.button(key="agc_analyze").click().run()
+    assert not app.exception
+    assert app.session_state[OUTPUTS_KEY] is None
+    result = app.session_state[ANALYZED_RESULT_KEY]
+    assert result.context.domain_architect == "Demo Reviewer"
+    assert result.action_items[0].title == "Action: test synthetic recovery."
+    assert result.missing_evidence[0].evidence[0].quote == "Unclassified note."
+    app.switch_page("pages/human_review.py").run()
+    app.text_input(key="agc_field_action_0_owner").input("Demo Owner").run()
+    app.button(key="agc_confirm_review").click().run()
+    assert not app.exception
+    assert "Demo Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
+    assert app.session_state[OUTPUTS_KEY].ado_work_items[0].assigned_to == "Demo Owner"
+
+
+def test_review_error_uses_visible_feedback_and_clears_on_correction() -> None:
+    app = _analyzed_app()
+    app.text_input(key="agc_field_finding_0_due_date").input("next Friday").run()
+    app.button(key="agc_confirm_review").click().run()
+    assert any("Unable to generate reviewed outputs" in item.value for item in app.error)
+    assert any("Your inputs are retained" in item.value for item in app.caption)
+    app.text_input(key="agc_field_finding_0_due_date").input("2026-07-24").run()
+    assert not app.error
+
+
+def test_shared_feedback_in_drafting_pages_and_delivery(monkeypatch) -> None:
+    app = _initial_app()
+    app.button(key="agc_start_drafting_workflow").click().run()
+    app.switch_page("pages/project_context.py").run()
+    for key in ("agc_open_demonstration_project", "agc_evidence_sample", "agc_evidence_save"):
+        app.button(key=key).click().run()
+    app.session_state[ui_support.ERROR_KEY] = "Synthetic context failure"
+    app.run()
+    assert any(item.value == "Synthetic context failure" for item in app.error)
+    app.session_state[ui_support.ERROR_KEY] = None
+    app.button(key="agc_confirm_project_context").click().run()
+    app.switch_page("pages/solution_intent_drafting.py").run()
+    app.session_state[ui_support.ERROR_KEY] = "Synthetic drafting failure"
+    app.run()
+    assert any(item.value == "Synthetic drafting failure" for item in app.error)
+
+    app = _fake_delivery_app(monkeypatch)
+    app.session_state[ui_support.ERROR_KEY] = "Synthetic delivery failure"
+    app.run()
+    assert any(item.value == "Synthetic delivery failure" for item in app.error)
+    assert any("do not retry a protected operation" in item.value for item in app.caption)

@@ -2690,3 +2690,37 @@ def retain_review_tab_selection(state: MutableMapping[str, Any], labels: list[st
     state[key] = next(
         (label for label in labels if label.split(" · ", 1)[0] == category), labels[0]
     )
+
+
+def _operation_input_signature(state: Mapping[str, Any]) -> str:
+    """Track editable values only; never retain raw input text in feedback bookkeeping."""
+    prefixes = (
+        "agc_field_",
+        "agc_input_",
+        "agc_metadata_",
+        "agc_draft_",
+        "agc_context_",
+        "agc_delivery_action",
+    )
+    values = {key: repr(value) for key, value in state.items() if key.startswith(prefixes)}
+    return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
+
+
+def remember_operation_error(state: MutableMapping[str, Any]) -> None:
+    """Bind displayed feedback to its input revision."""
+    state["agc_operation_error_revision"] = (
+        state.get(ERROR_KEY),
+        _operation_input_signature(state),
+    )
+
+
+def clear_stale_operation_error(state: MutableMapping[str, Any]) -> None:
+    """Discard an old message on input correction without clearing a newly raised error."""
+    previous = state.get("agc_operation_error_revision")
+    if (
+        isinstance(previous, tuple)
+        and previous[0] == state.get(ERROR_KEY)
+        and previous[1] != _operation_input_signature(state)
+    ):
+        state[ERROR_KEY] = None
+        state.pop("agc_operation_error_revision", None)

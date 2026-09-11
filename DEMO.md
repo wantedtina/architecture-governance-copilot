@@ -424,7 +424,7 @@ and human-confirm. English keyword grouping places literal source excerpts into 
 unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
 This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
 sample package retains its canonical output. Custom drafts do not become supported inputs for the
-separate fixture-bound governance review extractor.
+governance review extractor, which still requires the bundled authoritative SI.
 
 Project Context displays SI Template, Repository context, and Governance Metadata in independently
 expanded sections by default; users may collapse them after review. Evidence appears once in its
@@ -446,3 +446,25 @@ Excluded by you / Needs correction labels. Changed fields show Original and Your
 long comparisons expand on demand. Tabs count edited/excluded/invalid items, while the fixed
 confirmation area summarizes unconfirmed changes. Restoring the original normalized value removes
 its change indication. Source evidence remains read-only and separate from reviewer changes.
+
+Edited Offline review transcripts use current literal evidence and line references. Unclassified
+lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
+The canonical transcript retains its original result with current editable metadata. Review category,
+severity, priority, owner, date and outcome still require human inspection and confirmation.
+Shared operation failures remain visible above the persistent action area, including on narrow
+screens. Input corrections clear stale errors; delivery history and protected results remain intact.
+
+For a predictable edited-transcript demonstration, enter lines such as:
+
+```text
+Finding: synthetic failover is not defined.
+Action: test synthetic recovery.
+Risk: capacity is uncertain.
+Question: who owns the recovery test?
+Additional context for manual review.
+```
+
+Edit Domain Architect or review round, confirm the input manifest, and analyze. Inspect current
+line evidence, assign the action owner/date during Human Review, and confirm before generating
+outputs. Unclassified content can be clarified in the transcript and reanalyzed after confirming
+the changed manifest. No automatic approval or real API call is demonstrated.

@@ -693,15 +693,18 @@ The deterministic drafter:
 
 The deterministic review extractor:
 
-1. loads the bundled synthetic SI, transcript, metadata, and expected result;
-2. normalizes only line endings and outer whitespace;
-3. confirms that both input documents match their fixtures;
-4. validates metadata expected by the scenario;
-5. parses the expected JSON as `GovernanceResult`; and
-6. returns a deep independent model copy.
+1. loads and validates the bundled synthetic SI, transcript, metadata, and expected result;
+2. normalizes line endings and outer whitespace and requires the bundled authoritative SI identity;
+3. accepts valid review round, date, Domain Architect and governance ticket edits;
+4. returns the original result with current metadata for the canonical transcript;
+5. groups edited transcript lines into literal keyword-based candidates; every nonblank line is
+   retained as an item or an unclassified manual-review entry under Missing Info; and
+6. leaves edited-transcript outcomes Not stated, owners/dates unset, and discloses medium
+   severity/priority as review defaults. Existing source-evidence validation still applies.
 
-If either source differs, deterministic mode must report its limitation rather than fabricate an
-analysis. It requires no network, credential, model SDK, Confluence page, Teams API, or ADO API.
+No approval or semantic inference is claimed. The provider identity is offline-deterministic-v2,
+invalidating incompatible prior confirmations through existing provenance controls. No network,
+credential, model SDK, Confluence page, Teams API or ADO API is required.
 
 The opt-in Internal fake runtime uses a distinct 1,083-word Synthetic Order Routing Service SI,
 28 timestamped transcript lines across four fictional roles, and a fixed fake AIF response. The
@@ -765,7 +768,7 @@ and human-confirm. English keyword grouping places literal source excerpts into 
 unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
 This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
 sample package retains its canonical output. Custom drafts do not become supported inputs for the
-separate fixture-bound governance review extractor.
+governance review extractor, which still requires the bundled authoritative SI.
 
 Project Context displays SI Template, Repository context, and Governance Metadata in independently
 expanded sections by default; users may collapse them after review. Evidence appears once in its
@@ -790,3 +793,10 @@ its change indication. Source evidence remains read-only and separate from revie
 
 Human Review retains the selected category when edits, exclusions, validation issues, or reverts
 change its tab counts. Switching categories remains an explicit user action within the review page.
+
+Edited Offline review transcripts use current literal evidence and line references. Unclassified
+lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
+The canonical transcript retains its original result with current editable metadata. Review category,
+severity, priority, owner, date and outcome still require human inspection and confirmation.
+Shared operation failures remain visible above the persistent action area, including on narrow
+screens. Input corrections clear stale errors; delivery history and protected results remain intact.

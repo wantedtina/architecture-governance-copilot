@@ -87,5 +87,7 @@ Run tests and both Ruff checks after application changes. Run `git diff --check`
 
 The demo drafter supports user-supplied evidence within the bundled synthetic workspace using
 deterministic topic grouping and literal source excerpts. It is not general semantic AI drafting.
-The exact canonical package still produces its frozen draft. The review extractor remains
-fixture-bound: a materially edited or custom-generated SI requires a future approved review provider.
+The exact canonical package still produces its frozen draft. Offline review supports edited
+transcripts through literal candidate grouping and valid editable metadata, with unclassified text
+retained for human review. Its SI remains fixture-bound: a materially edited or custom-generated SI
+requires a future approved review provider. Internal fake retains its separate fixed contract.

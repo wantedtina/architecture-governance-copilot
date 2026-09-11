@@ -1610,3 +1610,37 @@ def test_review_tab_selection_survives_count_changes_and_reset(category: str) ->
     clear_review_widget_state(state)
     retain_review_tab_selection(state, labels)
     assert state["agc_human_review_tabs"] == "Decisions · 1"
+
+
+def test_operation_error_clears_only_when_its_inputs_change():
+    from architecture_governance_copilot.ui_support import (
+        clear_stale_operation_error,
+        remember_operation_error,
+    )
+
+    state = {"agc_error": "Invalid date", "agc_field_finding_0_due_date": "bad"}
+    remember_operation_error(state)
+    clear_stale_operation_error(state)
+    assert state["agc_error"] == "Invalid date"
+    state["agc_field_finding_0_due_date"] = "2026-07-24"
+    clear_stale_operation_error(state)
+    assert state["agc_error"] is None
+
+
+def test_delivery_selection_clears_feedback_without_clearing_history():
+    from architecture_governance_copilot.ui_support import (
+        clear_stale_operation_error,
+        remember_operation_error,
+    )
+
+    history = {"synthetic-correlation": "unknown"}
+    state = {
+        "agc_error": "Needs reconciliation",
+        "agc_delivery_action_widget": 0,
+        "agc_ado_publication_history": history,
+    }
+    remember_operation_error(state)
+    state["agc_delivery_action_widget"] = 1
+    clear_stale_operation_error(state)
+    assert state["agc_error"] is None
+    assert state["agc_ado_publication_history"] is history

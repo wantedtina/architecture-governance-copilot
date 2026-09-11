@@ -99,10 +99,10 @@ Extractor provider                 Pydantic models
                            guarded fake Create
 ```
 
-The deterministic extractor is the required offline demo path. It validates the bundled
-SI/transcript pair and review metadata, then returns an independent copy of the known structured
-result. It supports only this frozen synthetic scenario and does not perform semantic extraction
-of arbitrary text. Pure deterministic generators now transform a validated result into Markdown
+The deterministic extractor is the required offline demo path. It validates the bundled SI identity and current metadata. The original transcript returns
+an independent copy of the known result with current metadata; edited transcripts use literal
+candidate grouping and retain unclassified lines. It does not perform semantic extraction of
+arbitrary text. Pure deterministic generators now transform a validated result into Markdown
 review minutes and typed mock ADO action work items. `GovernanceReviewService` intentionally
 keeps analysis separate from output generation so the Streamlit UI can place human review and
 editing between them. Explicit session state holds only the current one-round inputs, analysis,
@@ -316,7 +316,7 @@ The review flow is: **Review a Solution Intent → load the authoritative SI, tr
 in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
 Reviewed Record & Generate Outputs**.
 The application uses a synthetic workspace. Drafting accepts custom Evidence through offline
-topic grouping; governance review remains fixture-bound. Human draft edits are preserved in the drafting workflow, but the deterministic offline
+topic grouping; governance review accepts edited transcripts and metadata within the bundled SI scenario. Human draft edits are preserved in the drafting workflow, but the deterministic offline
 extractor can analyze only its unchanged authoritative SI snapshot and the fake AIF path accepts
 only its separate fixed package; arbitrary SI analysis requires a future approved provider.
 
@@ -418,7 +418,7 @@ Not yet implemented:
 - Confluence review-page write-back; or
 - any multi-round workflow behavior.
 
-Drafting supports custom Evidence in the synthetic workspace; review remains fixture-bound;
+Drafting supports custom Evidence in the synthetic workspace; review accepts edited transcripts and metadata for its bundled SI;
 they do not claim to draft from arbitrary repositories or analyze arbitrary documents. Offline
 ADO work items remain local previews. Internal fake mode can submit one preview to an in-memory
 gateway only; it never reaches Azure DevOps. Draft confirmation creates an unpublished artifact;
@@ -456,7 +456,7 @@ and human-confirm. English keyword grouping places literal source excerpts into 
 unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
 This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
 sample package retains its canonical output. Custom drafts do not become supported inputs for the
-separate fixture-bound governance review extractor.
+governance review extractor, which still requires the bundled authoritative SI.
 
 Project Context displays SI Template, Repository context, and Governance Metadata in independently
 expanded sections by default; users may collapse them after review. Evidence appears once in its
@@ -481,3 +481,10 @@ its change indication. Source evidence remains read-only and separate from revie
 
 Human Review retains the selected category when edits, exclusions, validation issues, or reverts
 change its tab counts. Switching categories remains an explicit user action within the review page.
+
+Edited Offline review transcripts use current literal evidence and line references. Unclassified
+lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
+The canonical transcript retains its original result with current editable metadata. Review category,
+severity, priority, owner, date and outcome still require human inspection and confirmation.
+Shared operation failures remain visible above the persistent action area, including on narrow
+screens. Input corrections clear stale errors; delivery history and protected results remain intact.
