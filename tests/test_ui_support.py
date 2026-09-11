@@ -1718,3 +1718,12 @@ def test_nonproduction_outcome_does_not_relax_provider_contract():
         EvidenceValidatingExtractor(ForgedProvider()).extract("SI", "Transcript", canonical.context)
     with pytest.raises(ValidationError):
         GovernanceResult.model_validate(reviewed.model_dump())
+
+
+def test_explicit_mapped_owner_choice_preserves_other_action_fields():
+    from architecture_governance_copilot.ui_support import choose_review_action_owner
+
+    state = {"agc_field_action_0_owner": "Unmapped", "agc_field_action_0_title": "Reviewed title"}
+    choose_review_action_owner(state, 0, "Avery Patel")
+    assert state["agc_field_action_0_owner"] == "Avery Patel"
+    assert state["agc_field_action_0_title"] == "Reviewed title"

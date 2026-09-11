@@ -154,6 +154,7 @@ from architecture_governance_copilot.ui_support import (
     build_review_change_summary,
     build_reviewed_result,
     build_sample_review_snapshot,
+    choose_review_action_owner,
     clear_outputs,
     clear_publication_preview,
     clear_review_action_due_date,
@@ -3418,6 +3419,23 @@ def _render_action_edits(
     st.markdown("### Action Items")
     if not result.action_items:
         st.caption("None recorded.")
+    capability = (
+        configured_delivery_capability(
+            confirmed_manifest=current_review_input_manifest(st.session_state)
+        )
+        if review_input_readiness(st.session_state).confirmed
+        else None
+    )
+    if capability is not None:
+        st.info(
+            "For fake Delivery, each selected action needs a mapped owner and a due date. "
+            "You can still confirm local outputs without delivering an incomplete action."
+        )
+        if result.context.ado_ticket_id not in capability.target.parent_work_item_ids:
+            st.warning(
+                "Delivery parent is unmapped. Review Inputs must use a configured "
+                "synthetic parent reference."
+            )
     edits: list[dict[str, object]] = []
     for index, action in enumerate(result.action_items):
         with _review_item_container("Action item", index):
@@ -3442,7 +3460,7 @@ def _render_action_edits(
             _render_field_change(pending, "Action item", index, "Title")
             owner_column, date_column, priority_column = st.columns(3)
             owner = owner_column.text_input(
-                "Owner (optional)",
+                "Owner (required for Delivery)" if capability else "Owner (optional)",
                 key=f"agc_field_action_{index}_owner",
                 **_review_widget_default(
                     f"agc_field_action_{index}_owner",
@@ -3450,8 +3468,17 @@ def _render_action_edits(
                 ),
             )
             _render_field_change(pending, "Action item", index, "Owner", target=owner_column)
+            if capability is not None:
+                owner_column.caption("Choose a mapped synthetic owner:")
+                for mapped_owner in capability.target.owner_identities:
+                    owner_column.button(
+                        mapped_owner,
+                        key=f"agc_choose_owner_{index}_{mapped_owner}",
+                        on_click=choose_review_action_owner,
+                        args=(st.session_state, index, mapped_owner),
+                    )
             due_date = date_column.date_input(
-                "Due date (optional)",
+                "Due date (required for Delivery)" if capability else "Due date (optional)",
                 key=f"agc_field_action_{index}_due_date",
                 format="YYYY-MM-DD",
                 min_value=date.min,
@@ -3479,6 +3506,14 @@ def _render_action_edits(
                     key=f"agc_field_action_{index}_priority",
                 )
                 _render_field_change(pending, "Action item", index, "Priority")
+            if capability is not None and include:
+                missing = []
+                if owner not in capability.target.owner_identities:
+                    missing.append("mapped owner")
+                if due_date is None:
+                    missing.append("due date")
+                if missing:
+                    st.warning("Before Delivery, provide: " + ", ".join(missing) + ".")
             _render_evidence(action.evidence, "Supporting evidence")
             edits.append(
                 {

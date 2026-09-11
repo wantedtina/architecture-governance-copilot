@@ -254,3 +254,60 @@ def test_dynamic_fake_capability_remains_bound_to_synthetic_source_and_mode():
         )
         is None
     )
+
+
+def test_edited_sample_preserves_explicit_action_details_and_acknowledgements():
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
+    transcript = runtime.review_transcript + "\nAdditional context."
+    result = runtime.extractor.extract(
+        runtime.confluence_reader.get_page(runtime.confluence_page_id).canonical_text,
+        transcript,
+        runtime.review_context,
+    )
+    assert len(result.action_items) == 2
+    assert [(a.owner, a.due_date.isoformat()) for a in result.action_items] == [
+        ("Riley Chen", "2026-09-18"),
+        ("Avery Patel", "2026-09-21"),
+    ]
+    for action in result.action_items:
+        assert len(action.evidence) == 2
+        assert all(e.quote in transcript for e in action.evidence)
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "I will test recovery by 2026-09-20.",
+        "[09:00] Avery Patel: Action: test recovery by 2026-09-20.",
+    ],
+)
+def test_synthetic_rules_do_not_invent_commitment_owner(line):
+    from architecture_governance_copilot.demo_review import group_transcript_candidates
+
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
+    result = group_transcript_candidates(line, runtime.review_context)
+    assert result.action_items[0].owner is None
+
+
+def test_synthetic_rules_retain_ambiguous_acknowledgement_and_dates():
+    from architecture_governance_copilot.demo_review import group_transcript_candidates
+
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
+    transcript = (
+        "[09:00] Avery Patel: I will test recovery by 2026-09-20 or 2026-09-21.\n"
+        "[09:01] Avery Patel: I accept ownership of the recovery action "
+        "and its 2026-09-20 due date."
+    )
+    result = group_transcript_candidates(transcript, runtime.review_context)
+    assert result.action_items[0].due_date is None
+    assert len(result.missing_evidence) == 1
+
+
+def test_historical_date_is_not_a_due_date():
+    from architecture_governance_copilot.demo_review import group_transcript_candidates
+
+    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
+    result = group_transcript_candidates(
+        "[09:00] Avery Patel: I will review the report from 2026-09-20.", runtime.review_context
+    )
+    assert result.action_items[0].due_date is None

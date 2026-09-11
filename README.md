@@ -503,3 +503,17 @@ manifest for the configured synthetic SI/provider. Owner, date and parent mappin
 use a configured synthetic owner (Avery Patel or Riley Chen), supply a date, and retain SYN-204 for
 the configured parent. An unmapped governance ticket gives a specific readiness blocker, not an
 old-sample fingerprint error. Production policy is unchanged; no real AIF, Confluence or ADO is used.
+
+
+Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
+`by 18 September 2026` as candidate action owner/date evidence. Dates require an explicit `by`,
+`due` / `due on`, or trailing `due date` cue. Invalid, multiple or unsupported dates remain unset.
+An ownership acknowledgement is attached to a preceding action only when speaker, date and literal
+non-date task words uniquely match; otherwise it remains an unclassified line for human review.
+This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
+
+Human Review labels owner/date as required for configured fake Delivery, offers mapped synthetic
+owner buttons, and names missing delivery fields before confirmation. These are explicit human
+choices, not automatic assignments. Local output confirmation remains available for incomplete
+or unmapped actions; their fake Delivery stays blocked. Default synthetic provider identities are
+now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.

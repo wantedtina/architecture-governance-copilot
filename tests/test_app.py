@@ -1519,7 +1519,9 @@ def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket)
     assert not app.exception
     assert app.session_state[ANALYZED_RESULT_KEY].context.domain_architect == "Demo Reviewer"
     app.switch_page("pages/human_review.py").run()
-    app.text_input(key="agc_field_action_0_owner").input("Avery Patel").run()
+    assert any("Before Delivery" in item.value for item in app.warning)
+    app.button(key="agc_choose_owner_0_Avery Patel").click().run()
+    assert app.text_input(key="agc_field_action_0_owner").value == "Avery Patel"
     app.date_input(key="agc_field_action_0_due_date").set_value(date(2026, 9, 20)).run()
     app.selectbox(key="agc_field_outcome").set_value("approved").run()
     app.button(key="agc_confirm_review").click().run()

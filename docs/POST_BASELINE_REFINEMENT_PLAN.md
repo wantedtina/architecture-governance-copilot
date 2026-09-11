@@ -4,7 +4,7 @@ Updated: 2026-09-11
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 19 / R23 is completed and verified.
+Execution authority: `NONE` — Batch 20 / R24 is completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
@@ -1001,3 +1001,10 @@ During the current user-testing period:
 
 No code, fixture, dependency, environment, or live-integration change is part of the current
 requirements-intake update.
+
+### R24 — Traceable action details and early delivery guidance
+
+- **State:** `Verified`
+- **Approval:** User approved explicit synthetic owner/date extraction and early Human Review delivery guidance with selectable mapped owners.
+- Preserve manual confirmation, uncertain values, canonical fixtures and production boundaries.
+- **Verification:** Batch 20; 537 tests, full repository checks and desktop/narrow Chrome acceptance passed, including fake Create and GET read-back.

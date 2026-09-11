@@ -2818,3 +2818,9 @@ def selected_outcome_evidence(transcript: str, lines: list[int]) -> tuple[Source
 
 def _evidence_summary(evidence) -> str:
     return " | ".join(f"{item.reference or 'Source'}: {item.quote}" for item in evidence) or "None"
+
+
+def choose_review_action_owner(state: MutableMapping[str, Any], index: int, owner: str) -> None:
+    """Apply an explicit human choice without changing other action fields."""
+    state[f"agc_field_action_{index}_owner"] = owner
+    preserve_review_widget_state(state)
