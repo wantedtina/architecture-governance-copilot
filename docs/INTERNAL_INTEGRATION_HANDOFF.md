@@ -1,10 +1,32 @@
 # Internal Integration Handoff
 
+Updated: 2026-09-15
+
 Document status: `DEFERRED_REFERENCE`
 
 Execution authority: `NONE`. The sequence below is a safety-preserving future handoff, not an
 active implementation plan. It may enter scope only through explicit user approval and an active
 bounded execution plan referenced by the post-baseline refinement register.
+
+## Current receiving environment and planning handoff
+
+On 2026-09-11 the user assigned future integration development to OpenCode + GPT-5.4 on their
+company-network MacBook. The external session is responsible for inspection and handoff documents
+only. No real service access, write request, application implementation, or production release is
+authorized yet. Runtime/data-policy/service readiness remains to be established internally.
+
+The 15 September user update confirms finalized submission materials and gives internal integration
+the highest priority for further competition development. The reviewed repository starting point
+is now `67a60da0a528966909269ed06d616003a71e1944`; application code remains identical to `81835b9`.
+The [dated review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) records fresh checks and unresolved
+publication defects. Passing the existing fake suite does not close those defects or the live gate.
+
+Start with [the receiving-agent prompt](INTERNAL_OPENCODE_START_PROMPT.md) and
+[the bounded proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md). The refinement register still
+names `NONE` as its active execution plan. The proposal records current code gaps, prerequisite
+decisions and a future acceptance sequence; this older adapter reference does not override it or
+activate implementation. Keep all internal configurations and acceptance evidence inside the
+approved company environment; transfer only approved non-sensitive code and documents externally.
 
 ## Purpose and status
 
@@ -57,8 +79,9 @@ must continue to work with all internal connections disabled.
    cookie jar. Verify the approved authentication scheme independently; do not infer that Bearer and
    PAT Basic authentication are interchangeable.
 6. **Implement correlation lookup and GET.** Map only the minimal response contract. Zero matches
-   permits the later Create, one match proceeds to GET reconciliation without Create, and multiple
-   matches block for manual reconciliation.
+   permits consideration of a later Create only after lookup completeness and retained-attempt
+   checks pass; it does not prove non-creation after uncertainty or session loss. One match proceeds
+   to GET reconciliation without Create, and multiple matches block for manual reconciliation.
 7. **Run one controlled Create.** Re-read the Confluence source, prepare the exact JSON Patch from
    the human-confirmed record, validate it, obtain a separate publication confirmation, recheck
    eligibility, and submit exactly once. GET the returned ID and compare target, type, expected
@@ -123,15 +146,21 @@ Complete this record in the approved internal system, not in this public reposit
 | Stale, duplicate, and unknown-result branches | Passed with fakes; live not run | Test identifiers and reconciliation outcome |
 | Offline flow with internal connections disabled | Passed | Frozen implementation commit `ce5fd3f2a760504da40440558180c5245ed291e9`; see `SUBMISSION_BASELINE.md` for verification results |
 
+The frozen offline row above is historical evidence, not the current repository starting revision.
+Current regression results are recorded in the dated review. Provider reference IDs remain
+untrusted; a validated ambiguous quote may have no locally assigned unique reference. Do not
+invent references to satisfy the adapter-map shorthand. Resolve its live evidence treatment
+through the bounded proposal's D6 decision.
+
 Passing fake acceptance is the external-preparation gate only. Mark the internal live gate passed
 only after every applicable live check above has direct evidence.
 
 ## Conditional secondary writes
 
-ADO Update and Confluence review-page write-back remain deferred. Do not expose controls or start
-implementation unless the primary Create path has passed the internal live gate, the user has named
-the exact synthetic targets, authorization is confirmed, and sufficient pre-freeze verification
-time remains. Never update the source SI page.
+ADO Update and Confluence review-page write-back remain outside this handoff's scope even after a
+successful Create. Their old pre-freeze scheduling condition is historical. Reopening either requires
+a separately approved bounded plan, exact targets and fresh verification time; competition priority
+alone does not activate them. Never update the source SI page under this plan.
 
 If later authorized, ADO Update must GET the current revision, display an exact diff, require a
 separate confirmation, include a revision test, and stop on conflict. Confluence write-back may
