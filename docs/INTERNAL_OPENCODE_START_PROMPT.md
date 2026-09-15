@@ -1,270 +1,220 @@
-# OpenCode internal integration handoff
+# OpenCode internal integration startup
 
 Updated: 2026-09-15
 
-Document status: `READY_FOR_INTERNAL_PLANNING_HANDOFF`.
-Implementation authority: `NONE`.
+Document status: `READY_FOR_ADO_INTERNAL_DEVELOPMENT`.
+Authority granted by this document: inspection and planning only; no new implementation, service
+access, publication or release authorization. Existing explicit internal approvals remain valid
+within their recorded scope.
 
-## Transfer instructions for the user
+## User operating guide
 
-### Current receiving arrangement
+### Work from the ADO repository
 
-The user has cloned `codex/internal-integration-plan` onto the company MacBook and copied selected
-project files into a separate company Azure DevOps repository. The GitHub clone is the local source
-reference; the ADO repository is the development target. Successful app startup in the ADO copy was
-reported by the user, but file completeness, regression results and import provenance still need
-verification. Git history was not necessarily imported with the files.
+The company ADO repository is the authoritative development workspace. Determine current behavior
+from its code and tests, requirements from its maintained internal documents, and authorized work
+from the user's internal decisions and sole active execution plan. The external session cannot
+verify internal progress or approvals and does not reset them.
 
-Original published handoff commit: `f7eb8b6e931dafa0dd20bce76235d1d653b4a22e`.
-Reviewed GitHub main base: `67a60da0a528966909269ed06d616003a71e1944`.
-Unchanged source application baseline: `81835b9ced0c709f4003522557b6423bc4bdaa18`.
-The final-materials tag `submission-2026-09-14-final-materials` targets that application baseline.
-These are source references, not required ADO commit IDs. Any copied or internally modified files
-must be compared before claiming equivalence to the reviewed source application.
+GitHub and the earlier handoff are historical sources. Do not routinely inspect the GitHub clone,
+compare commit ancestry, require matching hashes, synchronize repositories, or create an import
+record as a development gate. Existing provenance notes may remain as history. Consult an older
+source only when a specific missing item or question requires it and the user agrees to that lookup.
+Missing GitHub history is not an ADO defect.
 
-### Update the source clone, then copy the maintained documents
+This revision replaces the earlier instructions requiring source-clone comparison and an import
+baseline. Older handoff statements about `NONE`, Deferred requirements, pending decisions and
+external test results describe their recorded snapshot. They do not override later approved and
+evidenced internal progress. Conversely, code changes or a plan marked active are not by themselves
+proof that implementation, live access or production use was approved.
 
-Run the following only inside the existing GitHub source clone, using approved GitHub access:
+### Prepare the local project once
 
-```bash
-git status --short --branch
-git remote -v
-```
+Open the company ADO project or its existing isolated worktree in OpenCode. Preserve existing
+internal edits when incorporating this startup document. Do not copy older planning files over
+newer internal decisions. Maintain subsequent plans and this guide inside ADO; routine development
+does not require another external handoff update.
 
-Confirm that the checkout is clean, the branch is `codex/internal-integration-plan`, and `origin`
-is the expected GitHub source repository. If anything differs, inspect it before proceeding.
-Then update without rewriting history:
+Ensure the project has its working application and development inputs:
 
-```bash
-git pull --ff-only origin codex/internal-integration-plan
-git log -1 --oneline
-git rev-parse HEAD
-```
+- `AGENTS.md`, `README.md`, `SPEC.md` and applicable internal instructions.
+- `app.py`, complete `src/`, `pages/`, `samples/`, `assets/` and `tests/`, including test fixtures.
+- `pyproject.toml`, `uv.lock`, `.python-version`, `.streamlit/config.toml`, `.gitignore` and a
+  placeholder-only `.env.example`.
+- `docs/POST_BASELINE_REFINEMENT_PLAN.md` and `docs/exec-plans/README.md`.
+- The current internal execution plan named by the register, if one exists.
+- `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md`,
+  `docs/INTERNAL_INTEGRATION_HANDOFF.md`, `docs/FINAL_STAGE_DEVELOPMENT_PLAN.md` and
+  `docs/INTERNAL_INTEGRATION_REVIEW_2026-09-15.md`, where retained as proposal/reference material.
 
-Record this source-document revision. Do not run these GitHub update commands in the ADO target,
-change the ADO remote to GitHub, or replace the ADO `.git` directory. Do not reset either repository
-to an older source commit just to match this document. If the source clone has local edits, retain
-and inspect them rather than overwriting them.
+If an internal document has replaced one of these references, record the mapping rather than
+restoring obsolete instructions. Missing required code, fixtures or authoritative planning files
+must be reported and resolved locally. Missing historical media or a source commit is not a reason
+to stop unrelated permitted work. Video, slides, course notes and recordings are not integration
+dependencies. Retain `video/.ruff.toml` if preserved Python production sources are present there.
 
-Ensure the ADO target contains these seven current files at their repository-relative paths:
+Keep `.env`, virtual environments, credentials, local tool state, caches and generated output out
+of Git. Use company-approved local skills and package sources. Do not read secret values merely to
+check readiness. App startup alone does not establish regression acceptance.
 
-- `docs/INTERNAL_OPENCODE_START_PROMPT.md` — this transfer guide and standalone receiving prompt.
-- `docs/exec-plans/README.md` — execution-plan lifecycle and recovery rules.
-- `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md` — bounded proposal and decision gates.
-- `docs/POST_BASELINE_REFINEMENT_PLAN.md` — requirement register and sole active-plan pointer.
-- `docs/INTERNAL_INTEGRATION_HANDOFF.md` — adapter reference.
-- `docs/FINAL_STAGE_DEVELOPMENT_PLAN.md` — post-submission navigation and priority.
-- `docs/INTERNAL_INTEGRATION_REVIEW_2026-09-15.md` — source review findings and verification.
+### Start, approve and continue
 
-Compare existing ADO documents before copying; merge deliberately if internal decisions or edits
-already exist. Never overwrite a newer active plan or company instructions. Retain historical
-references where available: `docs/SUBMISSION_BASELINE.md`, `docs/FINAL_STAGE_IMPLEMENTATION_PLAN.md`
-and completed `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_*.md`. They are evidence, not active
-implementation instructions. Course notes and video-production materials are not prerequisites.
+Paste the complete **OpenCode startup prompt** section below into OpenCode. It covers both a new
+planning session and recovery of already approved internal work; no separate override is needed.
+Its first checkpoint must identify the actual ADO state and what may proceed under existing approval.
 
-Verify the complete application/development set: `AGENTS.md`, `README.md`, `SPEC.md`, `app.py`,
-`pages/`, `src/`, `samples/`, `tests/` (including `conftest.py` and `fixtures/`), `assets/`,
-`.streamlit/config.toml`, `pyproject.toml`, `uv.lock`, `.python-version`, `.gitignore` and a
-placeholder-only `.env.example`. Run from the source checkout; a built wheel alone is not the
-supported receiving package. Use company-approved Python/package sources for verification.
+If no implementation batch is approved, the agent prepares the smallest ready bounded plan for
+review. It must state affected files, intended behavior, prerequisites, exclusions, tests and
+acceptance criteria before requesting approval. After reviewing that concrete plan, the user can
+approve its named ready phases and state whether service access is included. Approval of code work
+alone does not authorize real requests or production use.
 
-Local `.env`, `.venv`, caches, tool state, credentials and generated output do not belong in the
-ADO import commit. Do not open credential values to check file completeness. `.agents/` is ignored
-in the source repository; use approved local guidance if present and report missing references.
-Do not copy external environments or credential stores to make the app run. Video, slides and
-recordings are not integration dependencies. If preserved Python production sources under `video/`
-are copied, retain `video/.ruff.toml`; otherwise no video directory needs to be restored for tests.
+If an approved batch already exists, the agent resumes its unfinished authorized work without
+asking the user to repeat valid approvals. Ambiguous or missing approval evidence should result in
+one focused clarification, while independent inspection and planning continue. Do not restart
+completed work or demand all final production decisions before an independently ready offline fix.
 
-### Establish the ADO import baseline
+Use these staged acceptance boundaries:
 
-OpenCode should inspect the ADO target first and compare only the relevant approved project paths
-against the local GitHub source. Record missing, changed and intentionally omitted files. Do not
-scan unrelated company files or infer equality merely from a matching folder name or a working UI.
-Keep the source clone as a reference, not a destination for internal changes.
+1. **Local foundations and adapters:** approved implementation and applicable contracts; synthetic
+   tests, explicit provider wiring, evidence/state guards and publication uncertainty safeguards.
+2. **Live read and analysis:** approved targets/data, model route, Confluence/AIF contracts and
+   explicit access authorization; validate source/context/evidence and require Human Review.
+3. **ADO Create and read-back:** approved mappings, correlation/recovery/audit controls, exact
+   request preview and separate human publication confirmation; reconcile uncertainty before any
+   possible new attempt. Code or repository-write approval is not work-item Create confirmation.
+4. **Production / R9b:** separately accepted outcome authority, evidence, confirmation, audit,
+   operating envelope and release authority. A synthetic internal pilot or competition demo does
+   not automatically complete production acceptance.
 
-Prepare `docs/INTERNAL_IMPORT_RECORD.md` inside the ADO project with source code/document revisions,
-import scope, intentional omissions, local differences, verification results and the ADO import
-commit when available. Until comparison is complete, mark provenance unverified. Commit only the
-reviewed import/planning files according to internal repository policy; no blanket staging of all
-local files. A worktree includes committed content, so do not create one from a target commit that
-still omits required copied files. Do not commit another session's edits without authorization.
+Review the resulting code, tests and internal evidence at each phase. Keep the living plan current
+in ADO so the next OpenCode session can recover from repository state and recorded decisions.
 
-Create an independent worktree and unused `codex/` branch from the verified ADO import commit,
-retaining the ADO history and remote. If an appropriate isolated ADO worktree already exists,
-inspect and use it. Do not require shared Git ancestry with GitHub, merge unrelated histories,
-force-push, or replace repository metadata.
+## OpenCode startup prompt
 
-Synchronize with the ADO mainline at deliberate checkpoints using its actual branch name and
-ordinary merges where appropriate. Future GitHub changes are separately reviewed source imports
-unless shared ancestry has been established; never treat a GitHub merge command as automatically
-applicable to this independently initialized ADO repository. Record each accepted source import
-and its corresponding ADO revision. No internal content may return to GitHub without approval.
+Continue company internal integration for this project in the current company ADO repository,
+using OpenCode with GPT-5.4 on my company MacBook. Internal integration is the highest-priority
+workstream. Communicate in Chinese; use English for files, code, comments, UI, plans, commits and
+other deliverables. Preserve finalized submission and presentation materials.
 
-The older ZIPs are historical local backups. Do not overlay them onto current GitHub or ADO
-handoff documents. No new clone, ZIP import, media transfer or history migration is needed simply
-to use this revised prompt.
+Treat this ADO repository as the authoritative workspace. Use its current code, tests, maintained
+internal documents and my explicit internal approvals. Do not routinely read a GitHub clone, compare
+GitHub hashes or ancestry, synchronize external repositories, or require an import/provenance
+reconstruction before development. Historical handoff references are context only. If a concrete
+missing item requires consulting an old source, explain the need and obtain my agreement first.
+Do not replace .git, change remotes, merge unrelated histories, force-push or export internal work.
 
-### Start OpenCode in the ADO target
+Read all applicable AGENTS.md and company instructions first. Inspect the actual ADO root, branch,
+HEAD, status including untracked files, upstream, worktrees and recent relevant history. Preserve
+local work and other sessions' changes. Use approved ADO remote access where already authorized;
+otherwise use cached state and report its limitation. Never print credentials or credential-bearing
+remote URLs. If the opened folder is not the intended ADO project, ask for its internal path rather
+than repurposing another repository.
 
-Open the ADO project or its prepared isolated worktree in OpenCode. Paste only the
-**Receiving-agent startup prompt** section below, ending before **Expected internal handoff-back
-record**. It already includes the independent-ADO context; the earlier conversational override is
-no longer needed. Provide the local source-clone path inside the company if requested. Do not put
-credentials or internal addresses into this external session.
+Read the internal POST_BASELINE_REFINEMENT_PLAN register, exec-plans/README, the single referenced
+active plan if any, SPEC.md and README.md. Read the retained INTERNAL_INTEGRATION_BATCH_01 proposal,
+INTERNAL_INTEGRATION_HANDOFF, FINAL_STAGE_DEVELOPMENT_PLAN and dated integration review where useful;
+map any replacements to current internal documents. Identify decisions that have already been
+resolved, work completed, remaining tasks and available approval evidence. Do not recreate a second
+active plan for overlapping work. Do not overwrite newer internal documents with historical copies.
 
-## Receiving-agent startup prompt
+This startup prompt authorizes inspection and planning, and grants no new application implementation,
+live service access, ADO work-item Create or production release permission. Honor existing explicit
+internal approvals within their actual scope; do not ask me to repeat them. A reachable endpoint,
+configured credential, code change or status label alone is not approval evidence. If an approval
+is referenced but its scope cannot be established, ask one focused question and continue independent
+permitted work. Do not infer or fabricate an approval.
 
-Continue company internal integration planning for architecture-governance-copilot in this
-repository. You are running through OpenCode with GPT-5.4 on my company MacBook inside the company
-network. The 14 September submission materials are finalized; internal integration is now the
-highest-priority development workstream for the final competition demonstration. Preserve the
-submitted version and keep any later development revision separately identifiable.
-Communicate with me in Chinese. Use English for every file, identifier, code comment,
-test, UI label, commit and other deliverable.
+If the register has an approved active plan, resume its unfinished authorized work. If no plan is
+active and approved, keep implementation inactive while preparing the smallest ready bounded plan
+for my approval. Do not force the pointer to NONE or restore old requirement states when valid
+internal approvals and progress exist. Historical R28/R9b states and external test counts are not
+current ADO acceptance evidence. Resolve discrepancies between register, plan, code and recorded
+approvals without discarding work. Update governance records to reflect established decisions;
+never declare an item Verified merely because implementation has begun.
 
-Your first task is to validate this handoff, resolve internal prerequisites and finalize the bounded
-execution plan for my approval. You are not yet authorized to implement application changes,
-connect to real services, invoke AIF on internal content, create ADO items or deploy production.
-Do not interpret this prompt, a reachable endpoint, configured credentials or a proposed plan as
-authorization for those actions. Do useful permitted inspection before asking for decisions.
+Use an existing suitable isolated ADO worktree and development branch when available. Otherwise
+prepare an independent worktree with an unused codex/ branch from the agreed ADO revision. Check
+whether required files are uncommitted: a new worktree will not include them automatically. Preserve
+and arrange those changes under the internal policy and existing authorization before relying on
+the new checkout. Do not blanket-stage files or commit unrelated edits. An unavailable clean starting
+point does not prevent useful read-only analysis.
 
-Repository context: this is the independent company ADO development target. I have also cloned
-GitHub branch `codex/internal-integration-plan` locally and copied selected project files into this
-ADO repository. GitHub history may be absent here. Do not require the ADO HEAD to equal a GitHub
-commit or require GitHub ancestry checks to pass. If the opened directory is actually the GitHub
-source clone, identify it and ask for the local ADO target path before doing target work. Do not
-repurpose the source clone or change its remote to guess the intended target.
+Check local file completeness and current behavior: app.py, src, pages, samples, assets, complete
+tests/fixtures, configuration templates, Python version, pyproject.toml and uv.lock. Use Python 3.12
+and uv; do not introduce requirements.txt or a new specification framework. Read approved locally
+available Streamlit guidance before application edits; do not claim to have read absent skills.
+Inspect tests/configuration before execution and use approved package sources. Keep default tests
+free of real enterprise calls. Verify this ADO revision instead of inheriting old external results.
 
-First read all of `AGENTS.md`, including applicable parent/subdirectory and company instructions.
-Inspect the actual ADO root, status including untracked files, branch, HEAD, upstream, remotes,
-worktrees and recent history. Preserve existing internal instructions and edits; report conflicts.
-Inspect cached remote state first and establish approved remote operations before fetching.
-Do not expose credential-bearing remote URLs in reports. Never replace `.git`, reset hard,
-rewrite history, force-push, merge unrelated histories or push internal work to GitHub.
+Inspect relevant current provider, deployment policy, model, evidence validation, publication,
+governance service and session-state code and tests. The old review describes possible gaps in GET
+identity verification, uncertain Create receipts, pre-AIF confirmation, live dependency wiring,
+source completeness and correlation/recovery. Recheck whether they still exist; do not reimplement
+fixes already completed internally or assume all findings still apply.
 
-Use the local GitHub clone as a read-only reference for this initial investigation. Ask me for
-its local path inside the company if unavailable; do not guess it or scan unrelated directories.
-The original published handoff is `f7eb8b6e931dafa0dd20bce76235d1d653b4a22e`, based on reviewed
-GitHub main `67a60da0a528966909269ed06d616003a71e1944`. Later handoff documentation revisions may
-exist; inspect and record the actual source code and document revisions. The source application's
-reviewed baseline is `81835b9ced0c709f4003522557b6423bc4bdaa18`. These are provenance references,
-not required ADO revisions. Compare the copied project paths before asserting baseline equality.
-If a referenced source revision is unavailable, report unverified provenance and continue other
-permitted inspection; do not fabricate Git history or claim verification.
+Recover the current internal decisions corresponding to D1-D8 in the proposal: runtime/model data
+handling, data flows and retention, Confluence contract, AIF contract, ADO process/mappings, review
+and outcome policy, audit/recovery/concurrency and release authority. Carry forward resolved decisions
+and ask only for what the next phase needs. Confirm the selected OpenCode/model route is approved
+for the intended data classification before confidential inspection; a company-network laptop alone
+is insufficient. Use approved internal configuration and evidence locations. Ask for safe internal
+pointers rather than pasted secrets. Do not read secrets simply to prove they exist, dump environment
+values, or disclose raw confidential inputs/provider diagnostics to external artifacts.
 
-Check the seven maintained handoff/process files listed in this document's transfer guide, plus
-AGENTS.md, README.md, SPEC.md, application code, pages, samples, assets, complete tests/fixtures,
-Streamlit configuration, pyproject.toml, uv.lock, .python-version, .gitignore and placeholder-only
-.env.example. Do not inspect .env contents, credential stores, unrelated internal files or media.
-App startup alone does not prove import completeness or regression acceptance. Existing external
-558-test results describe the reviewed source, not this ADO copy; verify locally before attributing
-those results to the target. Inspect tests/configuration before running checks, use approved package
-sources, and preserve the initial prohibition on live service calls.
+The intended bounded slice is designated Confluence SI read, manual transcript/metadata intake,
+AIF review analysis, source/context/evidence validation, mandatory Human Review, local outputs,
+separately confirmed single-action ADO Create, correlation reconciliation and GET verification.
+Preserve existing SolutionIntentDrafter/GovernanceExtractor boundaries, deterministic offline
+behavior, strict models and no silent synthetic fallback. Keep review analysis separate from output
+generation. Keep app.py as the shared shell/renderers, pages as thin routes, and shared state and
+invalidation in ui_support.py.
 
-Prepare or update an internal docs/INTERNAL_IMPORT_RECORD.md with the source revisions, copied
-paths, omissions, differences and actual verification results. Identify the ADO import commit,
-or mark it pending if required files are uncommitted. Keep local configuration, secrets, environments
-and generated output out of version control. Do not stage or commit unrelated changes. Follow the
-internal repository policy and existing authorization when preparing the import commit. Only after
-required files are committed, use the verified ADO baseline for an independent worktree and unused
-codex/ branch, unless a suitable isolated target worktree already exists. Continue useful read-only
-inspection while import provenance or commit readiness remains unresolved.
+Do not extend scope into Teams ingestion, ADO Update, Confluence write-back, live drafting, databases,
+application authentication, repository discovery, RAG, agent frameworks or production infrastructure
+unless a separate explicit internal approval names that expansion. Adapter service authentication
+is distinct from adding application login. Preserve samples and update synthetic fixtures with their
+validation tests when approved changes require it. Do not alter videos or submission materials.
 
-Read these documents completely, using chunks if output would truncate:
+Sequence work by readiness: complete approved local corrections and adapter tests first; add live
+read/analysis only under its established access/data authorization; permit Create only with approved
+mappings, operating controls and separate exact-request human confirmation. Obtain any still-required
+publication confirmation for the actual request. Do not demand final production release decisions
+before every independent offline task. Existing live-test authorization does not imply production
+release or permission for different targets/data.
 
-1. `docs/POST_BASELINE_REFINEMENT_PLAN.md`.
-2. `docs/exec-plans/README.md`.
-3. `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md`.
-4. `docs/INTERNAL_INTEGRATION_HANDOFF.md`.
-5. `docs/FINAL_STAGE_DEVELOPMENT_PLAN.md`.
-6. `SPEC.md` and `README.md`.
-7. `docs/INTERNAL_INTEGRATION_REVIEW_2026-09-15.md`.
+Before live AIF, validate deployment eligibility and the exact confirmed source/input bindings.
+Before outputs and delivery, validate the human-reviewed result and its evidence under the approved
+policy. Do not carry demo outcome exceptions, fake owner aliases or synthetic parent IDs into live
+behavior by assumption. Preserve known remote IDs and uncertain attempts through ordinary resets;
+fake new-run cleanup must never clear real reconciliation state. Session loss, an empty lookup or
+reanalysis is insufficient proof that no work item exists. Reconcile unknown results before any
+possible resubmission and do not claim atomic or exactly-once delivery.
 
-The expected active execution plan is `NONE`. R1–R8 and R10–R27 are Verified, R9a is Verified,
-R9b is Deferred, and proposed R28 needs decisions. Completed plans and the frozen submission are
-historical evidence. This handoff's plan was explicitly requested before implementation approval;
-its existence is not an active batch. Preserve `NONE` until I approve a finalized plan. Do not
-mark requirements Verified when implementation merely starts.
+Production R9b requires separately evidenced decisions on outcome authority/provenance, evidence,
+reviewer and publisher confirmation, audit retention, recovery, concurrency and release ownership.
+Do not inherit demo acceptance as production policy. Preserve any valid internal acceptance already
+recorded, but keep unaccepted production capabilities unavailable. A synthetic pilot or competition
+demo does not automatically close R9b. If requirements cannot be met within approved scope, report
+the exact dependency rather than silently adding a subsystem.
 
-Validate the proposal against current code and relevant tests, especially:
+Your first checkpoint should state the current ADO revision/dirty state, current capability truth,
+active plan and approval scope, completed work, remaining gaps, and the next permitted action. Then
+continue approved work or finish a concrete plan for approval. The plan must name included phases,
+affected components, prerequisite decisions, intended behavior, exclusions, tests and acceptance.
+Make approval requests only for actual missing decisions or new scope, after doing the permitted
+preparation that makes the request reviewable.
 
-- `src/architecture_governance_copilot/runtime_dependencies.py` and `models.py`.
-- `integrations/confluence.py`, `integrations/aif.py`, `integrations/azure_devops.py` under the
-  same package.
-- `evidence_validation.py`, `publication.py`, `ui_support.py`, `governance_service.py`,
-  `extractors.py`, the existing `SolutionIntentDrafter` boundary and output generators.
-- `app.py` shared shell/renderers and thin `pages/` entry points.
-- `tests/test_runtime_dependencies.py`, the three integration test modules,
-  `test_publication.py`, `test_evidence_validation.py`, `test_models.py`, `test_app.py`,
-  `test_ui_support.py` and related provider/generator tests.
+After implementation approval, maintain the sole active plan and requirement lifecycle, implement
+the approved phases, and record actual validation. Run pytest, both Ruff checks, build and
+`git diff --check` as appropriate to the changes under repository instructions; add focused app/state
+tests and relevant desktop/narrow browser acceptance for UI/state changes. Keep live tests opt-in
+and distinguish synthetic tests, real-browser checks and authorized live acceptance. Record commands,
+results, failures and evidence honestly. Preserve local outputs on delivery failure.
 
-Read the repository's Streamlit skill and relevant locally available references before application
-edits. The original external directory had a local skill, but `.agents/` is ignored and does not
-travel with Git; the isolated worktree had no session-state reference. Locate approved internal
-guidance if the skill is absent; do not claim to have read a missing file. Use Python 3.12 and uv, with
-`pyproject.toml` and `uv.lock`; do not create requirements.txt or a new specification framework.
-
-Resolve decisions D1–D8 in the proposal with me and the appropriate internal owners. Confirm
-the OpenCode/GPT-5.4 route's approved data handling before accessing confidential material, even
-though the laptop is on the company network. Establish the approved internal locations for
-configuration, contracts, test data, audit records and acceptance evidence. Ask for safe pointers
-or configuration references rather than asking me to paste credentials. Do not read credential
-values merely to prove their existence or echo environment dumps, cookies, raw provider errors,
-confidential source content or internal identifiers into external artifacts. Only sanitized
-non-sensitive progress may be returned to the external planning session.
-
-Use the proposal's stage-specific readiness rules: finalize and request approval for the smallest
-ready implementation subset; do not make final production release decisions a prerequisite for
-all offline adapter work. Before any live pilot, explicitly approve its synthetic-data review
-policy and operating controls. Production remains unavailable until production decisions and R9b
-are accepted. Progress on the pilot never silently approves later stages.
-
-Keep the implementation bounded to a single governance review round: designated Confluence read,
-manual transcript/metadata intake, AIF review analysis, Human Review, local outputs, separately
-confirmed single-action ADO Create, correlation reconciliation and GET verification, followed by
-the R9b release decision. Use new synthetic inputs for the initial live acceptance. Do not expand
-into Teams ingestion, ADO Update, Confluence write-back, live drafting, repository discovery,
-databases, application authentication, RAG, agent frameworks or production infrastructure.
-Approved service authentication for the three adapters is a separate necessity from adding login.
-
-Preserve deterministic offline behavior, existing provider interfaces, mandatory human review,
-strict source evidence, explicit confirmation and no silent synthetic fallback. Keep ordinary
-resets from deleting remote reconciliation facts. The new-demo-run cleanup is for in-memory fakes
-only. Treat session loss, reset, an empty lookup or changed analysis ordering as insufficient proof
-that no remote work item exists. Do not claim atomic or exactly-once publication.
-
-Do not inherit demo/development product decisions as production requirements. Resolve outcome
-authority/provenance/evidence, confirmation identity and audit retention explicitly. Do not use
-synthetic owner aliases or parent IDs for real ADO mappings. A successful local pilot does not
-automatically satisfy production R9b. If durable audit or concurrency requirements cannot be met
-within approved scope, keep release blocked and present the exact dependency, rather than adding
-an unapproved subsystem.
-
-Your first response should report repository facts, discrepancies, current capability truth and
-the smallest set of internal prerequisite decisions needed next. Complete permitted investigation
-and revise the proposed plan into a concrete reviewable implementation scope. Ask for my approval
-of that scope only after the plan is ready. Keep service access and Create gates explicit; before
-an actual Create, present the exact internal target/request and obtain the required separate
-publication confirmation. Production release requires its own named authority and evidence.
-
-After I approve implementation, update the register's sole active pointer and lifecycle correctly,
-implement the bounded phases and maintain actual evidence in the living plan. Run required tests,
-both Ruff checks, build, `git diff --check`, and relevant desktop/narrow browser acceptance. Keep
-live tests opt-in and ordinary tests network-free. Record pass/fail and blockers accurately; never
-present planned tests or injected responses as natural live-service acceptance. Preserve offline
-regression and local outputs on delivery failure. Do not modify video or submission materials.
-
-## Expected internal handoff-back record
-
-At each approval or completion boundary, produce an internal record with:
-
-- exact ADO code revision and clean/dirty state, plus source import/document revisions;
-- approved scope, completed phase and unresolved D1–D8 decisions;
-- offline/synthetic test and browser results;
-- separately authorized live checks and internal evidence references;
-- production policy/release decision, including explicit non-acceptance where applicable;
-- known Create IDs/correlations, unknown results and reconciliation owner, retained internally;
-- next permitted action and any approval still required.
-
-Do not export internal values or evidence bodies back to the external session. An approved
-sanitized summary is sufficient for external coordination.
+At each checkpoint, record the ADO revision, approved scope, completed phase, test results, unresolved
+decisions, internal live evidence references, production disposition and next permitted action in
+ADO-maintained documents or the approved internal evidence system. Keep confidential values and
+known remote IDs/correlations internal. Provide only an approved sanitized summary externally if
+needed. When the approved batch is verified, close its plan and update the register accurately;
+retain history and any separately deferred work.
