@@ -1,0 +1,17 @@
+{
+  "duration_seconds": 238,
+  "video_frames": 7140,
+  "resolution": "1920x1080",
+  "fps": 30,
+  "full_decode": "pass",
+  "caption_count": 48,
+  "caption_overlaps": 0,
+  "spoken_words_unchanged": true,
+  "section_order_unchanged": true,
+  "architecture_text_unchanged": true,
+  "source_files_verified": 67,
+  "captured_new_application_footage": false,
+  "human_voice_replacement": "pending user recording",
+  "v1_sha256": "fe52d4bdf9cf42114a77d9646af4a27f2de2bc82108e845491cdc8f89282068a",
+  "video_bytes": 23257451
+}

@@ -1,0 +1,1063 @@
+{
+  "application_commit": "81835b9ced0c709f4003522557b6423bc4bdaa18",
+  "duration_seconds": 238,
+  "sections": [
+    {
+      "id": "title",
+      "title": "Architecture Governance Copilot",
+      "start": 0,
+      "end": 10,
+      "duration": 10,
+      "tempo": 1.0680851063829786,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Hello, we're Two Tokens One Brain. Let me show you how Architecture Governance Copilot helps teams prepare and follow up on architecture reviews.",
+          "start": 0.3,
+          "end": 9.7,
+          "source_duration": 10.04,
+          "tempo": 1.0680851063829786,
+          "measured_pause_candidates": [
+            0.6536285,
+            2.725805
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          2.9858049999999996,
+          "Hello, we're Two Tokens One Brain."
+        ],
+        [
+          3.0258049999999996,
+          9.660000000000002,
+          "Let me show you how Architecture Governance Copilot helps teams prepare and follow up on architecture reviews."
+        ]
+      ]
+    },
+    {
+      "id": "process",
+      "title": "The problem: fragmented governance work",
+      "start": 10,
+      "end": 28,
+      "duration": 18,
+      "tempo": 1.0331010452961673,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Today, a project team writes its Solution Intent in Confluence, tracks the review in Azure Boards, and discusses the design in Teams.",
+          "start": 0.3,
+          "end": 9.1665,
+          "source_duration": 9.16,
+          "tempo": 1.0331010452961673,
+          "measured_pause_candidates": [
+            0.6730385000000001,
+            4.4139005000000004,
+            6.564036
+          ]
+        },
+        {
+          "index": 1,
+          "text": "Afterwards, someone has to bring the decisions, evidence and action owners back together. That's the work we're trying to make easier.",
+          "start": 9.4065,
+          "end": 17.76,
+          "source_duration": 8.63,
+          "tempo": 1.0331010452961673,
+          "measured_pause_candidates": [
+            1.0749659999999999,
+            3.4805895,
+            5.947982
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          4.6739005,
+          "Today, a project team writes its Solution Intent in Confluence,"
+        ],
+        [
+          4.7139005,
+          9.126509274873525,
+          "tracks the review in Azure Boards, and discusses the design in Teams."
+        ],
+        [
+          9.406509274873525,
+          14.53771781899944,
+          "Afterwards, someone has to bring the decisions, evidence and action owners back together."
+        ],
+        [
+          14.577717818999439,
+          17.72,
+          "That's the work we're trying to make easier."
+        ]
+      ]
+    },
+    {
+      "id": "solution",
+      "title": "Two activities, explicit human checkpoints",
+      "start": 28,
+      "end": 46,
+      "duration": 18,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Our app helps with drafting and review, but Confluence remains the source of truth for the Solution Intent.",
+          "start": 0.3,
+          "end": 6.86,
+          "source_duration": 6.56,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.476145
+          ]
+        },
+        {
+          "index": 1,
+          "text": "We only produce drafts and suggested changes. The app never edits Confluence. Users decide what to keep and make those changes themselves.",
+          "start": 7.615,
+          "end": 17.245,
+          "source_duration": 9.63,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.3529475,
+            5.59873
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          2.7361449999999996,
+          "Our app helps with drafting and review,"
+        ],
+        [
+          2.7761449999999996,
+          6.819999999999999,
+          "but Confluence remains the source of truth for the Solution Intent."
+        ],
+        [
+          7.614999999999998,
+          13.173729999999999,
+          "We only produce drafts and suggested changes. The app never edits Confluence."
+        ],
+        [
+          13.213729999999998,
+          17.205,
+          "Users decide what to keep and make those changes themselves."
+        ]
+      ]
+    },
+    {
+      "id": "architecture",
+      "title": "System architecture",
+      "start": 46,
+      "end": 69,
+      "duration": 23,
+      "tempo": 1.0195099818511797,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Both project teams and Domain Architects use the app, with different permissions and responsibilities.",
+          "start": 0.3,
+          "end": 6.607,
+          "source_duration": 6.43,
+          "tempo": 1.0195099818511797,
+          "measured_pause_candidates": [
+            3.2943765
+          ]
+        },
+        {
+          "index": 1,
+          "text": "The interface sits in Service Bench. SKE hosts the backend and database, with adapters for Confluence, AI Factory and Azure DevOps.",
+          "start": 6.827,
+          "end": 16.5179,
+          "source_duration": 9.88,
+          "tempo": 1.0195099818511797,
+          "measured_pause_candidates": [
+            2.4548075000000003,
+            5.385419499999999,
+            7.4314515
+          ]
+        },
+        {
+          "index": 2,
+          "text": "Teams transcripts are imported manually. Logs, traces and metrics go to COP.",
+          "start": 16.7379,
+          "end": 22.78,
+          "source_duration": 6.16,
+          "tempo": 1.0195099818511797,
+          "measured_pause_candidates": [
+            2.6605670000000003,
+            3.519297
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          6.566951490876724,
+          "Both project teams and Domain Architects use the app, with different permissions and responsibilities."
+        ],
+        [
+          6.8269514908767235,
+          12.172370990876724,
+          "The interface sits in Service Bench. SKE hosts the backend and database,"
+        ],
+        [
+          12.212370990876723,
+          16.477881619937698,
+          "with adapters for Confluence, AI Factory and Azure DevOps."
+        ],
+        [
+          16.737881619937696,
+          22.740000000000002,
+          "Teams transcripts are imported manually. Logs, traces and metrics go to COP."
+        ]
+      ]
+    },
+    {
+      "id": "draft",
+      "title": "1. Prepare and confirm an SI draft",
+      "start": 69,
+      "end": 96,
+      "duration": 27,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Let's start with the project team. I open the project context, which brings together the template, repository revision and governance details.",
+          "start": 0.3,
+          "end": 10.21,
+          "source_duration": 9.91,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.2234695,
+            4.582698,
+            6.835737
+          ]
+        },
+        {
+          "index": 1,
+          "text": "I save the supporting evidence, confirm the package, and generate a Solution Intent draft.",
+          "start": 10.5233,
+          "end": 17.0433,
+          "source_duration": 6.52,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.1275285,
+            3.7849885
+          ]
+        },
+        {
+          "index": 2,
+          "text": "I review and confirm that draft here. I would then make any changes I want in Confluence myself. The governance review is a separate step.",
+          "start": 17.3567,
+          "end": 26.6867,
+          "source_duration": 9.33,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.546508,
+            6.6968485
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          5.450952380952381,
+          "Let's start with the project team. I open the project context,"
+        ],
+        [
+          5.490952380952381,
+          10.170000000000002,
+          "which brings together the template, repository revision and governance details."
+        ],
+        [
+          10.523333333333335,
+          17.003333333333337,
+          "I save the supporting evidence, confirm the package, and generate a Solution Intent draft."
+        ],
+        [
+          17.35666666666667,
+          19.86317466666667,
+          "I review and confirm that draft here."
+        ],
+        [
+          19.90317466666667,
+          24.01351516666667,
+          "I would then make any changes I want in Confluence myself."
+        ],
+        [
+          24.05351516666667,
+          26.64666666666667,
+          "The governance review is a separate step."
+        ]
+      ]
+    },
+    {
+      "id": "inputs",
+      "title": "2. Select and confirm review inputs",
+      "start": 96,
+      "end": 115,
+      "duration": 19,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "For the review, I select the authoritative Solution Intent, import the meeting transcript, and load the review details.",
+          "start": 0.3,
+          "end": 8.36,
+          "source_duration": 8.06,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            0.9982085,
+            4.0196145,
+            6.0574604999999995
+          ]
+        },
+        {
+          "index": 1,
+          "text": "I check and confirm these inputs before running the analysis. The app then puts together a proposal, with evidence for us to inspect.",
+          "start": 9.375,
+          "end": 17.985,
+          "source_duration": 8.61,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.8649885,
+            6.46034
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          4.2796145,
+          "For the review, I select the authoritative Solution Intent,"
+        ],
+        [
+          4.3196145,
+          8.320000000000002,
+          "import the meeting transcript, and load the review details."
+        ],
+        [
+          9.375,
+          13.1999885,
+          "I check and confirm these inputs before running the analysis."
+        ],
+        [
+          13.239988499999999,
+          17.945,
+          "The app then puts together a proposal, with evidence for us to inspect."
+        ]
+      ]
+    },
+    {
+      "id": "human",
+      "title": "3. Exercise human judgment",
+      "start": 115,
+      "end": 148,
+      "duration": 33,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "This is where I review what the app has proposed. The transcript says Riley will document the retry controls. I'm changing that action's owner to Taylor Kim.",
+          "start": 0.3,
+          "end": 10.35,
+          "source_duration": 10.05,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.093492,
+            7.1810884999999995
+          ]
+        },
+        {
+          "index": 1,
+          "text": "Notice that Riley's original words stay visible, alongside my change.",
+          "start": 11.4925,
+          "end": 16.3325,
+          "source_duration": 4.84,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.0456234999999996
+          ]
+        },
+        {
+          "index": 2,
+          "text": "I'm also leaving the retention finding out of this record. That doesn't mean the issue is resolved or approved.",
+          "start": 17.475,
+          "end": 23.975,
+          "source_duration": 6.5,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.4516324999999997
+          ]
+        },
+        {
+          "index": 3,
+          "text": "The outcome is still Changes Requested. I confirm my reviewed record before generating the outputs.",
+          "start": 25.1175,
+          "end": 31.8575,
+          "source_duration": 6.74,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.619977
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          3.982222222222222,
+          "This is where I review what the app has proposed."
+        ],
+        [
+          4.022222222222222,
+          10.310000000000002,
+          "The transcript says Riley will document the retry controls. I'm changing that action's owner to Taylor Kim."
+        ],
+        [
+          11.492500000000001,
+          16.292500000000004,
+          "Notice that Riley's original words stay visible, alongside my change."
+        ],
+        [
+          17.475,
+          20.8866325,
+          "I'm also leaving the retention finding out of this record."
+        ],
+        [
+          20.9266325,
+          23.935000000000002,
+          "That doesn't mean the issue is resolved or approved."
+        ],
+        [
+          25.1175,
+          31.817500000000003,
+          "The outcome is still Changes Requested. I confirm my reviewed record before generating the outputs."
+        ]
+      ]
+    },
+    {
+      "id": "outputs",
+      "title": "4. Follow evidence into the outputs",
+      "start": 148,
+      "end": 171,
+      "duration": 23,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "The change summary shows what I edited and left out. Let's follow that retry action: here's Riley's original quote, then Taylor as the owner I confirmed, followed by the minutes and work-item preview.",
+          "start": 0.3,
+          "end": 13.4,
+          "source_duration": 13.1,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.282041,
+            5.5785485,
+            7.690295000000001,
+            10.229387500000001
+          ]
+        },
+        {
+          "index": 1,
+          "text": "We can check how the final action came from the original discussion, and see where I changed it.",
+          "start": 15.15,
+          "end": 21.25,
+          "source_duration": 6.1,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            4.1546710000000004
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          5.8385485,
+          "The change summary shows what I edited and left out. Let's follow that retry action:"
+        ],
+        [
+          5.8785485,
+          13.360000000000001,
+          "here's Riley's original quote, then Taylor as the owner I confirmed, followed by the minutes and work-item preview."
+        ],
+        [
+          15.15,
+          18.16,
+          "We can check how the final action came from"
+        ],
+        [
+          18.2,
+          21.21,
+          "the original discussion, and see where I changed it."
+        ]
+      ]
+    },
+    {
+      "id": "delivery",
+      "title": "5. Deliver through explicit controls",
+      "start": 171,
+      "end": 200,
+      "duration": 29,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Next, I'll deliver the work item. I preview the request and check the owner, due date, parent reference and supporting evidence.",
+          "start": 0.3,
+          "end": 9.18,
+          "source_duration": 8.88,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            0.7738325,
+            2.657846,
+            5.1943535,
+            6.1621545
+          ]
+        },
+        {
+          "index": 1,
+          "text": "The summary and JSON show the same request. Once I'm happy with it, I confirm and create the work item.",
+          "start": 10.88,
+          "end": 18.04,
+          "source_duration": 7.16,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.0312015,
+            4.6175060000000006
+          ]
+        },
+        {
+          "index": 2,
+          "text": "The app reads it back to check the result. The receipt is visible here, and this action can't simply be submitted again.",
+          "start": 19.74,
+          "end": 27.3,
+          "source_duration": 7.56,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.632404,
+            4.585397
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          6.4221544999999995,
+          "Next, I'll deliver the work item. I preview the request and check the owner,"
+        ],
+        [
+          6.4621545,
+          9.140000000000002,
+          "due date, parent reference and supporting evidence."
+        ],
+        [
+          10.88,
+          13.871201500000002,
+          "The summary and JSON show the same request."
+        ],
+        [
+          13.9112015,
+          18.0,
+          "Once I'm happy with it, I confirm and create the work item."
+        ],
+        [
+          19.740000000000002,
+          22.792727272727276,
+          "The app reads it back to check the result."
+        ],
+        [
+          22.832727272727276,
+          27.26,
+          "The receipt is visible here, and this action can't simply be submitted again."
+        ]
+      ]
+    },
+    {
+      "id": "invalidation",
+      "title": "6. Protect against stale outputs",
+      "start": 200,
+      "end": 219,
+      "duration": 19,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "Now let's see what happens if I change the transcript. I add some new context, and the previous outputs become invalid.",
+          "start": 0.3,
+          "end": 8.25,
+          "source_duration": 7.95,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            3.4780274999999996,
+            5.4747164999999995
+          ]
+        },
+        {
+          "index": 1,
+          "text": "I need to run the analysis and review again before using new outputs. The work item I already delivered is still recorded.",
+          "start": 9.72,
+          "end": 17.53,
+          "source_duration": 7.81,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            4.520998
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          3.7380274999999994,
+          "Now let's see what happens if I change the transcript."
+        ],
+        [
+          3.7780274999999994,
+          8.21,
+          "I add some new context, and the previous outputs become invalid."
+        ],
+        [
+          9.72,
+          14.200998000000002,
+          "I need to run the analysis and review again before using new outputs."
+        ],
+        [
+          14.240998000000001,
+          17.490000000000002,
+          "The work item I already delivered is still recorded."
+        ]
+      ]
+    },
+    {
+      "id": "value",
+      "title": "What we strengthened",
+      "start": 219,
+      "end": 228,
+      "duration": 9,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "We've made edits easier to see, evidence easier to follow, and delivery easier to check. That's our response to the feedback.",
+          "start": 0.3,
+          "end": 8.6,
+          "source_duration": 8.3,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            2.0427210000000002,
+            3.9121544999999998,
+            5.930816500000001
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          4.1721544999999995,
+          "We've made edits easier to see, evidence easier to follow,"
+        ],
+        [
+          4.2121545,
+          8.560000000000002,
+          "and delivery easier to check. That's our response to the feedback."
+        ]
+      ]
+    },
+    {
+      "id": "close",
+      "title": "Two Tokens One Brain",
+      "start": 228,
+      "end": 238,
+      "duration": 10,
+      "tempo": 1.0,
+      "speech": [
+        {
+          "index": 0,
+          "text": "That's our demo. We want teams to spend less time piecing reviews together, while keeping people in control. Thank you for watching.",
+          "start": 0.3,
+          "end": 8.96,
+          "source_duration": 8.66,
+          "tempo": 1.0,
+          "measured_pause_candidates": [
+            1.1662815,
+            4.9717234999999995,
+            7.1756005
+          ]
+        }
+      ],
+      "captions": [
+        [
+          0.3,
+          5.231723499999999,
+          "That's our demo. We want teams to spend less time piecing reviews together,"
+        ],
+        [
+          5.271723499999999,
+          8.920000000000002,
+          "while keeping people in control. Thank you for watching."
+        ]
+      ]
+    }
+  ],
+  "edit_list": {
+    "frame_rate": 30,
+    "sections": {
+      "draft": [
+        [
+          0,
+          5.65,
+          10.4
+        ],
+        [
+          5.65,
+          14.8,
+          17.3
+        ],
+        [
+          14.8,
+          18.0,
+          20.5
+        ],
+        [
+          18,
+          19.7,
+          24.2
+        ],
+        [
+          19.7,
+          22,
+          27
+        ]
+      ],
+      "inputs": [
+        [
+          0,
+          4.2,
+          4
+        ],
+        [
+          4.2,
+          7.8,
+          8.4
+        ],
+        [
+          7.8,
+          11.7,
+          12.2
+        ],
+        [
+          11.7,
+          15,
+          15.3
+        ],
+        [
+          15,
+          18.9,
+          19
+        ]
+      ],
+      "human": [
+        [
+          0,
+          3.45,
+          6.2
+        ],
+        [
+          3.45,
+          7.75,
+          11.3
+        ],
+        [
+          7.75,
+          9.6,
+          16.6
+        ],
+        [
+          9.6,
+          12.6,
+          19.5
+        ],
+        [
+          12.6,
+          16.9,
+          24.5
+        ],
+        [
+          16.9,
+          17.5,
+          28.1
+        ],
+        [
+          17.5,
+          20.5,
+          31.7
+        ],
+        [
+          20.5,
+          22.8,
+          33
+        ]
+      ],
+      "outputs": [
+        [
+          0.8,
+          3.6,
+          5.5
+        ],
+        [
+          3.6,
+          8.9,
+          14.4
+        ],
+        [
+          8.9,
+          12.5,
+          21.5
+        ],
+        [
+          12.5,
+          14.5,
+          23
+        ]
+      ],
+      "delivery": [
+        [
+          0,
+          4.8,
+          4.7
+        ],
+        [
+          4.8,
+          7.8,
+          10.5
+        ],
+        [
+          7.8,
+          12.3,
+          14.5
+        ],
+        [
+          12.3,
+          14.85,
+          17.2
+        ],
+        [
+          14.85,
+          16.9,
+          19.45
+        ],
+        [
+          16.9,
+          19,
+          22.3
+        ],
+        [
+          19,
+          24.5,
+          29
+        ]
+      ],
+      "invalidation": [
+        [
+          0,
+          5.4,
+          3.1
+        ],
+        [
+          5.4,
+          9.2,
+          7.3
+        ],
+        [
+          9.2,
+          16.3,
+          19
+        ]
+      ]
+    },
+    "focus_regions": {
+      "process": [
+        [
+          0.5,
+          4.2,
+          88,
+          298,
+          554,
+          198
+        ],
+        [
+          4.2,
+          6.6,
+          683,
+          298,
+          554,
+          198
+        ],
+        [
+          6.6,
+          9.2,
+          1278,
+          298,
+          554,
+          198
+        ],
+        [
+          9.5,
+          14.7,
+          88,
+          543,
+          1744,
+          198
+        ],
+        [
+          14.7,
+          17.6,
+          88,
+          820,
+          1744,
+          129
+        ]
+      ],
+      "solution": [
+        [
+          0.4,
+          3.0,
+          87,
+          335,
+          1745,
+          441
+        ],
+        [
+          3.0,
+          6.9,
+          87,
+          809,
+          1745,
+          148
+        ],
+        [
+          7.6,
+          11.3,
+          653,
+          335,
+          1080,
+          168
+        ],
+        [
+          11.3,
+          17.2,
+          87,
+          809,
+          1745,
+          148
+        ]
+      ],
+      "architecture": [
+        [
+          0.3,
+          6.6,
+          52,
+          333,
+          266,
+          150
+        ],
+        [
+          0.3,
+          6.6,
+          52,
+          507,
+          266,
+          150
+        ],
+        [
+          6.8,
+          9.0,
+          382,
+          337,
+          261,
+          225
+        ],
+        [
+          9,
+          12.2,
+          742,
+          337,
+          251,
+          458
+        ],
+        [
+          12.2,
+          16.5,
+          1027,
+          330,
+          806,
+          441
+        ],
+        [
+          16.75,
+          19.45,
+          52,
+          626,
+          591,
+          158
+        ],
+        [
+          19.45,
+          22.5,
+          1357,
+          847,
+          506,
+          153
+        ]
+      ],
+      "human": [
+        [
+          11.7,
+          14.2,
+          412,
+          464,
+          1080,
+          59
+        ],
+        [
+          14.2,
+          16.0,
+          394,
+          83,
+          670,
+          42
+        ]
+      ],
+      "outputs": [
+        [
+          6.0,
+          8.5,
+          394,
+          383,
+          537,
+          211
+        ],
+        [
+          8.5,
+          10.25,
+          967,
+          300,
+          546,
+          117
+        ],
+        [
+          10.25,
+          12.2,
+          967,
+          431,
+          546,
+          276
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,2662 @@
+[
+  {
+    "name": "process",
+    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/process.svg",
+    "elements": [
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1920",
+          "height": "1080",
+          "fill": "#F7F8FA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1310",
+          "height": "10",
+          "fill": "#0473EA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1310",
+          "width": "610",
+          "height": "10",
+          "fill": "#38D200"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "87",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#0473ea"
+        },
+        "text": "CURRENT GOVERNANCE PROCESS"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "154",
+          "font-family": "Arial,sans-serif",
+          "font-size": "43",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Architecture work spans documents, meetings and tracked actions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "211",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "400",
+          "fill": "#66727d"
+        },
+        "text": "Project teams prepare and revise; Domain Architects review and decide."
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "300",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "110",
+          "y": "323",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "124",
+          "y": "355",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "1"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "356",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Prepare the SI"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "406",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Describe the proposed solution"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "448",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Tool: Confluence"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "685",
+          "y": "300",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "705",
+          "y": "323",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "719",
+          "y": "355",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "2"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "356",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Set up governance tracking"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "406",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Link the review and its actions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "448",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Tool: Azure Boards"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1280",
+          "y": "300",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1300",
+          "y": "323",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1314",
+          "y": "355",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "3"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "356",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Review the design"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "406",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Discuss the SI and its evidence"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "448",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Tool: Teams"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1280",
+          "y": "545",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1300",
+          "y": "568",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1314",
+          "y": "600",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "4"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "601",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Record findings and actions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "651",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Capture decisions and owners"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1365",
+          "y": "693",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Owner: Project team"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "685",
+          "y": "545",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "705",
+          "y": "568",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "719",
+          "y": "600",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "5"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "601",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Revise the SI"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "651",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Apply the agreed changes"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "770",
+          "y": "693",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Tool: Confluence"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "545",
+          "width": "550",
+          "height": "193",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "110",
+          "y": "568",
+          "width": "44",
+          "height": "44",
+          "rx": "14",
+          "fill": "#0473ea",
+          "stroke": "#0473ea",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "124",
+          "y": "600",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "6"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "601",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Review and decide"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "651",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Check the revised SI"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "175",
+          "y": "693",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Owner: Domain Architect"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M645,397 H676",
+          "fill": "none",
+          "stroke": "#008acb",
+          "stroke-width": "3",
+          "marker-end": "url(#flow)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1240,397 H1271",
+          "fill": "none",
+          "stroke": "#008acb",
+          "stroke-width": "3",
+          "marker-end": "url(#flow)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1555,499 V536",
+          "fill": "none",
+          "stroke": "#008acb",
+          "stroke-width": "3",
+          "marker-end": "url(#flow)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1275,642 H1244",
+          "fill": "none",
+          "stroke": "#008acb",
+          "stroke-width": "3",
+          "marker-end": "url(#flow)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M680,642 H649",
+          "fill": "none",
+          "stroke": "#008acb",
+          "stroke-width": "3",
+          "marker-end": "url(#flow)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "823",
+          "width": "1740",
+          "height": "123",
+          "rx": "14",
+          "fill": "#061d33",
+          "stroke": "#061d33",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "120",
+          "y": "867",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "THE FRICTION"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "120",
+          "y": "914",
+          "font-family": "Arial,sans-serif",
+          "font-size": "31",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Decisions, evidence and ownership must be reconstructed across handoffs."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "1035",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "700",
+          "fill": "#66727d"
+        },
+        "text": "ARCHITECTURE GOVERNANCE COPILOT  \u00b7  ACCELERATE 3.0"
+      }
+    ]
+  },
+  {
+    "name": "solution",
+    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/solution.svg",
+    "elements": [
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1920",
+          "height": "1080",
+          "fill": "#F7F8FA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1310",
+          "height": "10",
+          "fill": "#0473EA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1310",
+          "width": "610",
+          "height": "10",
+          "fill": "#38D200"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "87",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#0473ea"
+        },
+        "text": "PROPOSED SOLUTION"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "154",
+          "font-family": "Arial,sans-serif",
+          "font-size": "43",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Assist the work. Preserve the evidence. Keep people accountable."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "210",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "400",
+          "fill": "#66727d"
+        },
+        "text": "Draft and review in the app. Keep the authoritative SI in Confluence."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "306",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "700",
+          "fill": "#0473ea"
+        },
+        "text": "DRAFTING"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "337",
+          "width": "510",
+          "height": "162",
+          "rx": "14",
+          "fill": "#fff",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "381",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Selected project context"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "428",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Template \u00b7 repository"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "464",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Supporting evidence"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "655",
+          "y": "337",
+          "width": "510",
+          "height": "162",
+          "rx": "14",
+          "fill": "#E7F2FC",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "680",
+          "y": "381",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "AI-assisted SI draft"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "680",
+          "y": "428",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Structured proposal"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "680",
+          "y": "464",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Traceable source context"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1220",
+          "y": "337",
+          "width": "510",
+          "height": "162",
+          "rx": "14",
+          "fill": "#EAF8E2",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1245",
+          "y": "381",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "User-reviewed draft"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1245",
+          "y": "428",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Accept, change or reject"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1245",
+          "y": "464",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "User updates Confluence"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "610",
+          "y": "430",
+          "font-family": "Arial,sans-serif",
+          "font-size": "45",
+          "font-weight": "400",
+          "fill": "#008acb"
+        },
+        "text": "\u2192"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1175",
+          "y": "430",
+          "font-family": "Arial,sans-serif",
+          "font-size": "45",
+          "font-weight": "400",
+          "fill": "#008acb"
+        },
+        "text": "\u2192"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "568",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "700",
+          "fill": "#0473ea"
+        },
+        "text": "GOVERNANCE REVIEW"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "600",
+          "width": "365",
+          "height": "174",
+          "rx": "14",
+          "fill": "#fff",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "113",
+          "y": "644",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "700",
+          "fill": "#061d33"
+        },
+        "text": "Authoritative inputs"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "113",
+          "y": "690",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "SI + transcript"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "113",
+          "y": "725",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Review metadata"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "520",
+          "y": "600",
+          "width": "365",
+          "height": "174",
+          "rx": "14",
+          "fill": "#E7F2FC",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "543",
+          "y": "644",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "700",
+          "fill": "#061d33"
+        },
+        "text": "Review proposal"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "543",
+          "y": "690",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Findings \u00b7 decisions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "543",
+          "y": "725",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Actions + evidence"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "950",
+          "y": "600",
+          "width": "365",
+          "height": "174",
+          "rx": "14",
+          "fill": "#EAF8E2",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "973",
+          "y": "644",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "700",
+          "fill": "#061d33"
+        },
+        "text": "Human Review"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "973",
+          "y": "690",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Edit \u00b7 include / exclude"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "973",
+          "y": "725",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Confirm reviewed record"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1380",
+          "y": "600",
+          "width": "450",
+          "height": "174",
+          "rx": "14",
+          "fill": "#061d33",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1403",
+          "y": "644",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Governance outputs"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1403",
+          "y": "690",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Minutes + work items"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1403",
+          "y": "725",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Controlled delivery"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "466",
+          "y": "699",
+          "font-family": "Arial,sans-serif",
+          "font-size": "45",
+          "font-weight": "400",
+          "fill": "#008acb"
+        },
+        "text": "\u2192"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "896",
+          "y": "699",
+          "font-family": "Arial,sans-serif",
+          "font-size": "45",
+          "font-weight": "400",
+          "fill": "#008acb"
+        },
+        "text": "\u2192"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1326",
+          "y": "699",
+          "font-family": "Arial,sans-serif",
+          "font-size": "45",
+          "font-weight": "400",
+          "fill": "#008acb"
+        },
+        "text": "\u2192"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "812",
+          "width": "1740",
+          "height": "143",
+          "rx": "14",
+          "fill": "#061d33",
+          "stroke": "#061d33",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "851",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "CONFLUENCE REMAINS THE SI SOURCE OF TRUTH"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "896",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "The app produces drafts and suggested changes; it does not write to or edit Confluence."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "115",
+          "y": "934",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Users decide what to use, then write and update the SI themselves in Confluence."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "1035",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "700",
+          "fill": "#66727d"
+        },
+        "text": "ARCHITECTURE GOVERNANCE COPILOT  \u00b7  ACCELERATE 3.0"
+      }
+    ]
+  },
+  {
+    "name": "system-architecture",
+    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/system-architecture.svg",
+    "elements": [
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1920",
+          "height": "1080",
+          "fill": "#061D33"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1310",
+          "height": "9",
+          "fill": "#0473EA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1310",
+          "width": "610",
+          "height": "9",
+          "fill": "#38D200"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "80",
+          "y": "74",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "SYSTEM ARCHITECTURE"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "80",
+          "y": "134",
+          "font-family": "Arial,sans-serif",
+          "font-size": "47",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Architecture Governance Copilot"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "80",
+          "y": "181",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "400",
+          "fill": "#b4ccdc"
+        },
+        "text": "Selected context. AI-assisted drafting and review. Human-controlled action."
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "355",
+          "y": "230",
+          "width": "315",
+          "height": "570",
+          "rx": "14",
+          "fill": "#08233a",
+          "stroke": "#0473ea",
+          "stroke-width": "2",
+          "stroke-dasharray": "9 7"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "382",
+          "y": "270",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#7fc3ff"
+        },
+        "text": "SERVICE BENCH"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "710",
+          "y": "230",
+          "width": "600",
+          "height": "570",
+          "rx": "14",
+          "fill": "#08233a",
+          "stroke": "#38d200",
+          "stroke-width": "2",
+          "stroke-dasharray": "9 7"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "737",
+          "y": "270",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "SKE"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1360",
+          "y": "230",
+          "width": "500",
+          "height": "570",
+          "rx": "14",
+          "fill": "#08233a",
+          "stroke": "#6289a5",
+          "stroke-width": "2",
+          "stroke-dasharray": "9 7"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1386",
+          "y": "270",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#b4ccdc"
+        },
+        "text": "ENTERPRISE SERVICES"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "55",
+          "y": "336",
+          "width": "260",
+          "height": "144",
+          "rx": "14",
+          "fill": "#fff",
+          "stroke": "#d8e2ec",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "374",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#061d33"
+        },
+        "text": "Project Team"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "414",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#33576e"
+        },
+        "text": "Draft preparation"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "442",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#33576e"
+        },
+        "text": "Action follow-through"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "55",
+          "y": "510",
+          "width": "260",
+          "height": "144",
+          "rx": "14",
+          "fill": "#fff",
+          "stroke": "#d8e2ec",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "548",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#061d33"
+        },
+        "text": "Domain Architect"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "588",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#33576e"
+        },
+        "text": "Architecture review"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "616",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#33576e"
+        },
+        "text": "Formal decision authority"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "385",
+          "y": "340",
+          "width": "255",
+          "height": "219",
+          "rx": "14",
+          "fill": "#0b66c3",
+          "stroke": "#58a8f4",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "381",
+          "font-family": "Arial,sans-serif",
+          "font-size": "26",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "AGC Front End"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "424",
+          "font-family": "Arial,sans-serif",
+          "font-size": "21",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Context selection"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "454",
+          "font-family": "Arial,sans-serif",
+          "font-size": "21",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Drafting and review"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "484",
+          "font-family": "Arial,sans-serif",
+          "font-size": "21",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Evidence inspection"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "514",
+          "font-family": "Arial,sans-serif",
+          "font-size": "21",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Human confirmation"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M317,408 H379",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M317,566 H341 V490 H379",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "55",
+          "y": "668",
+          "width": "260",
+          "height": "112",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "705",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Teams transcript"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "77",
+          "y": "741",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "User export / manual transfer"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "385",
+          "y": "630",
+          "width": "255",
+          "height": "125",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "668",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Transcript intake"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "703",
+          "font-family": "Arial,sans-serif",
+          "font-size": "20",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Manual import / paste"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "407",
+          "y": "732",
+          "font-family": "Arial,sans-serif",
+          "font-size": "20",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Review metadata"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M317,722 H379",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M511,628 V565",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M642,447 H739",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "663",
+          "y": "423",
+          "font-family": "Arial,sans-serif",
+          "font-size": "17",
+          "font-weight": "400",
+          "fill": "#7fc3ff"
+        },
+        "text": "HTTPS"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "745",
+          "y": "340",
+          "width": "245",
+          "height": "238",
+          "rx": "14",
+          "fill": "#12456a",
+          "stroke": "#70e545",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "379",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "AGC Backend API"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "424",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Drafting and governance"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "451",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Schema + evidence checks"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "478",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Confirmed context scope"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "505",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Minutes + work items"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "532",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Controlled delivery"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "883",
+          "y": "613",
+          "font-family": "Arial,sans-serif",
+          "font-size": "16",
+          "font-weight": "400",
+          "fill": "#80d8f5"
+        },
+        "text": "State + audit"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M866,580 V632",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M745,661 C745,629 990,629 990,661 V775 C990,804 745,804 745,775 Z",
+          "fill": "#173f59",
+          "stroke": "#00a1e0",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "ellipse",
+        "a": {
+          "cx": "867.5",
+          "cy": "661",
+          "rx": "122.5",
+          "ry": "19",
+          "fill": "#173f59",
+          "stroke": "#00a1e0",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "810",
+          "y": "711",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Database"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "740",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Records \u00b7 source versions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "765",
+          "y": "767",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Actions \u00b7 receipts \u00b7 audit"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1030",
+          "y": "307",
+          "font-family": "Arial,sans-serif",
+          "font-size": "17",
+          "font-weight": "700",
+          "fill": "#9be880"
+        },
+        "text": "INTEGRATION ADAPTERS"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1030",
+          "y": "335",
+          "width": "250",
+          "height": "95",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "368",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Confluence"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "400",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Read-only templates + SI"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1030",
+          "y": "450",
+          "width": "250",
+          "height": "95",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#70e545",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "483",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "AIF provider"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "515",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Scoped AI requests"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1030",
+          "y": "621",
+          "width": "250",
+          "height": "120",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "654",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Azure DevOps"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "686",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Repos + Boards"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1050",
+          "y": "713",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Controlled work items"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M992,467 H1010 V383 H1024",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1010,467 H1024",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1010,467 V680 H1024",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1410",
+          "y": "328",
+          "width": "420",
+          "height": "105",
+          "rx": "14",
+          "fill": "#123a59",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "361",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Confluence"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "393",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Read API \u00b7 authoritative SI"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "421",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Users edit in Confluence UI"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1410",
+          "y": "450",
+          "width": "420",
+          "height": "105",
+          "rx": "14",
+          "fill": "#123a59",
+          "stroke": "#70e545",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "483",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "AI Factory (AIF)"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "515",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Confirmed context in"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "543",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Structured proposal out"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1410",
+          "y": "588",
+          "width": "420",
+          "height": "83",
+          "rx": "14",
+          "fill": "#123a59",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "621",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Azure Repos API"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "653",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Selected repository + revision"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1410",
+          "y": "684",
+          "width": "420",
+          "height": "83",
+          "rx": "14",
+          "fill": "#123a59",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "717",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Azure Boards API"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1435",
+          "y": "749",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Governance metadata + work items"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1282,382 H1404",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1282,499 H1404",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1282,650 H1330 V629 H1404",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1282,713 H1330 V725 H1404",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "marker-start": "url(#arr)"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1360",
+          "y": "850",
+          "width": "500",
+          "height": "147",
+          "rx": "14",
+          "fill": "#0e304b",
+          "stroke": "#00a1e0",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1386",
+          "y": "887",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "700",
+          "fill": "#80d8f5"
+        },
+        "text": "COP"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1459",
+          "y": "887",
+          "font-family": "Arial,sans-serif",
+          "font-size": "20",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Central Observability Platform"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1386",
+          "y": "924",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Logs \u00b7 traces \u00b7 metrics"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1386",
+          "y": "966",
+          "font-family": "Arial,sans-serif",
+          "font-size": "23",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Grafana / Kibana"
+      },
+      {
+        "tag": "path",
+        "a": {
+          "d": "M1265,802 V826 H1600 V844",
+          "fill": "none",
+          "stroke": "#8fbbd5",
+          "stroke-width": "2.5",
+          "marker-end": "url(#arr)",
+          "stroke-dasharray": "7 5"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "920",
+          "y": "850",
+          "font-family": "Arial,sans-serif",
+          "font-size": "20",
+          "font-weight": "400",
+          "fill": "#80d8f5"
+        },
+        "text": "Automatic SKE telemetry"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "355",
+          "y": "890",
+          "width": "955",
+          "height": "107",
+          "rx": "14",
+          "fill": "#0b2a40",
+          "stroke": "#527d9b",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "382",
+          "y": "927",
+          "font-family": "Arial,sans-serif",
+          "font-size": "24",
+          "font-weight": "700",
+          "fill": "#fff"
+        },
+        "text": "Enterprise controls"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "382",
+          "y": "963",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Role-based permissions \u00b7 secrets \u00b7 encryption \u00b7 data policy"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "80",
+          "y": "1046",
+          "font-family": "Arial,sans-serif",
+          "font-size": "19",
+          "font-weight": "700",
+          "fill": "#b4ccdc"
+        },
+        "text": "ARCHITECTURE GOVERNANCE COPILOT  \u00b7  TWO TOKENS ONE BRAIN"
+      }
+    ]
+  },
+  {
+    "name": "value",
+    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/value.svg",
+    "elements": [
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1920",
+          "height": "1080",
+          "fill": "#F7F8FA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "width": "1310",
+          "height": "10",
+          "fill": "#0473EA"
+        },
+        "text": ""
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1310",
+          "width": "610",
+          "height": "10",
+          "fill": "#38D200"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "87",
+          "font-family": "Arial,sans-serif",
+          "font-size": "22",
+          "font-weight": "700",
+          "fill": "#0473ea"
+        },
+        "text": "WHAT WE STRENGTHENED"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "154",
+          "font-family": "Arial,sans-serif",
+          "font-size": "44",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "From a traceable record to visible, controlled action"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "210",
+          "font-family": "Arial,sans-serif",
+          "font-size": "27",
+          "font-weight": "400",
+          "fill": "#66727d"
+        },
+        "text": "Responding to judge feedback through demonstrated behavior."
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "330",
+          "width": "550",
+          "height": "350",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "118",
+          "y": "393",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Visible human edits"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "118",
+          "y": "466",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Owner changes and exclusions"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "118",
+          "y": "503",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Explicit confirmation before outputs"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "680",
+          "y": "330",
+          "width": "550",
+          "height": "350",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "708",
+          "y": "393",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Evidence through outputs"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "708",
+          "y": "466",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Original quote \u2192 reviewed action"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "708",
+          "y": "503",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Minutes and work item stay traceable"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "1270",
+          "y": "330",
+          "width": "550",
+          "height": "350",
+          "rx": "14",
+          "fill": "#FFFFFF",
+          "stroke": "#D8E2EC",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1298",
+          "y": "393",
+          "font-family": "Arial,sans-serif",
+          "font-size": "29",
+          "font-weight": "700",
+          "fill": "#061D33"
+        },
+        "text": "Consistency and delivery"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1298",
+          "y": "466",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Changed inputs invalidate outputs"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "1298",
+          "y": "503",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#526a7b"
+        },
+        "text": "Preview \u2192 Confirm \u2192 Create \u2192 Verify"
+      },
+      {
+        "tag": "rect",
+        "a": {
+          "x": "90",
+          "y": "765",
+          "width": "1740",
+          "height": "170",
+          "rx": "14",
+          "fill": "#061d33",
+          "stroke": "#061d33",
+          "stroke-width": "2"
+        },
+        "text": ""
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "120",
+          "y": "817",
+          "font-family": "Arial,sans-serif",
+          "font-size": "28",
+          "font-weight": "700",
+          "fill": "#70e545"
+        },
+        "text": "Expected value"
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "120",
+          "y": "863",
+          "font-family": "Arial,sans-serif",
+          "font-size": "34",
+          "font-weight": "400",
+          "fill": "#fff"
+        },
+        "text": "Less repeated reconstruction. Easier verification."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "120",
+          "y": "909",
+          "font-family": "Arial,sans-serif",
+          "font-size": "25",
+          "font-weight": "400",
+          "fill": "#c7d8e5"
+        },
+        "text": "Business validation is the next step; benefits have not been quantified."
+      },
+      {
+        "tag": "text",
+        "a": {
+          "x": "90",
+          "y": "1035",
+          "font-family": "Arial,sans-serif",
+          "font-size": "18",
+          "font-weight": "700",
+          "fill": "#66727d"
+        },
+        "text": "ARCHITECTURE GOVERNANCE COPILOT  \u00b7  ACCELERATE 3.0"
+      }
+    ]
+  }
+]

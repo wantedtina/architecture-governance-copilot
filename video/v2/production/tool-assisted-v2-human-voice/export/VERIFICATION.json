@@ -1,0 +1,18 @@
+{
+  "duration_seconds": 219,
+  "frame_count": 6570,
+  "format": "1920x1080, 30 fps, H.264/AAC",
+  "full_decode": "pass",
+  "human_voice_segments": 12,
+  "audio_speed": 1.0,
+  "time_stretch_applied": false,
+  "captions": 47,
+  "caption_overlaps": 0,
+  "requested_sentence_removed": true,
+  "other_script_words_unchanged": true,
+  "source_recordings_unchanged": true,
+  "v2_video_and_source_clips_unchanged": true,
+  "video_bytes": 22717240,
+  "video_sha256": "d71db0ee7d91f25b5946a1c156831008fbfdab2e643294741086f9e7ac600cd6",
+  "audio_loudness_summary": "Summary:\n\n  Integrated loudness:\n    I:         -16.1 LUFS\n    Threshold: -26.6 LUFS\n\n  Loudness range:\n    LRA:         3.8 LU\n    Threshold: -36.8 LUFS\n    LRA low:   -19.1 LUFS\n    LRA high:  -15.3 LUFS\n\n  True peak:\n    Peak:       -4.4 dBFS\n[out#0/null @ 0x159f054b0] video:0KiB audio:41064KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown\nsize=N/A time=00:03:39.00 bitrate=N/A speed= 284x    \n"
+}

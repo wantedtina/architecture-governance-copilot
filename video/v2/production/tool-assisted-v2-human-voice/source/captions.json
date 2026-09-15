@@ -1,0 +1,331 @@
+[
+  {
+    "text": "Hello, we're Two Tokens One Brain.",
+    "startMs": 430,
+    "endMs": 2320,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Let me show you how Architecture Governance Copilot helps teams prepare and follow up on architecture reviews.",
+    "startMs": 2400,
+    "endMs": 8720,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Today, a project team writes its Solution Intent in Confluence,",
+    "startMs": 10424,
+    "endMs": 13997,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "tracks the review in Azure Boards, and discusses the design in Teams.",
+    "startMs": 14347,
+    "endMs": 18868,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Afterwards, someone has to bring the decisions, evidence and action owners back together.",
+    "startMs": 19336,
+    "endMs": 24765,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "That's the work we're trying to make easier.",
+    "startMs": 25139,
+    "endMs": 26800,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Our app helps with drafting and review,",
+    "startMs": 28751,
+    "endMs": 30980,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "but Confluence remains the source of truth for the Solution Intent.",
+    "startMs": 31020,
+    "endMs": 33970,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "We only produce drafts and suggested changes. The app never edits Confluence.",
+    "startMs": 34641,
+    "endMs": 39540,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Users decide what to keep and make those changes themselves.",
+    "startMs": 39962,
+    "endMs": 42950,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Both project teams and Domain Architects use the app, with different permissions and responsibilities.",
+    "startMs": 44934,
+    "endMs": 51345,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The interface sits in Service Bench. SKE hosts the backend and database,",
+    "startMs": 51861,
+    "endMs": 56515,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "with adapters for Confluence, AI Factory and Azure DevOps.",
+    "startMs": 57004,
+    "endMs": 60235,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Teams transcripts are imported manually. Logs, traces and metrics go to COP.",
+    "startMs": 60886,
+    "endMs": 65770,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Let's start with the project team. I open the project context,",
+    "startMs": 67739,
+    "endMs": 70633,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "which brings together the template, repository revision and governance details.",
+    "startMs": 71120,
+    "endMs": 75015,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I save the supporting evidence, confirm the package, and generate a Solution Intent draft.",
+    "startMs": 75532,
+    "endMs": 79841,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I review and confirm that draft here.",
+    "startMs": 80541,
+    "endMs": 82609,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I would then make any changes I want in Confluence myself.",
+    "startMs": 83288,
+    "endMs": 86333,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The governance review is a separate step.",
+    "startMs": 87041,
+    "endMs": 88962,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "For the review, I select the authoritative Solution Intent,",
+    "startMs": 91485,
+    "endMs": 95756,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "import the meeting transcript, and load the review details.",
+    "startMs": 96359,
+    "endMs": 99638,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I check and confirm these inputs before running the analysis.",
+    "startMs": 100171,
+    "endMs": 103548,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The app then puts together a proposal, with evidence for us to inspect.",
+    "startMs": 104007,
+    "endMs": 108086,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "This is where I review what the app has proposed.",
+    "startMs": 111121,
+    "endMs": 113419,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The transcript says Riley will document the retry controls. I'm changing that action's owner to Taylor Kim.",
+    "startMs": 114009,
+    "endMs": 119952,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Notice that Riley's original words stay visible, alongside my change.",
+    "startMs": 120275,
+    "endMs": 124472,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I'm also leaving the retention finding out of this record.",
+    "startMs": 124987,
+    "endMs": 128837,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "That doesn't mean the issue is resolved or approved.",
+    "startMs": 129471,
+    "endMs": 133154,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The outcome is still Changes Requested. I confirm my reviewed record before generating the outputs.",
+    "startMs": 133722,
+    "endMs": 139800,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The change summary shows what I edited and left out. Let's follow that retry action:",
+    "startMs": 142113,
+    "endMs": 147535,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "here's Riley's original quote, then Taylor as the owner I confirmed, followed by the minutes and work-item preview.",
+    "startMs": 148033,
+    "endMs": 155020,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "We can check how the final action came from the original discussion, and see where I changed it.",
+    "startMs": 155615,
+    "endMs": 160550,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Next, I'll deliver the work item. I preview the request and check the owner,",
+    "startMs": 162916,
+    "endMs": 166789,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "due date, parent reference and supporting evidence.",
+    "startMs": 167261,
+    "endMs": 169699,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The summary and JSON show the same request.",
+    "startMs": 170181,
+    "endMs": 172535,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Once I'm happy with it, I confirm and create the work item.",
+    "startMs": 173149,
+    "endMs": 175803,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The app reads it back to check the result.",
+    "startMs": 176504,
+    "endMs": 178813,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The receipt is visible here, and this action can't simply be submitted again.",
+    "startMs": 179310,
+    "endMs": 183543,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "Now let's see what happens if I change the transcript.",
+    "startMs": 186019,
+    "endMs": 188550,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I add some new context, and the previous outputs become invalid.",
+    "startMs": 189119,
+    "endMs": 193077,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "I need to run the analysis and review again before using new outputs.",
+    "startMs": 193498,
+    "endMs": 197402,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "The work item I already delivered is still recorded.",
+    "startMs": 197844,
+    "endMs": 200378,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "We've made edits easier to see, evidence easier to follow,",
+    "startMs": 202952,
+    "endMs": 206156,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "and delivery easier to check.",
+    "startMs": 206432,
+    "endMs": 207905,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "That's our demo. We want teams to spend less time piecing reviews together,",
+    "startMs": 209926,
+    "endMs": 214417,
+    "timestampMs": null,
+    "confidence": null
+  },
+  {
+    "text": "while keeping people in control. Thank you for watching.",
+    "startMs": 214797,
+    "endMs": 217031,
+    "timestampMs": null,
+    "confidence": null
+  }
+]

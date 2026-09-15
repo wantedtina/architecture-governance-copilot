@@ -1,5 +1,15 @@
 # Audio Assets
 
+## Archive status
+
+This directory contains earlier local audio assets, including `human_voice_narration.wav` and `human_voice_segments/`. The local recordings and generated audio are not tracked in Git. These materials predate the later accepted baseline explicitly named V1, which used temporary Daniel narration.
+
+For the accepted V2 human recordings, use the [V2 narration archive](../versions/v2/AUDIO.md). Twelve unchanged recording copies are now in the separate [v2 subdirectory](v2/README.md) of the original project checkout. The guide records project and external paths, chapter mapping and checksums. Raw audio remains Git-ignored.
+
+The instructions below are retained as historical production notes. They do not describe the final V2 workflow or request a new render.
+
+## Historical production notes
+
 - `provisional_offline_tts.wav` is a **draft-only**, fully offline macOS TTS narration using the
   `Daniel` English voice. It is aligned to the original 03:50 storyboard and contains no external service
   output.

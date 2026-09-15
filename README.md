@@ -15,6 +15,10 @@ governance decision. Only a validated, human-confirmed reviewed record generates
 review minutes and mock Azure DevOps outputs.
 The submission baseline supports the video and repository deliverables due on 14 September 2026.
 
+## Final submission materials
+
+For the accepted video, PowerPoint deck, architecture diagram and production sources, open [video/](video/README.md): [V1](video/v1/README.md), [V2 final submission](video/v2/README.md), and [earlier history](video/archive/pre-v1/README.md). Files are grouped by version; [VIDEO_HANDOFF.md](video/VIDEO_HANDOFF.md) preserves confirmed requirements for future revisions. Large local media is Git-ignored.
+
 ## Business problem
 
 A Solution Intent is the project's detailed design document, covering areas such as conceptual

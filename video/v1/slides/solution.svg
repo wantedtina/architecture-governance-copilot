@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#F7F8FA"/><rect width="1310" height="10" fill="#0473EA"/><rect x="1310" width="610" height="10" fill="#38D200"/>
+<text x="90" y="87" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#0473ea">PROPOSED SOLUTION</text>
+<text x="90" y="154" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="#061D33">Assist the work. Preserve the evidence. Keep people accountable.</text>
+<text x="90" y="210" font-family="Arial,sans-serif" font-size="27" font-weight="400" fill="#66727d">Draft and review in the app. Keep the authoritative SI in Confluence.</text>
+<text x="90" y="306" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#0473ea">DRAFTING</text>
+<rect x="90" y="337" width="510" height="162" rx="14" fill="#fff" stroke="#D8E2EC" stroke-width="2"/>
+<text x="115" y="381" font-family="Arial,sans-serif" font-size="29" font-weight="700" fill="#061D33">Selected project context</text>
+<text x="115" y="428" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Template · repository</text>
+<text x="115" y="464" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Supporting evidence</text>
+<rect x="655" y="337" width="510" height="162" rx="14" fill="#E7F2FC" stroke="#D8E2EC" stroke-width="2"/>
+<text x="680" y="381" font-family="Arial,sans-serif" font-size="29" font-weight="700" fill="#061D33">AI-assisted SI draft</text>
+<text x="680" y="428" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Structured proposal</text>
+<text x="680" y="464" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Traceable source context</text>
+<rect x="1220" y="337" width="510" height="162" rx="14" fill="#EAF8E2" stroke="#D8E2EC" stroke-width="2"/>
+<text x="1245" y="381" font-family="Arial,sans-serif" font-size="29" font-weight="700" fill="#061D33">User-reviewed draft</text>
+<text x="1245" y="428" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Accept, change or reject</text>
+<text x="1245" y="464" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">User updates Confluence</text>
+<text x="610" y="430" font-family="Arial,sans-serif" font-size="45" font-weight="400" fill="#008acb">→</text>
+<text x="1175" y="430" font-family="Arial,sans-serif" font-size="45" font-weight="400" fill="#008acb">→</text>
+<text x="90" y="568" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#0473ea">GOVERNANCE REVIEW</text>
+<rect x="90" y="600" width="365" height="174" rx="14" fill="#fff" stroke="#D8E2EC" stroke-width="2"/>
+<text x="113" y="644" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#061d33">Authoritative inputs</text>
+<text x="113" y="690" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">SI + transcript</text>
+<text x="113" y="725" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">Review metadata</text>
+<rect x="520" y="600" width="365" height="174" rx="14" fill="#E7F2FC" stroke="#D8E2EC" stroke-width="2"/>
+<text x="543" y="644" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#061d33">Review proposal</text>
+<text x="543" y="690" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">Findings · decisions</text>
+<text x="543" y="725" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">Actions + evidence</text>
+<rect x="950" y="600" width="365" height="174" rx="14" fill="#EAF8E2" stroke="#D8E2EC" stroke-width="2"/>
+<text x="973" y="644" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#061d33">Human Review</text>
+<text x="973" y="690" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">Edit · include / exclude</text>
+<text x="973" y="725" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#526a7b">Confirm reviewed record</text>
+<rect x="1380" y="600" width="450" height="174" rx="14" fill="#061d33" stroke="#D8E2EC" stroke-width="2"/>
+<text x="1403" y="644" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#fff">Governance outputs</text>
+<text x="1403" y="690" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#c7d8e5">Minutes + work items</text>
+<text x="1403" y="725" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#c7d8e5">Controlled delivery</text>
+<text x="466" y="699" font-family="Arial,sans-serif" font-size="45" font-weight="400" fill="#008acb">→</text>
+<text x="896" y="699" font-family="Arial,sans-serif" font-size="45" font-weight="400" fill="#008acb">→</text>
+<text x="1326" y="699" font-family="Arial,sans-serif" font-size="45" font-weight="400" fill="#008acb">→</text>
+<rect x="90" y="812" width="1740" height="143" rx="14" fill="#061d33" stroke="#061d33" stroke-width="2"/>
+<text x="115" y="851" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#70e545">CONFLUENCE REMAINS THE SI SOURCE OF TRUTH</text>
+<text x="115" y="896" font-family="Arial,sans-serif" font-size="26" font-weight="400" fill="#fff">The app produces drafts and suggested changes; it does not write to or edit Confluence.</text>
+<text x="115" y="934" font-family="Arial,sans-serif" font-size="25" font-weight="400" fill="#c7d8e5">Users decide what to use, then write and update the SI themselves in Confluence.</text>
+<text x="90" y="1035" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#66727d">ARCHITECTURE GOVERNANCE COPILOT  ·  ACCELERATE 3.0</text>
+</svg>

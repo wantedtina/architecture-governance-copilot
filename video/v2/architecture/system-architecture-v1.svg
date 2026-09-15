@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080"><title>Architecture Governance Copilot - System architecture</title><desc>Project Team and Domain Architect use a Service Bench front end. SKE contains the backend, persistent database and integration adapters. Teams transcripts are imported manually. SKE sends telemetry automatically to COP, the Central Observability Platform, with Grafana and Kibana.</desc><defs><marker id="arr" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#8fbbd5" stroke-width="1.4"/></marker></defs><rect width="1920" height="1080" fill="#061D33"/><rect width="1310" height="9" fill="#0473EA"/><rect x="1310" width="610" height="9" fill="#38D200"/>
+<text x="80" y="74" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#70e545">SYSTEM ARCHITECTURE</text>
+<text x="80" y="134" font-family="Arial,sans-serif" font-size="47" font-weight="700" fill="#fff">Architecture Governance Copilot</text>
+<text x="80" y="181" font-family="Arial,sans-serif" font-size="26" font-weight="400" fill="#b4ccdc">Selected context. AI-assisted drafting and review. Human-controlled action.</text>
+<rect x="355" y="230" width="315" height="570" rx="14" fill="#08233a" stroke="#0473ea" stroke-width="2" stroke-dasharray="9 7"/>
+<text x="382" y="270" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#7fc3ff">SERVICE BENCH</text>
+<rect x="710" y="230" width="600" height="570" rx="14" fill="#08233a" stroke="#38d200" stroke-width="2" stroke-dasharray="9 7"/>
+<text x="737" y="270" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#70e545">SKE</text>
+<rect x="1360" y="230" width="500" height="570" rx="14" fill="#08233a" stroke="#6289a5" stroke-width="2" stroke-dasharray="9 7"/>
+<text x="1386" y="270" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#b4ccdc">ENTERPRISE SERVICES</text>
+<rect x="55" y="336" width="260" height="144" rx="14" fill="#fff" stroke="#d8e2ec" stroke-width="2"/>
+<text x="77" y="374" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#061d33">Project Team</text>
+<text x="77" y="414" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#33576e">Draft preparation</text>
+<text x="77" y="442" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#33576e">Action follow-through</text>
+<rect x="55" y="510" width="260" height="144" rx="14" fill="#fff" stroke="#d8e2ec" stroke-width="2"/>
+<text x="77" y="548" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#061d33">Domain Architect</text>
+<text x="77" y="588" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#33576e">Architecture review</text>
+<text x="77" y="616" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#33576e">Formal decision authority</text>
+<rect x="385" y="340" width="255" height="219" rx="14" fill="#0b66c3" stroke="#58a8f4" stroke-width="2"/>
+<text x="407" y="381" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#fff">AGC Front End</text>
+<text x="407" y="424" font-family="Arial,sans-serif" font-size="21" font-weight="400" fill="#fff">Context selection</text>
+<text x="407" y="454" font-family="Arial,sans-serif" font-size="21" font-weight="400" fill="#fff">Drafting and review</text>
+<text x="407" y="484" font-family="Arial,sans-serif" font-size="21" font-weight="400" fill="#fff">Evidence inspection</text>
+<text x="407" y="514" font-family="Arial,sans-serif" font-size="21" font-weight="400" fill="#fff">Human confirmation</text>
+<path d="M317,408 H379" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<path d="M317,566 H341 V490 H379" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="55" y="668" width="260" height="112" rx="14" fill="#0e304b" stroke="#527d9b" stroke-width="2"/>
+<text x="77" y="705" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">Teams transcript</text>
+<text x="77" y="741" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">User export / manual transfer</text>
+<rect x="385" y="630" width="255" height="125" rx="14" fill="#0e304b" stroke="#527d9b" stroke-width="2"/>
+<text x="407" y="668" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">Transcript intake</text>
+<text x="407" y="703" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="#c7d8e5">Manual import / paste</text>
+<text x="407" y="732" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="#c7d8e5">Review metadata</text>
+<path d="M317,722 H379" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<path d="M511,628 V565" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<path d="M642,447 H739" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<text x="663" y="423" font-family="Arial,sans-serif" font-size="17" font-weight="400" fill="#7fc3ff">HTTPS</text>
+<rect x="745" y="340" width="245" height="238" rx="14" fill="#12456a" stroke="#70e545" stroke-width="2"/>
+<text x="765" y="379" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">AGC Backend API</text>
+<text x="765" y="424" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#fff">Drafting and governance</text>
+<text x="765" y="451" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#fff">Schema + evidence checks</text>
+<text x="765" y="478" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#fff">Confirmed context scope</text>
+<text x="765" y="505" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#fff">Minutes + work items</text>
+<text x="765" y="532" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#fff">Controlled delivery</text>
+<text x="883" y="613" font-family="Arial,sans-serif" font-size="16" font-weight="400" fill="#80d8f5">State + audit</text>
+<path d="M866,580 V632" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<path d="M745,661 C745,629 990,629 990,661 V775 C990,804 745,804 745,775 Z" fill="#173f59" stroke="#00a1e0" stroke-width="2"/><ellipse cx="867.5" cy="661" rx="122.5" ry="19" fill="#173f59" stroke="#00a1e0" stroke-width="2"/>
+<text x="810" y="711" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">Database</text>
+<text x="765" y="740" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Records · source versions</text>
+<text x="765" y="767" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Actions · receipts · audit</text>
+<text x="1030" y="307" font-family="Arial,sans-serif" font-size="17" font-weight="700" fill="#9be880">INTEGRATION ADAPTERS</text>
+<rect x="1030" y="335" width="250" height="95" rx="14" fill="#0e304b" stroke="#527d9b" stroke-width="2"/>
+<text x="1050" y="368" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">Confluence</text>
+<text x="1050" y="400" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Read-only templates + SI</text>
+<rect x="1030" y="450" width="250" height="95" rx="14" fill="#0e304b" stroke="#70e545" stroke-width="2"/>
+<text x="1050" y="483" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#70e545">AIF provider</text>
+<text x="1050" y="515" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Scoped AI requests</text>
+<rect x="1030" y="621" width="250" height="120" rx="14" fill="#0e304b" stroke="#527d9b" stroke-width="2"/>
+<text x="1050" y="654" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">Azure DevOps</text>
+<text x="1050" y="686" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Repos + Boards</text>
+<text x="1050" y="713" font-family="Arial,sans-serif" font-size="18" font-weight="400" fill="#c7d8e5">Controlled work items</text>
+<path d="M992,467 H1010 V383 H1024" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<path d="M1010,467 H1024" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<path d="M1010,467 V680 H1024" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)"/>
+<rect x="1410" y="328" width="420" height="105" rx="14" fill="#123a59" stroke="#527d9b" stroke-width="2"/>
+<text x="1435" y="361" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">Confluence</text>
+<text x="1435" y="393" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Read API · authoritative SI</text>
+<text x="1435" y="421" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Users edit in Confluence UI</text>
+<rect x="1410" y="450" width="420" height="105" rx="14" fill="#123a59" stroke="#70e545" stroke-width="2"/>
+<text x="1435" y="483" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#70e545">AI Factory (AIF)</text>
+<text x="1435" y="515" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Confirmed context in</text>
+<text x="1435" y="543" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Structured proposal out</text>
+<rect x="1410" y="588" width="420" height="83" rx="14" fill="#123a59" stroke="#527d9b" stroke-width="2"/>
+<text x="1435" y="621" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">Azure Repos API</text>
+<text x="1435" y="653" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Selected repository + revision</text>
+<rect x="1410" y="684" width="420" height="83" rx="14" fill="#123a59" stroke="#527d9b" stroke-width="2"/>
+<text x="1435" y="717" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">Azure Boards API</text>
+<text x="1435" y="749" font-family="Arial,sans-serif" font-size="19" font-weight="400" fill="#c7d8e5">Governance metadata + work items</text>
+<path d="M1282,382 H1404" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<path d="M1282,499 H1404" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<path d="M1282,669 H1350 V629 H1404" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<path d="M1350,669 V725 H1404" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" marker-start="url(#arr)"/>
+<rect x="1360" y="850" width="500" height="147" rx="14" fill="#0e304b" stroke="#00a1e0" stroke-width="2"/>
+<text x="1386" y="887" font-family="Arial,sans-serif" font-size="27" font-weight="700" fill="#80d8f5">COP</text>
+<text x="1459" y="887" font-family="Arial,sans-serif" font-size="20" font-weight="700" fill="#fff">Central Observability Platform</text>
+<text x="1386" y="924" font-family="Arial,sans-serif" font-size="23" font-weight="400" fill="#c7d8e5">Logs · traces · metrics</text>
+<text x="1386" y="966" font-family="Arial,sans-serif" font-size="23" font-weight="700" fill="#fff">Grafana / Kibana</text>
+<path d="M1265,802 V826 H1600 V844" fill="none" stroke="#8fbbd5" stroke-width="2.5" marker-end="url(#arr)" stroke-dasharray="7 5"/>
+<text x="920" y="850" font-family="Arial,sans-serif" font-size="20" font-weight="400" fill="#80d8f5">Automatic SKE telemetry</text>
+<rect x="355" y="890" width="955" height="107" rx="14" fill="#0b2a40" stroke="#527d9b" stroke-width="2"/>
+<text x="382" y="927" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">Enterprise controls</text>
+<text x="382" y="963" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#c7d8e5">Role-based permissions · secrets · encryption · data policy</text>
+<text x="80" y="1046" font-family="Arial,sans-serif" font-size="19" font-weight="700" fill="#b4ccdc">ARCHITECTURE GOVERNANCE COPILOT  ·  TWO TOKENS ONE BRAIN</text>
+</svg>

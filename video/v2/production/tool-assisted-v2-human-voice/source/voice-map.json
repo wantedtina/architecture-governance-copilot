@@ -1,0 +1,14 @@
+{
+  "draft": "assets/voice/AGC2 1. Prepare and confirm an SI draft.m4a",
+  "inputs": "assets/voice/AGC2 2. Select and confirm review inputs.m4a",
+  "human": "assets/voice/AGC2 3. Exercise human judgement.m4a",
+  "outputs": "assets/voice/AGC2 4. Follow evidence into the outputs.m4a",
+  "delivery": "assets/voice/AGC2 5. Deliver through explicit controls.m4a",
+  "invalidation": "assets/voice/AGC2 6. Protected against stale outputs.m4a",
+  "title": "assets/voice/AGC2 architecture governance copilot.m4a",
+  "architecture": "assets/voice/AGC2 system architecture.m4a",
+  "process": "assets/voice/AGC2 the problem: fragmented governance work.m4a",
+  "solution": "assets/voice/AGC2 two activities, explicit human checkpoints.m4a",
+  "close": "assets/voice/AGC2 two token one brain.m4a",
+  "value": "assets/voice/AGC2 what we strengthened.m4a"
+}

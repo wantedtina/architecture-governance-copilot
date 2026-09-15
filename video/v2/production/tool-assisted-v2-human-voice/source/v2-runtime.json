@@ -1,0 +1,10 @@
+{
+  "ffmpeg": "/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1",
+  "packages": {
+    "resvg-py": "0.5.0",
+    "pymupdf": "1.28.2",
+    "reportlab": "5.0.1"
+  },
+  "application_commit": "81835b9ced0c709f4003522557b6423bc4bdaa18",
+  "renderer": "FFmpeg; no Remotion SDK installed or invoked"
+}

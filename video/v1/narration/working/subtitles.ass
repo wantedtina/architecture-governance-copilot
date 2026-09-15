@@ -1,0 +1,60 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1920
+PlayResY: 1080
+WrapStyle: 0
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Arial,36,&H00FFFFFF,&H00FFFFFF,&H00331D06,&H00331D06,0,0,0,0,100,100,0,0,1,1,0,2,120,120,24,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.30,0:00:02.69,Default,,0,0,0,,Hello, we're Two Tokens One Brain.
+Dialogue: 0,0:00:02.73,0:00:09.56,Default,,0,0,0,,Let me show you how Architecture Governance Copilot helps\Nteams prepare and follow up on architecture reviews.
+Dialogue: 0,0:00:10.30,0:00:14.31,Default,,0,0,0,,Today, a project team writes its Solution Intent in Confluence,
+Dialogue: 0,0:00:14.35,0:00:19.17,Default,,0,0,0,,tracks the review in Azure Boards,\Nand discusses the design in Teams.
+Dialogue: 0,0:00:19.21,0:00:24.36,Default,,0,0,0,,Afterwards, someone has to bring the decisions,\Nevidence and action owners back together.
+Dialogue: 0,0:00:24.40,0:00:27.56,Default,,0,0,0,,That's the work we're trying to make easier.
+Dialogue: 0,0:00:28.30,0:00:31.09,Default,,0,0,0,,Our app helps with drafting and review,
+Dialogue: 0,0:00:31.13,0:00:35.55,Default,,0,0,0,,but Confluence remains the source\Nof truth for the Solution Intent.
+Dialogue: 0,0:00:35.59,0:00:41.39,Default,,0,0,0,,We only produce drafts and suggested\Nchanges. The app never edits Confluence.
+Dialogue: 0,0:00:41.43,0:00:46.25,Default,,0,0,0,,Users decide what to keep and make those changes themselves.
+Dialogue: 0,0:00:48.30,0:00:54.64,Default,,0,0,0,,Both project teams and Domain Architects use the\Napp, with different permissions and responsibilities.
+Dialogue: 0,0:00:54.68,0:01:00.24,Default,,0,0,0,,The interface sits in Service Bench.\NSKE hosts the backend and database,
+Dialogue: 0,0:01:00.28,0:01:04.45,Default,,0,0,0,,with adapters for Confluence, AI Factory and Azure DevOps.
+Dialogue: 0,0:01:04.49,0:01:10.56,Default,,0,0,0,,Teams transcripts are imported manually.\NLogs, traces and metrics go to COP.
+Dialogue: 0,0:01:11.30,0:01:16.56,Default,,0,0,0,,Let's start with the project team. I open the project context,
+Dialogue: 0,0:01:16.60,0:01:21.38,Default,,0,0,0,,which brings together the template,\Nrepository revision and governance details.
+Dialogue: 0,0:01:21.42,0:01:28.03,Default,,0,0,0,,I save the supporting evidence, confirm the\Npackage, and generate a Solution Intent draft.
+Dialogue: 0,0:01:28.07,0:01:30.70,Default,,0,0,0,,I review and confirm that draft here.
+Dialogue: 0,0:01:30.74,0:01:34.89,Default,,0,0,0,,I would then make any changes I want in Confluence myself.
+Dialogue: 0,0:01:34.93,0:01:37.56,Default,,0,0,0,,The governance review is a separate step.
+Dialogue: 0,0:01:38.30,0:01:42.68,Default,,0,0,0,,For the review, I select the authoritative Solution Intent,
+Dialogue: 0,0:01:42.72,0:01:47.11,Default,,0,0,0,,import the meeting transcript, and load the review details.
+Dialogue: 0,0:01:47.15,0:01:51.22,Default,,0,0,0,,I check and confirm these inputs before running the analysis.
+Dialogue: 0,0:01:51.26,0:01:56.56,Default,,0,0,0,,The app then puts together a proposal,\Nwith evidence for us to inspect.
+Dialogue: 0,0:01:57.30,0:02:01.40,Default,,0,0,0,,This is where I review what the app has proposed.
+Dialogue: 0,0:02:01.44,0:02:08.43,Default,,0,0,0,,The transcript says Riley will document the retry\Ncontrols. I'm changing that action's owner to Taylor Kim.
+Dialogue: 0,0:02:08.47,0:02:13.80,Default,,0,0,0,,Notice that Riley's original words\Nstay visible, alongside my change.
+Dialogue: 0,0:02:13.84,0:02:17.61,Default,,0,0,0,,I'm also leaving the retention finding out of this record.
+Dialogue: 0,0:02:17.65,0:02:21.03,Default,,0,0,0,,That doesn't mean the issue is resolved or approved.
+Dialogue: 0,0:02:21.07,0:02:28.52,Default,,0,0,0,,The outcome is still Changes Requested. I confirm\Nmy reviewed record before generating the outputs.
+Dialogue: 0,0:02:30.30,0:02:36.88,Default,,0,0,0,,The change summary shows what I edited and\Nleft out. Let's follow that retry action:
+Dialogue: 0,0:02:36.92,0:02:44.82,Default,,0,0,0,,here's Riley's original quote, then Taylor as the owner I\Nconfirmed, followed by the minutes and work-item preview.
+Dialogue: 0,0:02:44.86,0:02:48.20,Default,,0,0,0,,We can check how the final action came from
+Dialogue: 0,0:02:48.24,0:02:51.59,Default,,0,0,0,,the original discussion, and see where I changed it.
+Dialogue: 0,0:02:53.30,0:02:59.84,Default,,0,0,0,,Next, I'll deliver the work item. I\Npreview the request and check the owner,
+Dialogue: 0,0:02:59.88,0:03:03.13,Default,,0,0,0,,due date, parent reference and supporting evidence.
+Dialogue: 0,0:03:03.17,0:03:06.31,Default,,0,0,0,,The summary and JSON show the same request.
+Dialogue: 0,0:03:06.35,0:03:11.08,Default,,0,0,0,,Once I'm happy with it, I confirm and create the work item.
+Dialogue: 0,0:03:11.12,0:03:14.52,Default,,0,0,0,,The app reads it back to check the result.
+Dialogue: 0,0:03:14.56,0:03:19.48,Default,,0,0,0,,The receipt is visible here, and this\Naction can't simply be submitted again.
+Dialogue: 0,0:03:22.30,0:03:26.47,Default,,0,0,0,,Now let's see what happens if I change the transcript.
+Dialogue: 0,0:03:26.51,0:03:31.09,Default,,0,0,0,,I add some new context, and the previous outputs become invalid.
+Dialogue: 0,0:03:31.13,0:03:36.22,Default,,0,0,0,,I need to run the analysis and review\Nagain before using new outputs.
+Dialogue: 0,0:03:36.26,0:03:39.77,Default,,0,0,0,,The work item I already delivered is still recorded.
+Dialogue: 0,0:03:41.30,0:03:44.74,Default,,0,0,0,,We've made edits easier to see, evidence easier to follow,
+Dialogue: 0,0:03:44.78,0:03:48.56,Default,,0,0,0,,and delivery easier to check. That's our response to the feedback.
+Dialogue: 0,0:03:49.30,0:03:54.16,Default,,0,0,0,,That's our demo. We want teams to spend\Nless time piecing reviews together,
+Dialogue: 0,0:03:54.20,0:03:57.56,Default,,0,0,0,,while keeping people in control. Thank you for watching.

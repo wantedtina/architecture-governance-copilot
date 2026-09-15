@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080"><rect width="1920" height="1080" fill="#F7F8FA"/><rect width="1310" height="10" fill="#0473EA"/><rect x="1310" width="610" height="10" fill="#38D200"/>
+<text x="90" y="87" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#0473ea">CURRENT GOVERNANCE PROCESS</text>
+<text x="90" y="154" font-family="Arial,sans-serif" font-size="43" font-weight="700" fill="#061D33">Architecture work spans documents, meetings and tracked actions</text>
+<text x="90" y="211" font-family="Arial,sans-serif" font-size="27" font-weight="400" fill="#66727d">Project teams prepare and revise; Domain Architects review and decide.</text>
+<rect x="90" y="300" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="110" y="323" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="124" y="355" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">1</text>
+<text x="175" y="356" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Prepare the SI</text>
+<text x="175" y="406" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Describe the proposed solution</text>
+<text x="175" y="448" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Tool: Confluence</text>
+<rect x="685" y="300" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="705" y="323" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="719" y="355" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">2</text>
+<text x="770" y="356" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Set up governance tracking</text>
+<text x="770" y="406" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Link the review and its actions</text>
+<text x="770" y="448" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Tool: Azure Boards</text>
+<rect x="1280" y="300" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="1300" y="323" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="1314" y="355" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">3</text>
+<text x="1365" y="356" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Review the design</text>
+<text x="1365" y="406" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Discuss the SI and its evidence</text>
+<text x="1365" y="448" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Tool: Teams</text>
+<rect x="1280" y="545" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="1300" y="568" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="1314" y="600" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">4</text>
+<text x="1365" y="601" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Record findings and actions</text>
+<text x="1365" y="651" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Capture decisions and owners</text>
+<text x="1365" y="693" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Owner: Project team</text>
+<rect x="685" y="545" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="705" y="568" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="719" y="600" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">5</text>
+<text x="770" y="601" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Revise the SI</text>
+<text x="770" y="651" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Apply the agreed changes</text>
+<text x="770" y="693" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Tool: Confluence</text>
+<rect x="90" y="545" width="550" height="193" rx="14" fill="#FFFFFF" stroke="#D8E2EC" stroke-width="2"/>
+<rect x="110" y="568" width="44" height="44" rx="14" fill="#0473ea" stroke="#0473ea" stroke-width="2"/>
+<text x="124" y="600" font-family="Arial,sans-serif" font-size="25" font-weight="700" fill="#fff">6</text>
+<text x="175" y="601" font-family="Arial,sans-serif" font-size="26" font-weight="700" fill="#061D33">Review and decide</text>
+<text x="175" y="651" font-family="Arial,sans-serif" font-size="24" font-weight="400" fill="#526a7b">Check the revised SI</text>
+<text x="175" y="693" font-family="Arial,sans-serif" font-size="22" font-weight="400" fill="#526a7b">Owner: Domain Architect</text>
+<defs><marker id="flow" markerWidth="9" markerHeight="9" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="none" stroke="#008acb" stroke-width="1.5"/></marker></defs>
+<path d="M645,397 H676" fill="none" stroke="#008acb" stroke-width="3" marker-end="url(#flow)"/>
+<path d="M1240,397 H1271" fill="none" stroke="#008acb" stroke-width="3" marker-end="url(#flow)"/>
+<path d="M1555,499 V536" fill="none" stroke="#008acb" stroke-width="3" marker-end="url(#flow)"/>
+<path d="M1275,642 H1244" fill="none" stroke="#008acb" stroke-width="3" marker-end="url(#flow)"/>
+<path d="M680,642 H649" fill="none" stroke="#008acb" stroke-width="3" marker-end="url(#flow)"/>
+<rect x="90" y="823" width="1740" height="123" rx="14" fill="#061d33" stroke="#061d33" stroke-width="2"/>
+<text x="120" y="867" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#70e545">THE FRICTION</text>
+<text x="120" y="914" font-family="Arial,sans-serif" font-size="31" font-weight="400" fill="#fff">Decisions, evidence and ownership must be reconstructed across handoffs.</text>
+<text x="90" y="1035" font-family="Arial,sans-serif" font-size="18" font-weight="700" fill="#66727d">ARCHITECTURE GOVERNANCE COPILOT  ·  ACCELERATE 3.0</text>
+</svg>

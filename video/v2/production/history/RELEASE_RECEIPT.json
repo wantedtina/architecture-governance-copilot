@@ -1,0 +1,41 @@
+{
+  "id": 388197318,
+  "tag": "submission-2026-09-14-final-materials",
+  "status": "published",
+  "historical_tags_before": {
+    "submission-2026-09-14": "b46f1854fccc2d9e841b8fbeac7a7b509e130e36",
+    "submission-2026-09-14-r1": "3be203701e9b7d9c3f7a868d64c3c6a3ebb56ef0"
+  },
+  "assets": [
+    {
+      "id": 562803927,
+      "name": "Architecture-Governance-Copilot-Demo-2026-09-14.mp4",
+      "url": "https://github.com/wantedtina/architecture-governance-copilot/releases/download/submission-2026-09-14-final-materials/Architecture-Governance-Copilot-Demo-2026-09-14.mp4",
+      "sha256": "d71db0ee7d91f25b5946a1c156831008fbfdab2e643294741086f9e7ac600cd6",
+      "bytes": 22717240,
+      "anonymous_download_verified": true
+    },
+    {
+      "id": 562804415,
+      "name": "Architecture-Governance-Copilot-2026-09-14.pptx",
+      "url": "https://github.com/wantedtina/architecture-governance-copilot/releases/download/submission-2026-09-14-final-materials/Architecture-Governance-Copilot-2026-09-14.pptx",
+      "sha256": "3ebb4ac31ed215473c1324bff29f18a7ab716899a58afba3a1abdac250751c77",
+      "bytes": 239222,
+      "anonymous_download_verified": true
+    },
+    {
+      "id": 562804450,
+      "name": "Architecture-Governance-Copilot-System-Architecture-2026-09-14.pdf",
+      "url": "https://github.com/wantedtina/architecture-governance-copilot/releases/download/submission-2026-09-14-final-materials/Architecture-Governance-Copilot-System-Architecture-2026-09-14.pdf",
+      "sha256": "092c768c784a117ecd49efeae88eeeb602a793f1d8ca9195985e5a4688b6b04d",
+      "bytes": 187272,
+      "anonymous_download_verified": true
+    }
+  ],
+  "url": "https://github.com/wantedtina/architecture-governance-copilot/releases/tag/submission-2026-09-14-final-materials",
+  "published_at": "2026-09-14T06:59:29Z",
+  "application_commit": "81835b9ced0c709f4003522557b6423bc4bdaa18",
+  "historical_tags_unchanged": true,
+  "public_downloads_verified": true,
+  "download_verification_note": "Fresh published asset URLs used; draft asset URLs changed on publication."
+}

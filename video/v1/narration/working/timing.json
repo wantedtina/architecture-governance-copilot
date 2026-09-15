@@ -1,0 +1,98 @@
+[
+  {
+    "id": "title",
+    "start": 0,
+    "end": 10,
+    "source_speech_duration": 10.04,
+    "tempo": 1.079569892473118,
+    "spoken_duration": 9.3
+  },
+  {
+    "id": "process",
+    "start": 10,
+    "end": 28,
+    "source_speech_duration": 17.79,
+    "tempo": 1.0283236994219653,
+    "spoken_duration": 17.3
+  },
+  {
+    "id": "solution",
+    "start": 28,
+    "end": 48,
+    "source_speech_duration": 16.19,
+    "tempo": 0.9,
+    "spoken_duration": 17.988888888888887
+  },
+  {
+    "id": "architecture",
+    "start": 48,
+    "end": 71,
+    "source_speech_duration": 22.47,
+    "tempo": 1.0076233183856502,
+    "spoken_duration": 22.3
+  },
+  {
+    "id": "draft",
+    "start": 71,
+    "end": 98,
+    "source_speech_duration": 25.759999999999998,
+    "tempo": 0.9794676806083649,
+    "spoken_duration": 26.300000000000004
+  },
+  {
+    "id": "inputs",
+    "start": 98,
+    "end": 117,
+    "source_speech_duration": 16.67,
+    "tempo": 0.9109289617486339,
+    "spoken_duration": 18.299999999999997
+  },
+  {
+    "id": "human",
+    "start": 117,
+    "end": 150,
+    "source_speech_duration": 28.130000000000003,
+    "tempo": 0.9,
+    "spoken_duration": 31.255555555555556
+  },
+  {
+    "id": "outputs",
+    "start": 150,
+    "end": 173,
+    "source_speech_duration": 19.2,
+    "tempo": 0.9,
+    "spoken_duration": 21.333333333333332
+  },
+  {
+    "id": "delivery",
+    "start": 173,
+    "end": 202,
+    "source_speech_duration": 23.6,
+    "tempo": 0.9,
+    "spoken_duration": 26.22222222222222
+  },
+  {
+    "id": "invalidation",
+    "start": 202,
+    "end": 221,
+    "source_speech_duration": 15.76,
+    "tempo": 0.9,
+    "spoken_duration": 17.511111111111113
+  },
+  {
+    "id": "value",
+    "start": 221,
+    "end": 229,
+    "source_speech_duration": 8.3,
+    "tempo": 1.1369863013698631,
+    "spoken_duration": 7.3
+  },
+  {
+    "id": "close",
+    "start": 229,
+    "end": 238,
+    "source_speech_duration": 8.66,
+    "tempo": 1.0433734939759036,
+    "spoken_duration": 8.3
+  }
+]

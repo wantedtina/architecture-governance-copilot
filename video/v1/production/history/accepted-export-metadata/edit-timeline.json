@@ -1,0 +1,187 @@
+{
+  "revision": "v2.2",
+  "duration_seconds": 238,
+  "sections": [
+    {
+      "id": "title",
+      "start": 0,
+      "end": 10,
+      "title": "Architecture Governance Copilot"
+    },
+    {
+      "id": "process",
+      "start": 10,
+      "end": 28,
+      "title": "The problem: fragmented governance work"
+    },
+    {
+      "id": "solution",
+      "start": 28,
+      "end": 48,
+      "title": "Two activities, explicit human checkpoints"
+    },
+    {
+      "id": "architecture",
+      "start": 48,
+      "end": 71,
+      "title": "System architecture"
+    },
+    {
+      "id": "draft",
+      "start": 71,
+      "end": 98,
+      "title": "1. Prepare and confirm an SI draft"
+    },
+    {
+      "id": "inputs",
+      "start": 98,
+      "end": 117,
+      "title": "2. Select and confirm review inputs"
+    },
+    {
+      "id": "human",
+      "start": 117,
+      "end": 150,
+      "title": "3. Exercise human judgment"
+    },
+    {
+      "id": "outputs",
+      "start": 150,
+      "end": 173,
+      "title": "4. Follow evidence into the outputs"
+    },
+    {
+      "id": "delivery",
+      "start": 173,
+      "end": 202,
+      "title": "5. Deliver through explicit controls"
+    },
+    {
+      "id": "invalidation",
+      "start": 202,
+      "end": 221,
+      "title": "6. Protect against stale outputs"
+    },
+    {
+      "id": "value",
+      "start": 221,
+      "end": 229,
+      "title": "What we strengthened"
+    },
+    {
+      "id": "close",
+      "start": 229,
+      "end": 238,
+      "title": "Two Tokens One Brain"
+    }
+  ],
+  "demo_source_pieces": {
+    "draft": [
+      [
+        0,
+        5,
+        7
+      ],
+      [
+        5,
+        9,
+        5
+      ],
+      [
+        9,
+        14,
+        8
+      ],
+      [
+        14,
+        19.9,
+        7
+      ]
+    ],
+    "inputs": [
+      [
+        0,
+        13.8,
+        16
+      ],
+      [
+        17.6,
+        18.96,
+        3
+      ]
+    ],
+    "human": [
+      [
+        0,
+        6,
+        11
+      ],
+      [
+        6,
+        10,
+        7
+      ],
+      [
+        10,
+        18,
+        9
+      ],
+      [
+        18,
+        22.3,
+        6
+      ]
+    ],
+    "outputs": [
+      [
+        0,
+        4,
+        5
+      ],
+      [
+        4,
+        10,
+        12
+      ],
+      [
+        10,
+        15,
+        6
+      ]
+    ],
+    "delivery": [
+      [
+        0,
+        5,
+        5
+      ],
+      [
+        5,
+        10,
+        5
+      ],
+      [
+        10,
+        17,
+        7
+      ],
+      [
+        17,
+        23,
+        12
+      ]
+    ],
+    "invalidation": [
+      [
+        0,
+        9,
+        8
+      ],
+      [
+        9,
+        16.36,
+        11
+      ]
+    ]
+  }
+}

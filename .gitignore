@@ -14,22 +14,22 @@ dist/
 *.egg-info/
 
 # Generated video working audio
-video/audio/provisional_offline_tts.wav
-video/audio/provisional_offline_tts_revised.wav
-video/audio/provisional_tts_segments/
-video/output/playwright/
-video/human_voice/
-video/audio/human_voice_narration.wav
-video/audio/human_voice_segments/
-video/output/architecture_governance_copilot_human_voice.mp4
-video/output/architecture_governance_copilot_human_voice.srt
-video/presentation/Architecture_Governance_Copilot_Video_Deck_Enterprise_SI.pptx
-video/presentation/Architecture_Governance_Copilot_Video_Deck_AI_Factory.pptx
-video/presentation/Architecture_Governance_Copilot_Video_Deck_Final.pptx
-video/presentation/Architecture_Governance_Copilot_Video_Deck_Project_Context.pptx
-video/presentation/Architecture_Governance_Copilot_Video_Deck_System_Architecture.pptx
-video/presentation/Architecture_Governance_Copilot_Video_Deck_Updated.pptx
-video/presentation/*.pptx.inspect.ndjson
+video/archive/pre-v1/audio/provisional_offline_tts.wav
+video/archive/pre-v1/audio/provisional_offline_tts_revised.wav
+video/archive/pre-v1/audio/provisional_tts_segments/
+video/archive/pre-v1/output/playwright/
+video/archive/pre-v1/human_voice/
+video/archive/pre-v1/audio/human_voice_narration.wav
+video/archive/pre-v1/audio/human_voice_segments/
+video/archive/pre-v1/output/architecture_governance_copilot_human_voice.mp4
+video/archive/pre-v1/output/architecture_governance_copilot_human_voice.srt
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_Enterprise_SI.pptx
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_AI_Factory.pptx
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_Final.pptx
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_Project_Context.pptx
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_System_Architecture.pptx
+video/archive/pre-v1/presentation/Architecture_Governance_Copilot_Video_Deck_Updated.pptx
+video/archive/pre-v1/presentation/*.pptx.inspect.ndjson
 
 # Local configuration and secrets
 .env
@@ -44,3 +44,70 @@ video/presentation/*.pptx.inspect.ndjson
 .DS_Store
 .idea/
 .vscode/
+
+# Local versioned production binaries and generated working files
+/video/v1/**/*.mp4
+/video/v1/**/*.webm
+/video/v1/**/*.wav
+/video/v1/**/*.aiff
+/video/v1/**/*.m4a
+/video/v1/**/*.png
+/video/v1/**/*.pdf
+/video/v1/**/*.pptx
+/video/v2/**/*.mp4
+/video/v2/**/*.webm
+/video/v2/**/*.wav
+/video/v2/**/*.aiff
+/video/v2/**/*.m4a
+/video/v2/**/*.png
+/video/v2/**/*.pdf
+/video/v2/**/*.pptx
+/video/v1/**/qa/
+/video/v2/**/qa/
+/video/**/node_modules/
+/video/**/.venv/
+/video/**/*.log
+/video/v1/production/history/previous-indexes/
+/video/v2/production/history/previous-indexes/
+/video/v2/production/history/previous-audio-index/
+/video/archive/reorganization-history/
+
+# Preserve already-versioned historical media when relocating
+!/video/archive/pre-v1/output/architecture_governance_copilot_human_voice.mp4
+!/video/archive/pre-v1/output/architecture_governance_copilot_human_voice.srt
+
+# Generated render instructions and disposable chapter narration
+/video/v1/**/*-command.json
+/video/v2/**/*-command.json
+/video/v1/**/*.filter
+/video/v2/**/*.filter
+/video/v1/**/*.fffilter
+/video/v2/**/*.fffilter
+/video/v1/**/concat.txt
+/video/v2/**/concat.txt
+/video/v1/narration/working/*.txt
+/video/v2/production/tool-assisted-v2/production/assets/voice/*.txt
+/video/v2/production/tool-assisted-v2/production/audio/*.ass
+!/video/v2/production/tool-assisted-v2/production/audio/title.ass
+/video/v2/production/tool-assisted-v2-human-voice/audio/*.ass
+
+# Local duplicate export snapshots and earlier submission drafts
+/video/v2/production/history/submission-documents/
+/video/v1/production/history/accepted-export-metadata/*.svg
+/video/v1/production/history/accepted-export-metadata/*.srt
+/video/v1/production/history/accepted-export-metadata/NARRATION_V2.2.md
+/video/v1/production/history/accepted-export-metadata/FORM_TEXT.md
+/video/v2/production/tool-assisted-v2/export/*.svg
+/video/v2/production/tool-assisted-v2/export/*.srt
+/video/v2/production/tool-assisted-v2/export/NARRATION_V2.md
+/video/v2/production/tool-assisted-v2/export/FORM_TEXT.md
+/video/v2/production/tool-assisted-v2-human-voice/export/*.srt
+/video/v2/production/tool-assisted-v2-human-voice/export/NARRATION_HUMAN_VOICE.md
+/video/v2/production/tool-assisted-v2/production/assets/slides/*.svg
+
+# Keep only the required deck build sources inside the generic ignored build folder
+!/video/v2/slides/build/
+/video/v2/slides/build/*
+!/video/v2/slides/build/build.mjs
+!/video/v2/slides/build/finalize.mjs
+!/video/v2/slides/build/slides.json
