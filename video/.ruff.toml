@@ -1,0 +1,10 @@
+extend = "../pyproject.toml"
+
+# Preserve accepted historical production sources byte for byte.
+# Current archive utilities and application code remain checked.
+extend-exclude = [
+    "archive",
+    "v1/architecture/build_architecture.py",
+    "v1/production",
+    "v2/production",
+]

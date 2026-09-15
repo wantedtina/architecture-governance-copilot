@@ -28,3 +28,7 @@ The two V2 production workspace names remain siblings in the new layout, preserv
 ## Verification status
 
 Archive checks: hashes, local file presence, primary document links, 12 original recording copies, final deliverable identity and Git-ignore coverage. No migrated pipeline rerender, native PowerPoint playback, new browser capture or fresh plugin execution was performed. Existing final-decode/render receipts are historical production evidence.
+
+## Lint boundary for archived source snapshots
+
+`video/.ruff.toml` inherits the application lint rules and excludes only the preserved historical Python source locations under this directory. It leaves the current archive utility and all application code in scope. Historical source bytes remain unchanged; formatting those snapshots would invalidate their provenance hashes. Future versions are not automatically excluded.
