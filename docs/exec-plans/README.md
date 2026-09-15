@@ -57,7 +57,14 @@ accurately; planned verification is not verification evidence.
 
 ## Recovery protocol
 
-A fresh Codex session working on an approved batch should read, in order:
+For work transferred into an independent ADO repository, use that repository's current revision,
+internal register, approved plan and evidence. Source-repository commit IDs and recorded test results
+are historical context, not checkout, ancestry or synchronization requirements. Preserve existing
+internal approvals and later progress; never overwrite an active internal plan with an older
+external copy. Reconcile unclear authorization before dependent work without repeating approvals
+whose scope is established. Continue independent inspection while resolving discrepancies.
+
+A fresh coding-agent session working on an approved batch should read, in order:
 
 1. current explicit user direction and `AGENTS.md`;
 2. `docs/POST_BASELINE_REFINEMENT_PLAN.md` to identify accepted intent and the sole active-plan

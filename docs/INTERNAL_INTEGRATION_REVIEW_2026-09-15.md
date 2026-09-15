@@ -1,17 +1,27 @@
 # Internal integration handoff review — 15 September 2026
 
 Document status: `COMPLETED_DOCUMENT_REVIEW`.
-Application implementation authority: `NONE`.
+Application implementation authority granted by this report: `NONE`.
+
+## How to use this historical review in ADO
+
+This report records the external repository review performed on 15 September. All commits, branch
+inventories, commands, status labels, findings and test counts refer to that checkpoint. They do
+not establish the current ADO implementation or approval state. Use ADO code/tests and maintained
+internal decisions for continuation. Reassess findings before adding work; retain internal fixes,
+resolved decisions and valid approvals. GitHub history, matching hashes, import records and source
+clone comparison are not startup prerequisites. Create worktrees from the agreed ADO revision.
+The current [startup guide](INTERNAL_OPENCODE_START_PROMPT.md) supersedes earlier transfer workflows.
 
 ## Result
 
-Update the handoff to the current repository layout and post-submission priority. Preserve the
-existing integration scope and unresolved production release decisions. Application code has not
-changed since the original handoff, but critical publication gaps remain and two were reproduced
-with in-memory fakes during this review. No real service was accessed and no application fix was
-implemented. This report is evidence for planning, not live acceptance.
+The review updated the external handoff for the then-current layout and post-submission priority,
+preserving integration scope and unresolved release decisions. Application code had not changed
+since the original handoff. Two publication gaps were reproduced with in-memory fakes during this
+review; their current internal status must be established from ADO evidence. No real service was
+accessed and no application fix was implemented. This report is evidence for planning, not live acceptance.
 
-## Repository facts
+## Historical external repository facts
 
 | Fact | Verified result |
 | --- | --- |
@@ -31,30 +41,32 @@ paths are media/archive work plus `.gitignore`, README navigation and production
 `git diff --exit-code 81835b9..main -- app.py src tests pages samples pyproject.toml uv.lock
 AGENTS.md SPEC.md docs/POST_BASELINE_REFINEMENT_PLAN.md docs/INTERNAL_INTEGRATION_HANDOFF.md`
 returned no differences. This comparison concerns committed `main`; the handoff edits were
-working-tree documents at review time and are now prepared for a separate document-only commit. No media/script/slide source was modified by this review.
+working-tree documents at review time and were subsequently published separately. No
+media/script/slide source was modified by this review. The command above records a past check;
+it is not a command to run in the independent ADO repository.
 
 The user confirmed the submission materials are finalized. The existence of a tag does not by
 itself prove every large final artifact is tracked: the new layout intentionally includes ignored
 local binaries. Their completeness was not re-audited, and is not an integration prerequisite.
 
-## Findings and required actions
+## Historical findings and proposed actions to reassess
 
 | Priority / ID | Finding | Consequence and handoff action |
 | --- | --- | --- |
-| High / H1 | Old handoff starts from `81835b9` and speaks of preparing the 14 September submission. | Start from reviewed `67a60da`, retain the unchanged application/submission baseline separately, and record internal integration as the highest-priority post-submission workstream. |
+| High / H1 | Old handoff starts from `81835b9` and speaks of preparing the 14 September submission. | The external handoff was updated to that reviewed source. For current ADO work, use its own agreed revision and approved plan; retain these IDs only as historical evidence. |
 | High / H2 | The old P0 wording makes all D1–D8 decisions a prerequisite for every implementation phase. | Approve only the ready subset and apply stage-specific gates. A supervised synthetic live pilot may proceed after its own approvals while production remains disabled; it does not complete R9b. |
 | High / C1 | GET identity mismatch can be reported as verified success. | Fix identity and trusted URL/revision verification before a live Create; add focused regression coverage. |
 | High / C2 | HTTP 500 with a known Create ID is classified as definitely failed and not protected. | Preserve uncertainty and known IDs; stop repeated Create until reconciliation establishes an approved next action. Add status/partial-receipt tests. |
 | High / C3 | `_analyze_current_inputs` checks exact confirmed input fingerprint after calling extraction. | Enforce policy, manifest and source eligibility before any real AIF call; current disabled UI alone is insufficient as the live execution boundary. This remains a source-inspection finding. |
 | High / C4 | Runtime and rendering still construct only Offline/Internal fake; production is blocked by `drafting_allowed`, and fake gateway construction is in the submission handler. | Explicit live dependency injection and route/capability separation are required. Adding an enum/config value is not sufficient and must never fall through to fake construction. |
 | High / C5 | Existing action correlation is session/package-oriented; AIF reordering/evidence changes can change it, and lookup-before-Create is not atomic. | D7 must define reanalysis/restart identity, lookup completeness, unknown-result recovery and publisher serialization. A database or identity subsystem is not silently authorized. |
-| Medium / H3 | At review time the handoff was uncommitted; a documents ZIP alone omits the runnable repository and local skills. | Commit the six documents on the handoff branch for GitHub transfer with repository history and a recorded handoff commit. Retain the previously validated ZIP as a historical backup; local skills remain separate. |
+| Medium / H3 | At review time the handoff was uncommitted; a documents ZIP alone omits the runnable repository and local skills. | The documents were subsequently published. ADO is now the development workspace; no recurring GitHub transfer, source-history comparison or ZIP import is required. |
 | Medium / H4 | Legacy adapter prose says zero matches permits Create and assumes uniquely assigned evidence references. | Qualify zero matches with completeness/retained attempts; preserve valid ambiguous quotes without fabricated references and decide production treatment internally. |
 
-Other source-inspected gaps from the original proposal remain: Confluence origin/completeness
+Other gaps recorded at the external checkpoint included: Confluence origin/completeness
 validation against the deployed contract, exact field-type-aware ADO read-back, human outcome and
 evidence provenance, approved audit storage, and live/synthetic state isolation. They have not been
-implemented or accepted by passing the demo regression suite.
+closed by that demo regression suite; current internal resolution is outside this report.
 
 ## Targeted reproduction evidence
 
@@ -89,9 +101,9 @@ returned such a response. No UI automation retry or real duplicate was attempted
 behavior: classify unresolved outcomes conservatively and protect known IDs independently of an
 overly broad HTTP failure classification.
 
-## Fresh verification
+## Historical external verification
 
-Executed in the isolated worktree on 2026-09-15, using Python 3.12.7 and the existing lockfile:
+Executed in the external isolated worktree on 2026-09-15, using Python 3.12.7 and its lockfile:
 
 | Command / check | Result |
 | --- | --- |
@@ -109,28 +121,21 @@ contacted. No fresh desktop/narrow browser acceptance was run because this revie
 documentation; AppTest coverage is not described as real-browser acceptance. Build success does
 not establish wheel-only runtime support; transfer and run the source checkout with its samples.
 
-Document links, authority markers, whitespace, package hashes and ZIP integrity are checked during
-packaging. `git diff --check` must also pass at final handoff. Runtime/build artifacts stay ignored.
+Document links, whitespace, package hashes and ZIP integrity were checked during external packaging.
+These checks and the suite above do not replace validation of the current ADO revision.
 
-## Updated handoff and next action
+## Current internal continuation
 
-Six documents form the maintained handoff: receiving prompt, bounded proposal, refinement register,
-adapter handoff, final-stage navigation index and this report. Following the user's explicit
-publication authorization, prepare them for a document-only commit on
-`codex/internal-integration-plan`, push that branch and use a Draft PR for review. The receiving
-prompt now describes GitHub checkout and deliberate main synchronization. Record the final commit
-and publication result in the handoff message; publication does not activate implementation.
+The initial GitHub publication and older ZIPs are historical delivery records. Maintain subsequent
+plans, implementation and acceptance in ADO. Do not restore old ZIPs, match source hashes, reset an
+internal register to NONE or repeat completed work to reproduce this external checkpoint.
 
-The original 11 September ZIP and validated 15 September ZIP remain local historical backups.
-The latter includes its manifest, tracked-document patch and synthetic probe results, but predates
-the GitHub transfer instructions. Do not overlay it onto the committed branch. No ZIP, generated
-output, application change or submission material belongs in this document commit.
+Follow the ADO startup guide: inspect current internal state, recover established approval, and
+continue its unfinished scope. If no implementation plan is approved, prepare the smallest ready
+bounded plan. Resolve only missing prerequisites for the next phase. Real access, exact Create
+confirmation and production release retain their respective authorization and evidence requirements.
+Public demonstration of internal connectivity or screenshots requires approved presentation/data
+boundaries; it does not permit exposing confidential evidence or credentials.
 
-Next, transfer through the approved company channel and start OpenCode + GPT-5.4 with the updated
-prompt. Resolve internal D1–D5 plus the applicable D6/D7 pilot decisions, obtain approval for the
-ready implementation scope and start the bounded phases. D8 and full production D6/D7 remain
-mandatory before R9b activation. Public demonstration of internal connectivity or screenshots also
-requires approved presentation/data boundaries; do not show credentials, internal URLs, identities
-or confidential evidence to the competition audience by implication.
-
-No application implementation, real access, write or release approval is granted by this report.
+This report grants no new application implementation, real access, write or release approval and
+does not revoke valid internal approvals already recorded.

@@ -14,12 +14,14 @@ and other submission materials are finalized. Preserve them and identify subsequ
 separately. Internal integration is the highest-priority workstream, with implementation intended
 for the user's company-network MacBook through OpenCode + GPT-5.4.
 
-Current authorization covers project review, internal handoff refinement and bounded planning.
-It does not approve application implementation, live service access, ADO Create, production release
-or changes to finalized presentation materials. The refinement register retains the sole active
-execution pointer, currently `NONE`. The [internal proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md)
-and [startup prompt](INTERNAL_OPENCODE_START_PROMPT.md) separate pilot prerequisites from R9b
-production release. Other refinements, scripts, rehearsal and pitch work require their own scope.
+This external index grants no implementation, service access, Create, release or presentation-work
+authority. The ADO repository is the internal development workspace: recover its current code,
+register, approved active plan and evidence, preserving existing internal approvals and progress.
+The external register recorded NONE at handoff; do not impose that snapshot on a later internal
+plan. The [proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md) and
+[startup prompt](INTERNAL_OPENCODE_START_PROMPT.md) separate pilot and R9b release gates. GitHub
+commits and submission tags are historical references only, never required ADO checkout/worktree
+revisions or synchronization prerequisites. Other workstreams require their own approved scope.
 
 The combined development plan has been split into two independent plans. This file remains
 as a navigation entry to preserve existing links; it no longer maintains a third copy of scope,
@@ -31,7 +33,7 @@ acceptance criteria, or scheduling.
 | [Presentation and Demo Plan](FINAL_STAGE_PRESENTATION_DEMO_PLAN.md) | Complete judge feedback, narrative, specific actions, materials, timing, rehearsal, fallbacks, and materials freeze. |
 | [Post-baseline Refinement Register](POST_BASELINE_REFINEMENT_PLAN.md) | Current change intent, lifecycle decisions, and the pointer to any explicitly approved active execution plan. |
 | [Execution-plan Convention](exec-plans/README.md) | Stable structure and recovery rules for bounded implementation batches; it does not define active scope. |
-| [Internal Integration Review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) | Current repository comparison, handoff corrections and verification evidence; no implementation authority. |
+| [Internal Integration Review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) | Historical external comparison, findings and verification; reassess against current ADO work. |
 
 Historical event briefing (retained for context, not new implementation authority): it set
 11 September 2026 as the readiness target, without a formal checkpoint,
@@ -43,7 +45,7 @@ any later conference revision separately; no resubmission is required. Finalists
 on 23 September, with Shark Tank on 24 September. See the two plans for gates, business-value requirements,
 and confirmed briefing details. SharePoint link will follow. The former 18 September freeze schedule is superseded.
 
-The final-stage implementation baseline is complete and frozen at
+The historical final-stage implementation baseline was recorded at
 `submission-2026-09-14-r1`; see the implementation plan completion record and
 `SUBMISSION_BASELINE.md`. New findings from post-implementation user testing are collected in
 `POST_BASELINE_REFINEMENT_PLAN.md`. Recording an item there does not authorize implementation.

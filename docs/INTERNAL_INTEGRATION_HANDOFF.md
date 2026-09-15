@@ -4,28 +4,31 @@ Updated: 2026-09-15
 
 Document status: `DEFERRED_REFERENCE`
 
-Execution authority: `NONE`. The sequence below is a safety-preserving future handoff, not an
-active implementation plan. It may enter scope only through explicit user approval and an active
-bounded execution plan referenced by the post-baseline refinement register.
+Execution authority granted by this reference: `NONE`. It is not an active implementation plan.
+Use the current ADO register, approved plan, code and tests for internal continuation. Honor existing
+explicit internal approvals within scope; this external reference neither grants new permission nor
+revokes established approval. Do not reset internal progress to its historical status labels.
 
 ## Current receiving environment and planning handoff
 
 On 2026-09-11 the user assigned future integration development to OpenCode + GPT-5.4 on their
 company-network MacBook. The external session is responsible for inspection and handoff documents
-only. No real service access, write request, application implementation, or production release is
-authorized yet. Runtime/data-policy/service readiness remains to be established internally.
+only. That external handoff granted no real access, writes, application implementation or release
+authority. Current readiness and approval scope must be recovered from internal ADO records.
 
 The 15 September user update confirms finalized submission materials and gives internal integration
-the highest priority for further competition development. The reviewed repository starting point
-is now `67a60da0a528966909269ed06d616003a71e1944`; application code remains identical to `81835b9`.
-The [dated review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) records fresh checks and unresolved
-publication defects. Passing the existing fake suite does not close those defects or the live gate.
+the highest priority for further competition development. Historical source revision
+`67a60da0a528966909269ed06d616003a71e1944` had the same application as `81835b9` at the external
+review. These IDs identify [historical findings](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md); they
+are not required ADO commits. Use the current ADO revision for worktrees and validation. Do not
+require GitHub history, source-clone comparison or routine synchronization. Reassess the old
+publication findings against internal fixes and tests before planning further work.
 
 Start with [the receiving-agent prompt](INTERNAL_OPENCODE_START_PROMPT.md) and
-[the bounded proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md). The refinement register still
-names `NONE` as its active execution plan. The proposal records current code gaps, prerequisite
-decisions and a future acceptance sequence; this older adapter reference does not override it or
-activate implementation. Keep all internal configurations and acceptance evidence inside the
+[the bounded proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md), or the existing approved
+internal plan that supersedes it. The external register recorded NONE at handoff; the ADO register
+may have valid later state. Retain resolved decisions and completed work, and seek approval only
+for unapproved scope. This reference does not activate a second implementation plan. Keep all internal configurations and acceptance evidence inside the
 approved company environment; transfer only approved non-sensitive code and documents externally.
 
 ## Purpose and status
@@ -34,8 +37,8 @@ This handoff defines the bounded company-specific work needed to connect the alr
 Confluence, AIF, and Azure DevOps boundaries. It contains no company endpoint, tenant, project,
 field, identity, token, cookie, or confidential content.
 
-The external repository currently passes the fake-integration preparation gate. It does **not**
-pass the internal live gate. The deterministic offline path remains the submission baseline and
+The external review recorded passing fake tests, with unresolved publication findings and no
+internal live acceptance. It does not attest to the current ADO implementation. The deterministic offline path remains the submission baseline and
 must continue to work with all internal connections disabled.
 
 ## Non-negotiable controls
@@ -54,6 +57,9 @@ must continue to work with all internal connections disabled.
 - Do not treat Confluence and ADO as an atomic transaction.
 
 ## Adapter map
+
+Boundaries and fake evidence below describe the reviewed source. Verify their current ADO
+equivalents and applicable internal contracts; do not recreate adapters or fixes already completed.
 
 | Marker | Existing boundary | Internal input required | Existing fake evidence | Required live acceptance |
 | --- | --- | --- | --- | --- |
@@ -93,6 +99,9 @@ must continue to work with all internal connections disabled.
    or network dependency may be required by the deterministic flow.
 
 ## Protocol details to preserve
+
+These are the reviewed adapter contracts. Resolve current wire details from the approved internal
+contracts and ADO implementation while preserving evidence and confirmation requirements.
 
 ### Confluence
 
@@ -134,9 +143,11 @@ responses.
 
 ## Live acceptance record
 
-Complete this record in the approved internal system, not in this public repository.
+Maintain current acceptance evidence in the approved internal ADO/evidence system. The status
+column below is the external handoff snapshot, not current internal acceptance. Keep sensitive
+values internal and do not overwrite later records with these historical results.
 
-| Check | Current repository status | Internal evidence to record |
+| Check | Historical external status | Internal evidence to record |
 | --- | --- | --- |
 | Previously unbundled synthetic Confluence page read and canonicalized | Not run | Page/version identity and redacted request/response structure |
 | New synthetic input reaches shared Human Review | Not run | Provider configuration identity and acceptance timestamp |
@@ -147,7 +158,8 @@ Complete this record in the approved internal system, not in this public reposit
 | Offline flow with internal connections disabled | Passed | Frozen implementation commit `ce5fd3f2a760504da40440558180c5245ed291e9`; see `SUBMISSION_BASELINE.md` for verification results |
 
 The frozen offline row above is historical evidence, not the current repository starting revision.
-Current regression results are recorded in the dated review. Provider reference IDs remain
+The dated review records external regression results only. Run applicable checks on the current
+ADO revision and record its actual results internally. Provider reference IDs remain
 untrusted; a validated ambiguous quote may have no locally assigned unique reference. Do not
 invent references to satisfy the adapter-map shorthand. Resolve its live evidence treatment
 through the bounded proposal's D6 decision.
@@ -169,8 +181,10 @@ body, target, and version before confirmation.
 
 ## Non-production refinement boundary
 
-Current post-baseline user acceptance covers demo/development, not production. In particular,
+The external post-baseline acceptance covered demo/development, not production. In particular,
 reviewer-selected outcomes with optional transcript evidence are approved for synthetic human
 review only. During internal integration, explicitly decide production outcome authority, provenance,
 evidence requirements and audit behavior before release. Do not inherit demo policy implicitly.
-Existing production denial, provider boundaries, no-synthetic-fallback and R9b acceptance gates remain.
+Preserve provider boundaries, no synthetic fallback and production denial where release acceptance
+is incomplete. Honor separately evidenced internal production decisions without inferring them
+from this reference or the demo suite.

@@ -4,6 +4,16 @@ Updated: 2026-09-15
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
+Repository scope: the pointer and lifecycle entries in this copy describe the external repository.
+For internal development, use the ADO-maintained register, current code/tests and explicit internal
+approvals. Do not replace a newer ADO register or reset its active plan and requirement states from
+this copy. If decisions and records conflict, reconcile them while preserving work; a status label
+alone is not approval evidence. Historical GitHub IDs, tags and test counts are provenance only,
+not required ADO revisions, ancestry checks or acceptance results. New worktrees use the agreed ADO
+revision. Existing internal approval remains valid within its recorded scope. When maintaining the
+ADO version, update this scope note and lifecycle records to reflect verified internal state while
+retaining historical evidence.
+
 Execution authority: `NONE` — Batch 23 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
@@ -17,9 +27,10 @@ implementation, live service access, Create, or production release. The active p
 `NONE`; R9b remains `Deferred` pending internal decisions and separate approval.
 
 On 2026-09-15 the user confirmed that the 14 September materials are finalized and made internal
-integration the highest-priority workstream for final-competition development. The present scope
-is a renewed project/handoff review and document update only. Reviewed `main` is `67a60da`; its
-application code is unchanged from `81835b9`. See the [dated review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md).
+integration the highest-priority workstream for final-competition development. The external session
+scope is project/handoff review and documentation only. At that historical review, source `main` was
+`67a60da` and its application code matched `81835b9`; no current ADO equivalence is asserted.
+See the [dated review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md).
 An internal synthetic pilot and R9b production release have distinct readiness/acceptance gates;
 neither is activated by this priority update.
 
@@ -1065,14 +1076,14 @@ requirements-intake update.
 - **State:** `Needs decision`
 - **Origin:** User direction on 2026-09-11 to prepare a complete handoff for internal development;
   renewed review and highest-priority direction on 2026-09-15 after submission materials finalized.
-- **Planning authorization:** Inspect the verified baseline and propose the Confluence read →
+- **External planning authorization:** Inspect the then-verified source and propose the Confluence read →
   manual transcript/metadata → AIF analysis → Human Review → local outputs → separately confirmed
   ADO Create and GET verification slice. Implementation will be performed internally using
   OpenCode + GPT-5.4 on the user's company-network MacBook, after approval.
 - **Desired outcome:** A bounded, explicitly authorized integration with source traceability,
   human-controlled outcomes and delivery, protected uncertain results, and internal acceptance
   evidence. Preserve the deterministic offline path and existing provider boundaries.
-- **Unresolved:** Approved runtime/model data handling, service contracts and permissions,
+- **Unresolved at the external checkpoint:** Approved runtime/model data handling, service contracts and permissions,
   synthetic targets, production outcome/evidence/confirmation policy, audit and recovery,
   concurrency constraints and release authority. Detailed decisions belong in the proposal.
 - **Boundary:** No live access or writes are authorized by this intake. R9b remains a separate

@@ -4,29 +4,40 @@ Updated: 2026-09-15
 
 Document status: `PROPOSED_AWAITING_INTERNAL_DECISIONS_AND_USER_APPROVAL`
 
-Execution authority: `NONE`. Active execution plan remains `NONE` in the refinement register.
-Included requirements: proposed R28 and deferred R9b; preserve verified R1–R8, R9a, and R10–R27.
-Reviewed main base revision: `67a60da0a528966909269ed06d616003a71e1944` (reviewed `main`).
-Unchanged application baseline: `81835b9ced0c709f4003522557b6423bc4bdaa18`, also the target of
-`submission-2026-09-14-final-materials`. Preserve that submission reference.
-The receiving checkout must also include the committed handoff documents; record its exact HEAD
-using the [startup instructions](../INTERNAL_OPENCODE_START_PROMPT.md), rather than resetting to
-the main base.
-See [the 15 September review](../INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) for revision comparison,
-reproduced findings and verification evidence.
+Execution authority granted by this external proposal: `NONE`.
+External planning snapshot: R28 Needs decision; R9b Deferred; R1–R8, R9a and R10–R27 Verified.
+These states describe the external register, not independently verified internal ADO progress.
+
+## ADO continuation rule
+
+Use the current ADO code, tests, internal register and explicitly approved active plan as the
+working baseline. Record the actual ADO revision and local changes there. Resume existing approved
+work without repeating valid approvals; reconcile unclear scope before dependent action. If an
+active internal plan already covers this work, use it rather than activating this proposal in parallel.
+Only unresolved decisions and unfinished approved work need further action. Do not overwrite newer
+internal plan states, repeat completed fixes, or restore NONE from this external snapshot.
+
+Historical source references only: reviewed GitHub main
+`67a60da0a528966909269ed06d616003a71e1944`; reviewed application
+`81835b9ced0c709f4003522557b6423bc4bdaa18` and its submission tag. They identify the observations in
+[the dated review](../INTERNAL_INTEGRATION_REVIEW_2026-09-15.md), not an ADO checkout/worktree target.
+No GitHub hash, ancestry, source-clone comparison or import record is a development prerequisite.
+Use the [ADO startup instructions](../INTERNAL_OPENCODE_START_PROMPT.md).
 
 The user explicitly authorized inspection and preparation of this proposal before implementation
 approval. This is a task-specific exception to the creation timing in `exec-plans/README.md`, not
-an activation of an implementation batch. Resolve the decision gates below, then obtain approval
-of the resulting bounded plan before changing application behavior.
+an activation of an implementation batch. Recover existing internal approvals first. Obtain
+approval for any new bounded implementation scope after resolving its applicable decision gates.
 
 ## 1. Ownership and environment
 
 The user confirmed that integration development will run on their company MacBook, locally on the
 company network, using OpenCode with GPT-5.4. This external session prepares the handoff only.
-Availability of Python 3.12, uv, approved package sources, service permissions, model data handling,
-and internal evidence storage has not been established. A company-network laptop is not evidence
-that every reachable service, model route, or data category is approved.
+The external planning pass did not establish Python 3.12/uv readiness, approved package sources,
+service permissions, model data handling or internal evidence storage. Check current internal
+records and retain resolved decisions; ask only for missing prerequisites for the next phase.
+A company-network laptop is not evidence that every reachable service, model route, or data category
+is approved.
 
 The user confirmed on 15 September that the 14 September materials, including code, video, slides
 and architecture diagram, are finalized. Internal integration is the highest-priority workstream
@@ -35,8 +46,8 @@ update; it does not approve implementation or service access.
 
 The receiving agent owns application code, integration tests, and related product/execution
 documentation. Preserve finalized `video/`, recordings, presentation materials, demo scripts and
-submission evidence. `main` now contains versioned media archives and local-only artifact indexes;
-their presence or missing ignored binaries does not make them integration dependencies.
+submission evidence. The historical source contained media archives and local-only artifact indexes;
+their absence in ADO does not make them integration prerequisites.
 
 ## 2. Scope and non-goals
 
@@ -130,11 +141,13 @@ Prefer an already approved internal evidence mechanism and supervised operating 
 satisfy D7. This proposal does not select or implement a new durable store. If the intended release
 requires one, leave R9b incomplete until a separately approved solution exists.
 
-## 5. Inspected code and required integration gaps
+## 5. Historical code findings to reassess in ADO
 
-The code remains unchanged at the reviewed repository revision. The 15 September review reproduced
-the wrong-GET-ID and HTTP-500/known-ID findings using in-memory fakes; other rows are source-inspection
-findings or pending live-contract requirements. Existing passing tests do not close these gaps.
+The table describes the externally reviewed code, not the current ADO implementation. The
+15 September review reproduced wrong-GET-ID and HTTP-500/known-ID behavior with in-memory fakes;
+other rows are source observations or pending contract requirements from that review. Check current
+ADO code/tests and mark findings resolved, still applicable or superseded in the internal plan.
+Implement only remaining approved work. External passing tests are not current ADO acceptance.
 
 | Area / anchors | Existing foundation | Required bounded work |
 | --- | --- | --- |
@@ -158,13 +171,15 @@ observed drift, without claiming a cross-service transaction.
 
 ### P0 — Internal readiness and scope ratification
 
-Recheck repository truth and baseline on the company machine. Record the status of D1–D8, inspect only approved
-internal contracts, and revise this plan with concrete policy choices or explicitly deferred
-decisions using the stage-specific readiness rules. The user may approve only ready phases; only
-then set this file as the register's sole active execution plan and change the included requirement
-to `In progress`. Keep R9b Deferred if only the internal pilot is approved. Keep separate approvals
-for live operations and production release. Never require a completed production decision merely
-to investigate or implement an independently approved offline correction.
+Inspect the current ADO revision, code/tests and internal approval records. Carry forward resolved
+D1–D8 decisions and completed work. Resume the existing approved active plan if one exists. Otherwise
+revise this proposal for the smallest ready scope and obtain its approval before activating it in
+the internal register. Mark included items In progress when approved implementation starts. Preserve
+any evidenced R9b acceptance already recorded; if only a pilot is approved, do not claim production
+acceptance. Use an existing suitable ADO worktree or an unused codex/ branch/worktree from the agreed
+ADO revision, preserving uncommitted work. No external source revision is required. Keep live access,
+exact Create confirmation and production release gates distinct. Do not repeat valid approvals or
+block an approved offline correction on unrelated final production decisions.
 
 ### P1 — Offline-tested foundations and adapters
 
@@ -256,7 +271,11 @@ configuration. It never deletes remote items, clears uncertain attempts, force-p
 the verified baseline. Do not push internal configuration, data, or unreviewed internal changes to
 the external Git remote. Product documentation changes must describe verified final behavior.
 
-## 9. Progress and verification evidence
+## 9. External planning snapshot and historical verification
+
+The checklist below records external preparation and what was unverified there. It is not a reset
+instruction for the ADO plan. Recover internal completion, decisions and acceptance from internal
+evidence; maintain actual ongoing progress in the single internal execution plan.
 
 - [x] Original `AGENTS.md`, requested maintained documents, and relevant provider/policy/evidence/
   publication/session code and tests inspected on 2026-09-11.
@@ -283,15 +302,15 @@ skill was read in the original directory. `.agents/` is ignored and is not trans
 worktree; the referenced session-state guide was unavailable in the isolated checkout. Internal
 setup must resolve needed guidance before application edits rather than assuming external paths.
 
-## 10. Remaining limitations and completion record
+## 10. Historical limitations and internal completion requirements
 
-Planning output only. D1–D8, service contracts and all live evidence remain outstanding. The existing
-code offers synthetic capabilities, session-local recovery and no durable audit guarantee. This
-proposal does not close those gaps, activate R9b, or override the no-database/authentication scope.
+At the external planning checkpoint, D1–D8 and live acceptance were not verified. The reviewed code
+offered synthetic capabilities and session-local recovery, without a durable audit guarantee.
+These observations do not establish current ADO capability. This proposal itself closes no gaps,
+activates no production capability and expands no approved scope.
 
-Implementation completion: `NOT_STARTED`.
-Live acceptance: `NOT_RUN`.
-R9b release acceptance: `NOT_RUN`.
+External checkpoint only: implementation `NOT_STARTED`; live acceptance `NOT_RUN`;
+R9b release acceptance `NOT_RUN`. Recover the actual internal status from ADO evidence.
 
 At actual completion, record commit, commands/results, browser cases, approved internal evidence
 reference and release decision; mark only evidenced requirements Verified and clear the register's
