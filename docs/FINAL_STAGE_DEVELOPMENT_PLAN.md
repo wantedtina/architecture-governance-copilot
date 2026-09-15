@@ -1,6 +1,6 @@
 # Final-stage planning index
 
-Updated: 2026-09-10
+Updated: 2026-09-15
 
 Document status: `ACTIVE_NAVIGATION_INDEX`
 
@@ -8,17 +8,18 @@ This file routes readers to the document that owns each kind of repository state
 define an implementation scope. Start post-baseline work from the active change register and, only
 when explicitly approved, the single active execution plan referenced there.
 
-**Current execution horizon: the 14 September submission.** Prioritize the verified development
-version targeted for 11 September and the four required submission artifacts due 14 September. Prepare
-business evidence and material outlines alongside development. This prioritization does not itself
-authorize implementation or submission, or silently remove selected requirements.
+**Current execution horizon: post-submission development for the final competition demonstration.**
+On 15 September the user confirmed that the 14 September code, video, slides, architecture diagram
+and other submission materials are finalized. Preserve them and identify subsequent revisions
+separately. Internal integration is the highest-priority workstream, with implementation intended
+for the user's company-network MacBook through OpenCode + GPT-5.4.
 
-All post-submission activities are deferred until after the 14 September submission is complete:
-feedback-driven development, conference-specific scripts and rehearsals, and Shark Tank pitch,
-Q&A, and coaching preparation. Later dates, requirements, and detailed guidance below are retained
-as reference only, not active work or prerequisites for submission. Collecting briefing information
-now is appropriate; it does not activate those activities. Apply relevant storytelling and business
-value guidance now only to the four-minute submission video and key-details write-up.
+Current authorization covers project review, internal handoff refinement and bounded planning.
+It does not approve application implementation, live service access, ADO Create, production release
+or changes to finalized presentation materials. The refinement register retains the sole active
+execution pointer, currently `NONE`. The [internal proposal](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md)
+and [startup prompt](INTERNAL_OPENCODE_START_PROMPT.md) separate pilot prerequisites from R9b
+production release. Other refinements, scripts, rehearsal and pitch work require their own scope.
 
 The combined development plan has been split into two independent plans. This file remains
 as a navigation entry to preserve existing links; it no longer maintains a third copy of scope,
@@ -30,10 +31,12 @@ acceptance criteria, or scheduling.
 | [Presentation and Demo Plan](FINAL_STAGE_PRESENTATION_DEMO_PLAN.md) | Complete judge feedback, narrative, specific actions, materials, timing, rehearsal, fallbacks, and materials freeze. |
 | [Post-baseline Refinement Register](POST_BASELINE_REFINEMENT_PLAN.md) | Current change intent, lifecycle decisions, and the pointer to any explicitly approved active execution plan. |
 | [Execution-plan Convention](exec-plans/README.md) | Stable structure and recovery rules for bounded implementation batches; it does not define active scope. |
+| [Internal Integration Review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md) | Current repository comparison, handoff corrections and verification evidence; no implementation authority. |
 
-The latest briefing sets 11 September 2026 as the readiness target, without a formal checkpoint,
+Historical event briefing (retained for context, not new implementation authority): it set
+11 September 2026 as the readiness target, without a formal checkpoint,
 and accepts submission throughout 14 September: repository link, architecture diagram, demo video of at most four minutes, and key-details
-write-up. Prepare material outlines alongside development and finalize against verified code.
+write-up. Those materials are now finalized per the user's 15 September update.
 Judges review on 14–17 September, provide feedback on 18 September, and allow refinement through
 23 September; conference judging is 21–23 September. Preserve the submitted version and identify
 any later conference revision separately; no resubmission is required. Finalists are announced

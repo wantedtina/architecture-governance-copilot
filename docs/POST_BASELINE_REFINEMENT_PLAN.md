@@ -1,6 +1,6 @@
 # Post-baseline refinement register
 
-Updated: 2026-09-11
+Updated: 2026-09-15
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
@@ -8,6 +8,20 @@ Execution authority: `NONE` — Batch 23 completed and verified.
 The user approved splitting R9 into policy foundation now and live release acceptance later.
 
 Active execution plan: `NONE`
+
+Planning-only handoff: The user authorized inspection and a bounded internal integration proposal
+on 2026-09-11, then assigned implementation to OpenCode + GPT-5.4 on their company-network MacBook.
+See [the proposed internal batch](exec-plans/INTERNAL_INTEGRATION_BATCH_01.md) and
+[receiving-agent startup prompt](INTERNAL_OPENCODE_START_PROMPT.md). Neither document authorizes
+implementation, live service access, Create, or production release. The active pointer remains
+`NONE`; R9b remains `Deferred` pending internal decisions and separate approval.
+
+On 2026-09-15 the user confirmed that the 14 September materials are finalized and made internal
+integration the highest-priority workstream for final-competition development. The present scope
+is a renewed project/handoff review and document update only. Reviewed `main` is `67a60da`; its
+application code is unchanged from `81835b9`. See the [dated review](INTERNAL_INTEGRATION_REVIEW_2026-09-15.md).
+An internal synthetic pilot and R9b production release have distinct readiness/acceptance gates;
+neither is activated by this priority update.
 
 Acceptance scope: Current user feedback targets demo/development and its regression tests.
 Production product behavior is not accepted by these refinements; internal integration and R9b
@@ -990,7 +1004,7 @@ During the current user-testing period:
 6. After accepted-scope planning is authorized, create the smallest coherent execution plan using
    `docs/exec-plans/README.md` and set the active-plan pointer at the top of this register. Keep the
    plan in `PROPOSED_AWAITING_USER_APPROVAL` and its items no higher than `Ready` until the user
-   explicitly approves the plan; move included items to `Verified` only when implementation
+   explicitly approves the plan; move included items to `In progress` only when implementation
    actually starts.
 7. Keep component details, implementation steps, detailed tests, progress, discoveries, and
    verification evidence in that execution plan rather than this register.
@@ -1045,3 +1059,23 @@ requirements-intake update.
 - **Verification:** Batch 23; 558 tests and repository checks passed. Desktop/narrow Chrome
   verified two successful runs without restarting the app, explicit reset confirmation and
   retained within-run duplicate protection.
+
+### R28 — Bounded internal review integration and production-policy decisions
+
+- **State:** `Needs decision`
+- **Origin:** User direction on 2026-09-11 to prepare a complete handoff for internal development;
+  renewed review and highest-priority direction on 2026-09-15 after submission materials finalized.
+- **Planning authorization:** Inspect the verified baseline and propose the Confluence read →
+  manual transcript/metadata → AIF analysis → Human Review → local outputs → separately confirmed
+  ADO Create and GET verification slice. Implementation will be performed internally using
+  OpenCode + GPT-5.4 on the user's company-network MacBook, after approval.
+- **Desired outcome:** A bounded, explicitly authorized integration with source traceability,
+  human-controlled outcomes and delivery, protected uncertain results, and internal acceptance
+  evidence. Preserve the deterministic offline path and existing provider boundaries.
+- **Unresolved:** Approved runtime/model data handling, service contracts and permissions,
+  synthetic targets, production outcome/evidence/confirmation policy, audit and recovery,
+  concurrency constraints and release authority. Detailed decisions belong in the proposal.
+- **Boundary:** No live access or writes are authorized by this intake. R9b remains a separate
+  release acceptance obligation; internal synthetic success does not itself close R9b. No Teams,
+  ADO Update, Confluence write-back, database, application authentication, live drafting or media
+  work is included.
