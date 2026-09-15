@@ -21,7 +21,7 @@ s=s.replace("['Identity and permissions · secrets · encryption · data policy'
 s=s.replace("['Templates + SI snapshots']","['Read-only templates + SI']")
 s=s.replace("['Governed templates','Versioned Solution Intents']","['Authoritative SI + templates','Users write and edit here']")
 p.write_text(s)
-rows=json.loads(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.1/story.json').read_text())
+rows=json.loads(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.1/story.json').read_text())
 updates={
 'title':(10,["Hello, we're Two Tokens One Brain. Let me show you how Architecture Governance Copilot helps teams prepare and follow up on architecture reviews."]),
 'process':(18,["Today, a project team writes its Solution Intent in Confluence, tracks the review in Azure Boards, and discusses the design in Teams.","Afterwards, someone has to bring the decisions, evidence and action owners back together. That's the work we're trying to make easier."]),

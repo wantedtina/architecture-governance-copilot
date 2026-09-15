@@ -1,7 +1,7 @@
 from pathlib import Path
 import json,subprocess
 FF='/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1'
-old=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2')
+old=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2')
 rows=json.loads(Path('story.json').read_text());outs=[]
 static={'title':'/Users/wantedtina/Repos/architecture-governance-copilot/video/assets/opening-title.png','process':'frames/process.png','solution':'frames/solution.png','architecture':'frames/system-architecture.png','value':'frames/value.png','close':'/Users/wantedtina/Repos/architecture-governance-copilot/video/assets/closing-card.png'}
 for row in rows:

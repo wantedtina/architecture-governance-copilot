@@ -1,7 +1,7 @@
 # Human voice replacement production
 
-Input video: `/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/export/architecture-governance-copilot-v2-narrated.mp4`.
-Input recordings: `/Users/wantedtina/Deliverables/architecture-governance-copilot/voice-records/`.
+Input video: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/export/architecture-governance-copilot-v2-narrated.mp4`.
+Input recordings: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/voice-records/`.
 
 This workspace is separate from V1, V2 and the application. `source/INPUT_MANIFEST.json` hashes original recordings and the original V2 video; `source/PICTURE_MANIFEST.json` hashes copied V2 section clips. No originals were overwritten. Raw audio, recognition output, dependencies and working videos stay outside Git and the submission export.
 
@@ -10,7 +10,7 @@ This workspace is separate from V1, V2 and the application. `source/INPUT_MANIFE
 `source/replace_voice.py` contains the reviewed caption boundaries, monotonic picture-timing anchors and two-pass loudness normalization. It uses copied V2 section videos, preserving the picture treatment. It repaints the complete old caption band and burns in matching new ASS captions. The section videos are re-encoded once at CRF 17; the final join stream-copies video and encodes the human narration as AAC. Voice speed is never changed. All original recorded samples are included, followed by bounded silence to complete each chapter.
 
 ```bash
-cd /Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2-human-voice
+cd /Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2-human-voice
 python3 source/replace_voice.py
 python3 source/verify.py
 ```

@@ -1,7 +1,7 @@
 [
   {
     "name": "process",
-    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/process.svg",
+    "source": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/assets/slides/process.svg",
     "elements": [
       {
         "tag": "rect",
@@ -632,7 +632,7 @@
   },
   {
     "name": "solution",
-    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/solution.svg",
+    "source": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/assets/slides/solution.svg",
     "elements": [
       {
         "tag": "rect",
@@ -1198,7 +1198,7 @@
   },
   {
     "name": "system-architecture",
-    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/system-architecture.svg",
+    "source": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/assets/slides/system-architecture.svg",
     "elements": [
       {
         "tag": "rect",
@@ -2379,7 +2379,7 @@
   },
   {
     "name": "value",
-    "source": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/assets/slides/value.svg",
+    "source": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/assets/slides/value.svg",
     "elements": [
       {
         "tag": "rect",

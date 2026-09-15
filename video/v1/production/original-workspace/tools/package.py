@@ -11,7 +11,7 @@ for r in rows:
  sections.append({'id':r['id'],'start':n,'end':n+r['duration'],'title':r['title']});n+=r['duration']
 s.extend(['## Pronunciation','','SI: ess-eye. SKE: ess-kay-ee. COP: see-oh-pee. JSON: jay-son.','Each section may be recorded separately. Leave a short pause before and after.',''])
 (out/'NARRATION_V2.2.md').write_text('\n'.join(s))
-old=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.1/export')
+old=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.1/export')
 shutil.copy2(old/'FORM_TEXT.md',out/'FORM_TEXT.md')
 for k in ['process','solution']:
  for ext in ['png','svg']:shutil.copy2(Path('frames')/(k+'.'+ext),out/(k+'.'+ext))
@@ -72,7 +72,7 @@ The 3:58 video starts with the title and uses a continuous six-step process diag
 Confluence source-of-truth boundary, equal application-user roles and conversational narration.
 The complete demonstration, temporary English voice, subtitles and click highlights remain.
 
-External files: `/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/`.
+External files: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/`.
 The approved three-field form text is unchanged. Earlier preparation records below are historical
 and do not override v2.2. Human voice-over replacement is pending.
 

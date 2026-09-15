@@ -13,7 +13,7 @@ rows=json.loads((P/'source/timeline.json').read_text());manifest=json.loads((P/'
 for entry in manifest:
     assert hashlib.sha256((ROOT/entry['copy']).read_bytes()).hexdigest()==entry['sha256']
     assert hashlib.sha256(Path(entry['original']).read_bytes()).hexdigest()==entry['sha256']
-oldstory=json.loads(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/story.json').read_text())
+oldstory=json.loads(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/story.json').read_text())
 newstory=json.loads((P/'source/story.json').read_text())
 assert [s['sentences'] for s in oldstory]==[s['sentences'] for s in newstory]
 assert [s['id'] for s in oldstory]==[s['id'] for s in newstory]
@@ -28,7 +28,7 @@ with wave.open(str(P/'audio/narration-v2.wav')) as wav:
     assert wav.getnchannels()==2 and wav.getframerate()==48000 and wav.getnframes()==238*48000
 oldsvg=ET.parse(P/'assets/slides/system-architecture-v1.svg');newsvg=ET.parse(ROOT/'export/system-architecture.svg')
 assert list(oldsvg.getroot().itertext())==list(newsvg.getroot().itertext())
-assert (ROOT/'export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/FORM_TEXT.md').read_bytes()
-result={'duration_seconds':238,'video_frames':7140,'resolution':'1920x1080','fps':30,'full_decode':'pass','caption_count':len(allsubs),'caption_overlaps':0,'spoken_words_unchanged':True,'section_order_unchanged':True,'architecture_text_unchanged':True,'source_files_verified':len(manifest),'captured_new_application_footage':False,'human_voice_replacement':'pending user recording','v1_sha256':hashlib.sha256(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4').read_bytes()).hexdigest(),'video_bytes':video.stat().st_size}
+assert (ROOT/'export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/FORM_TEXT.md').read_bytes()
+result={'duration_seconds':238,'video_frames':7140,'resolution':'1920x1080','fps':30,'full_decode':'pass','caption_count':len(allsubs),'caption_overlaps':0,'spoken_words_unchanged':True,'section_order_unchanged':True,'architecture_text_unchanged':True,'source_files_verified':len(manifest),'captured_new_application_footage':False,'human_voice_replacement':'pending user recording','v1_sha256':hashlib.sha256(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4').read_bytes()).hexdigest(),'video_bytes':video.stat().st_size}
 assert result['v1_sha256']=='fe52d4bdf9cf42114a77d9646af4a27f2de2bc82108e845491cdc8f89282068a'
 (P/'qa/verification.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))

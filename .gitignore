@@ -111,3 +111,6 @@ video/archive/pre-v1/presentation/*.pptx.inspect.ndjson
 !/video/v2/slides/build/build.mjs
 !/video/v2/slides/build/finalize.mjs
 !/video/v2/slides/build/slides.json
+
+# Local original production workspaces and protected backups
+/video/archive/production-originals/

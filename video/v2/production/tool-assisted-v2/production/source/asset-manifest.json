@@ -1,61 +1,61 @@
 [
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/draft.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/draft.webm",
     "copy": "production/assets/footage/draft.webm",
     "sha256": "d68699a486192bf4998f509ffa9380042323b2735a72e5e6ae4c168fdad0da76"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/inputs.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/inputs.webm",
     "copy": "production/assets/footage/inputs.webm",
     "sha256": "bc2d43a9e3066569500ba42ab68f1136eefa6d17c1e03cc6795d9922d988fcd4"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/human-clean.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/human-clean.webm",
     "copy": "production/assets/footage/human-clean.webm",
     "sha256": "8fe2c2dc4885fee4912e68d84ff8593a964768ab18707bff5d2c8ffdb13863be"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/outputs.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/outputs.webm",
     "copy": "production/assets/footage/outputs.webm",
     "sha256": "58bf8b06cdb53dd3a6a20d1bfd5ec4a892005124aef8e30c4c8f8b0931310426"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/delivery.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/delivery.webm",
     "copy": "production/assets/footage/delivery.webm",
     "sha256": "9e0e36c85442b37cf3c4c91319f79081a696d88ed173a8ff78387d62fd5d1fea"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips/invalidation.webm",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips/invalidation.webm",
     "copy": "production/assets/footage/invalidation.webm",
     "sha256": "b3f4d50d240a6ca978618b72b26c116a14072d5441891d90862b99d7219dca7b"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/process.svg",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/process.svg",
     "copy": "production/assets/slides/process.svg",
     "sha256": "ce9d526f306b1ccf0ca1df1542c36f5274a91126bb20d3b18842c406613b1cef"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/process.png",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/process.png",
     "copy": "production/assets/slides/process.png",
     "sha256": "5a39978dddab15c75d1dc90659cd5227059674b22635c5d63a83fb5fc6802a4d"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/solution.svg",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/solution.svg",
     "copy": "production/assets/slides/solution.svg",
     "sha256": "2c71e2dc0d4acf345b71786a8fadd1f5180a05e430405da852ae25ea83df7313"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/solution.png",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/solution.png",
     "copy": "production/assets/slides/solution.png",
     "sha256": "c093ccbad44268d7007940f44aee8202f09a1210474cb3a88f1fe001e967ba6e"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/value.svg",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/value.svg",
     "copy": "production/assets/slides/value.svg",
     "sha256": "0e900e10cd0dd5b7e1234bb9e30001e4d82a19974849baea6e39d61c8c56c9c4"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/frames/value.png",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/frames/value.png",
     "copy": "production/assets/slides/value.png",
     "sha256": "3c264d5ef0077711284d76958259f19b794f238e0d0395b7fb7ddf8e5b88375c"
   },
@@ -70,267 +70,267 @@
     "sha256": "309bf93ff22d4b42afe9d5c608d7083faad9a6bac6b8ec9c768661da50cc92a8"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/system-architecture.svg",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/system-architecture.svg",
     "copy": "production/assets/slides/system-architecture-v1.svg",
     "sha256": "f058437b4c76d2a5b748eec3d21217e8d5e381ee5b93bc18ad8738ad2e1bf986"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/title-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/title-0.aiff",
     "copy": "production/assets/voice/title-0.aiff",
     "sha256": "482125d1b6df8970d7cdfa5b400175a23371c4034f33f539c79f15b0e23c9dbb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/title-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/title-0.txt",
     "copy": "production/assets/voice/title-0.txt",
     "sha256": "b9a175eaaa0f485f0c343eb238a8c2e139896dcc024b0f4ad04b68fef40e3734"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/process-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/process-0.aiff",
     "copy": "production/assets/voice/process-0.aiff",
     "sha256": "763d18b37100f102c4f1430c4a1f5afedd7236b6f14b029ff9ef28ba75faddad"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/process-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/process-0.txt",
     "copy": "production/assets/voice/process-0.txt",
     "sha256": "9dc6ba7d569dc4b5d66545903851b6deae65ec214f309ab0435183bfbe1c0718"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/process-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/process-1.aiff",
     "copy": "production/assets/voice/process-1.aiff",
     "sha256": "e444585392945f7f0a61d7c1f5efb962436f115dbcb4068b17a0d202f14f827b"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/process-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/process-1.txt",
     "copy": "production/assets/voice/process-1.txt",
     "sha256": "3c370ceb1dcaa98358604eac0405f8c573f1e0685e5c6a1f31436bd346efb578"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/solution-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/solution-0.aiff",
     "copy": "production/assets/voice/solution-0.aiff",
     "sha256": "9ed774c5b65528108e827649930ded6a60a6378544c34041b00bef8963956e8b"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/solution-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/solution-0.txt",
     "copy": "production/assets/voice/solution-0.txt",
     "sha256": "07c3717b3ce192ed88c64d1612efb13a4436731107c810a6ea61c3a366c9b374"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/solution-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/solution-1.aiff",
     "copy": "production/assets/voice/solution-1.aiff",
     "sha256": "17957e8e312f421cecef7e6e8df9ae0f2a8de1072dbf7225a005f02a257534ee"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/solution-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/solution-1.txt",
     "copy": "production/assets/voice/solution-1.txt",
     "sha256": "7ddae9898a2fb5dff0ab2be6448cc7cb7303b004e94f3714020f90278e52cf6f"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-0.aiff",
     "copy": "production/assets/voice/architecture-0.aiff",
     "sha256": "1ff1a3bd2f8985c17b023fff10f2f53ae3019de44b241cf4b7b9152d22fac6a6"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-0.txt",
     "copy": "production/assets/voice/architecture-0.txt",
     "sha256": "1361af2244c9e48a67543d81153254d7ffa682b116f9ea37a2d6b9775e4c2970"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-1.aiff",
     "copy": "production/assets/voice/architecture-1.aiff",
     "sha256": "5ed4fe21ce2d44eeb7f379239e758558e1eb550c7051e0128543dc676cdb5b8a"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-1.txt",
     "copy": "production/assets/voice/architecture-1.txt",
     "sha256": "dfd1105940efa24e393626cc4c03c4aac5526d6bb33e2eb0c67762d0ade2bf66"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-2.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-2.aiff",
     "copy": "production/assets/voice/architecture-2.aiff",
     "sha256": "ac6c7b13cb97e64766d55538d81cedd5cfd779bce934d76cc4d60ba1a0236868"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/architecture-2.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/architecture-2.txt",
     "copy": "production/assets/voice/architecture-2.txt",
     "sha256": "b0f3f0a5fc92b9f369111a88ceac22cea3275399cfc214088ba59ff8de8f0253"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-0.aiff",
     "copy": "production/assets/voice/draft-0.aiff",
     "sha256": "2e81e6d862e699855c6c16ae94eec48b7549577d1a0036db9ad13d82e81c3b94"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-0.txt",
     "copy": "production/assets/voice/draft-0.txt",
     "sha256": "d8359aa0f94808aa7598dcf68316ecfe89179c4eb454520bb6dce653a838d338"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-1.aiff",
     "copy": "production/assets/voice/draft-1.aiff",
     "sha256": "26cc4dd69ccd1e39f3abe3e25e3cb1bb5ae5f48bab2d190bb8d6793715aadbc7"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-1.txt",
     "copy": "production/assets/voice/draft-1.txt",
     "sha256": "c5d239eacd6c6d30ef40e6098867acc655a160cbfd82dbe6535ddd920b670189"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-2.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-2.aiff",
     "copy": "production/assets/voice/draft-2.aiff",
     "sha256": "0d8f8e866fbccbd1b390049020fa2e08cc2efdf31f32ee3e871a48e528d2aba7"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/draft-2.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/draft-2.txt",
     "copy": "production/assets/voice/draft-2.txt",
     "sha256": "655e572e7a69698c5418b88a61fb00554d53184e1865fea089fe2b951cb5d220"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/inputs-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/inputs-0.aiff",
     "copy": "production/assets/voice/inputs-0.aiff",
     "sha256": "537a04780b369fdf6b6783cbf48b007a9655a3267133575647629e7807ea0c31"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/inputs-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/inputs-0.txt",
     "copy": "production/assets/voice/inputs-0.txt",
     "sha256": "f0fe506ef9ab363a28ee6912cd4f09979b7fb3ae5d3eb56f7c52d2a4d9f83154"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/inputs-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/inputs-1.aiff",
     "copy": "production/assets/voice/inputs-1.aiff",
     "sha256": "b1617f3788a0c50a329499352b9349933d91bf79d4c4be536f3d53730cba8873"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/inputs-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/inputs-1.txt",
     "copy": "production/assets/voice/inputs-1.txt",
     "sha256": "a70df49e300e336d942416cb0f30bfb72a41ffca684d7cb485785a068c362811"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-0.aiff",
     "copy": "production/assets/voice/human-0.aiff",
     "sha256": "a832b77392fa8fb89b9ac8c26279ef881932a9c35bfcfa0ab6e84d93cc45aedb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-0.txt",
     "copy": "production/assets/voice/human-0.txt",
     "sha256": "b15e84b305e116d90b256d0b43948321be3514c41937f7ebca4e766408fef931"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-1.aiff",
     "copy": "production/assets/voice/human-1.aiff",
     "sha256": "4af9ab58f16915c42ea7c47443a94c480d713dd09fa901c969c2cb4b7475cbcb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-1.txt",
     "copy": "production/assets/voice/human-1.txt",
     "sha256": "83589e2e83e8c7c500f80f05830bfd225ee7e5ed2ce8ad10189e8f934c0c9608"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-2.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-2.aiff",
     "copy": "production/assets/voice/human-2.aiff",
     "sha256": "13fc74fe9e5a57162a42c9eceb31958137219eaa268563a37beb9628d6836f25"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-2.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-2.txt",
     "copy": "production/assets/voice/human-2.txt",
     "sha256": "c80a4c0c1217aac9a036de37646d7eda8b58e3c70bec50ad862f8a5f16a7df64"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-3.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-3.aiff",
     "copy": "production/assets/voice/human-3.aiff",
     "sha256": "c5ddb3d364874a3dd8c53bb201aa735271fcc34f882575bb4d4991a6af9def70"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/human-3.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/human-3.txt",
     "copy": "production/assets/voice/human-3.txt",
     "sha256": "3b538fb4ebabcab4f82081b77724b8530bf5abcb4073b64ec7b2752628f63572"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/outputs-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/outputs-0.aiff",
     "copy": "production/assets/voice/outputs-0.aiff",
     "sha256": "4fcd7d9f4f0c04988941267e39a364a3aeebaa71b59ec1b53a7d65dcdbddcac6"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/outputs-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/outputs-0.txt",
     "copy": "production/assets/voice/outputs-0.txt",
     "sha256": "4e42df003e3e53b8f937c90375d9f631f436431084d105ee7026ce72a6fb0fe6"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/outputs-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/outputs-1.aiff",
     "copy": "production/assets/voice/outputs-1.aiff",
     "sha256": "fa97d8b3c7a73c995da05af7a187254b576f12cf68ab7a4bb08965411028bbf3"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/outputs-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/outputs-1.txt",
     "copy": "production/assets/voice/outputs-1.txt",
     "sha256": "88c4ca6dcd2dede988b896bf91c40495cb1f3b2d36793b3fb8ddb3f8df74597a"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-0.aiff",
     "copy": "production/assets/voice/delivery-0.aiff",
     "sha256": "c1e5af8d9d1acd28ed03163ecbb85eb72648646bff369fb64c7ba4c8fc244039"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-0.txt",
     "copy": "production/assets/voice/delivery-0.txt",
     "sha256": "0a5365e5113196de91507b43cb0e84e4c3568db7d8652ae091b854d2f0cf99b1"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-1.aiff",
     "copy": "production/assets/voice/delivery-1.aiff",
     "sha256": "6c489c1c84c2fc62659bb7bf16e8532d23853b4c5478d0faced162562c6fe585"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-1.txt",
     "copy": "production/assets/voice/delivery-1.txt",
     "sha256": "77148eaec2983cf4cd55c4befa9385dd422eb68f39e77e05f6c2a9cca2fd5b6d"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-2.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-2.aiff",
     "copy": "production/assets/voice/delivery-2.aiff",
     "sha256": "5055c7b0908c232d59ebf2200c196a80865e5334daa76fb0b487b6a6e8e939eb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/delivery-2.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/delivery-2.txt",
     "copy": "production/assets/voice/delivery-2.txt",
     "sha256": "86d9fb08b125c008e600df957b320011b19e80bb05db399b8f9815954d1b96dd"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/invalidation-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/invalidation-0.aiff",
     "copy": "production/assets/voice/invalidation-0.aiff",
     "sha256": "f927f637776aba31b51c7146e725219b647791e24b420c18b8765a18efe107bb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/invalidation-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/invalidation-0.txt",
     "copy": "production/assets/voice/invalidation-0.txt",
     "sha256": "9551ad0991349eced41be840896f6d2a9be9f920bdf5011901f9e1aa8551420b"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/invalidation-1.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/invalidation-1.aiff",
     "copy": "production/assets/voice/invalidation-1.aiff",
     "sha256": "238933c9463e90afb270caf4202e65ac3884cbfe56001352733d6b7e285308dc"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/invalidation-1.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/invalidation-1.txt",
     "copy": "production/assets/voice/invalidation-1.txt",
     "sha256": "97297c54f3af9c08d5c14d46ae99137f3d33bcf3ff7ba84ae133c0a0d3456cae"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/value-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/value-0.aiff",
     "copy": "production/assets/voice/value-0.aiff",
     "sha256": "9612ff5e6205d8ffced05fde58a46617577ff0b2e24ed594bc5d9b6375802ef4"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/value-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/value-0.txt",
     "copy": "production/assets/voice/value-0.txt",
     "sha256": "3caf62a3b982b050bb00bcceafe865464f9e012176b49061681e50d433a4645e"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/close-0.aiff",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/close-0.aiff",
     "copy": "production/assets/voice/close-0.aiff",
     "sha256": "48545ccbb6be86977e034853c1304a1d903462fafbf21d8831d17550d8d8ae7a"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/audio/close-0.txt",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/audio/close-0.txt",
     "copy": "production/assets/voice/close-0.txt",
     "sha256": "02f6cb8bded5ee2df7dae6312b12a92b94cfdf54f0b00ab59a799f0acf7b7bc8"
   }

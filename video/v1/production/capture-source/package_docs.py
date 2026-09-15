@@ -44,7 +44,7 @@ Application commit remains 81835b9ced0c709f4003522557b6423bc4bdaa18. The archite
 the agreed system design; it does not assert that the locked PoC implements persistence or that
 live integrations have passed acceptance. No application code, tests, dependencies, refinement
 register, history or tags are changed. All media/audio/PDF exports remain outside Git, under
-/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/export/.
+/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/export/.
 
 Temporary speech is system-generated Daniel narration at a conversational preview pace, not a
 clone of the user's voice. Final human recording will replace it after review.

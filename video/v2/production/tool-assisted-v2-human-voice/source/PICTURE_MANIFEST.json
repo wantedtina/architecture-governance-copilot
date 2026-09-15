@@ -1,61 +1,61 @@
 [
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/title.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/title.mp4",
     "copy": "assets/picture/title.mp4",
     "sha256": "6539077a1f52bdda7438efa91f00c8a1cead93b98a07bd15fdc9c55ee9c4714f"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/process.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/process.mp4",
     "copy": "assets/picture/process.mp4",
     "sha256": "08134162dbaf254179dca9954889312041d1ec0c4fea40525cffb67a405ae5c5"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/solution.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/solution.mp4",
     "copy": "assets/picture/solution.mp4",
     "sha256": "a47d6dbd15c14c2416e8fe2ab7b14e42e4dba68a423d141df8cf8eaf9031b0e5"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/architecture.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/architecture.mp4",
     "copy": "assets/picture/architecture.mp4",
     "sha256": "fe57e9cb5c35dab896111ab57dc1667dab854c1828554666c041a78ac499216f"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/draft.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/draft.mp4",
     "copy": "assets/picture/draft.mp4",
     "sha256": "db2805f339bfd894f3a0316a210dea7706e9cfc3d5d3ffba7acc271279958da9"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/inputs.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/inputs.mp4",
     "copy": "assets/picture/inputs.mp4",
     "sha256": "7bf344e264eaddd6c754526f74da37982a180c2ca1b05811b3b90aa0c5185887"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/human.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/human.mp4",
     "copy": "assets/picture/human.mp4",
     "sha256": "c27b5a4cd76c18f98ebee695972885dc0c6692875dcd99f40e63c7b4f0b4dceb"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/outputs.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/outputs.mp4",
     "copy": "assets/picture/outputs.mp4",
     "sha256": "0cf5681388f24c26b8e8561c88c25ab3e43e1dba646e0a2b774c95c58c97adc2"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/delivery.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/delivery.mp4",
     "copy": "assets/picture/delivery.mp4",
     "sha256": "ac5e6a5d733115c6e1194efbe266308d56a68751f1318e6fcfcb08d16545ec59"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/invalidation.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/invalidation.mp4",
     "copy": "assets/picture/invalidation.mp4",
     "sha256": "4d8c7fcecba04dddee70fb332acdacf95aaa7506d38903f767ac3c2ccd9d8f93"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/value.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/value.mp4",
     "copy": "assets/picture/value.mp4",
     "sha256": "0817c33f264da906130f180b923a08e4c7c931dd8c6fbd8f2468e9c811fcbe9e"
   },
   {
-    "original": "/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2/production/clips/close.mp4",
+    "original": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2/production/clips/close.mp4",
     "copy": "assets/picture/close.mp4",
     "sha256": "824eac6329d5a6d096906d1fdf6b8c6558425a2a2282ed9900d492b4de3cb4d9"
   }

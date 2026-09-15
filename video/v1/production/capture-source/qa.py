@@ -13,5 +13,5 @@ for part in range((len(marks)+11)//12):
  for i,t in enumerate(ts):x=i%3*640;y=i//3*390;im.paste(Image.open(frames/f'{t:03}.png'),(x,y));d.text((x+10,y+363),f'{t//60:02}:{t%60:02}',fill='white')
  im.save(f'frames/final-sheet-{part}.jpg')
 for t in [5,57,68,84,94,125,136,159,190,201,215,226,234]:subprocess.run([FF,'-y','-loglevel','error','-ss',str(t),'-i',str(p),'-frames:v','1',f'frames/full-{t}.png'],check=True)
-assert hashlib.sha256(Path('export/FORM_TEXT.md').read_bytes()).hexdigest()==hashlib.sha256(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-draft/review-copy/FORM_TEXT.md').read_bytes()).hexdigest()
+assert hashlib.sha256(Path('export/FORM_TEXT.md').read_bytes()).hexdigest()==hashlib.sha256(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-draft/review-copy/FORM_TEXT.md').read_bytes()).hexdigest()
 print('Approved form unchanged. Video bytes',p.stat().st_size)

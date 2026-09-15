@@ -1,61 +1,6 @@
 {
-  "status": "Read-only source scan, not execution or complete dynamic dependency analysis",
+  "status": "Current source-path scan after 2026-09-15 path migration. Historical command logs/backups retain former paths; full dynamic dependency analysis and rerendering remain unverified.",
   "references": [
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
-      "line": 16,
-      "text": "oldstory=json.loads(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/story.json').read_text())"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
-      "line": 31,
-      "text": "assert (ROOT/'export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/FORM_TEXT.md').read_bytes()"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
-      "line": 32,
-      "text": "result={'duration_seconds':238,'video_frames':7140,'resolution':'1920x1080','fps':30,'full_decode':'pass','caption_count':len(allsubs),'caption_overlaps':0,'spoken_words_unchanged':True,'section_order_unchanged':True,'architecture_text_unchanged':True,'source_files_verified':len(manifest),'captured_new_application_footage':False,'human_voice_replacement':'pending user recording','v1_sha256':hashlib.sha256(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4').read_bytes()).hexdigest(),'video_bytes':video.stat().st_size}"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
-      "line": 11,
-      "text": "V1=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2')"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
-      "line": 12,
-      "text": "RAW=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips')"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
-      "line": 13,
-      "text": "REPO=Path('/Users/wantedtina/Repos/architecture-governance-copilot')"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
-      "line": 14,
-      "text": "FF='/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1'"
-    },
-    {
-      "file": "v2/production/tool-assisted-v2-human-voice/source/replace_voice.py",
-      "line": 4,
-      "text": "ROOT=Path(__file__).resolve().parents[1];V2=ROOT.parent/'tool-assisted-v2';FF=json.loads((ROOT/'source/v2-runtime.json').read_text())['ffmpeg']"
-    },
-    {
-      "file": "v2/slides/build/build.mjs",
-      "line": 4,
-      "text": "const root=path.resolve('..'), build=path.join(root,'build'), base='/Users/wantedtina/Deliverables/architecture-governance-copilot';"
-    },
-    {
-      "file": "v2/slides/build/finalize.mjs",
-      "line": 5,
-      "text": "const root=path.resolve('..'),skill='/Users/wantedtina/.codex/plugins/cache/openai-primary-runtime/presentations/26.904.11930/skills/presentations';"
-    },
-    {
-      "file": "v2/slides/build/finalize.mjs",
-      "line": 8,
-      "text": "const result=await finalizePresentation({workspaceDir:root,candidatePath:root+'/build/candidate.pptx',finalPath,pythonExecutable:'/Users/wantedtina/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3',integrityValidatorPath:skill+'/container_tools/inspect_presentation_package_integrity.py',layoutValidatorPath:skill+'/container_tools/inspect_presentation_layout_geometry.py',layoutArgs:['--expected-slide-size-emu','18288000,10287000','--validate-bullet-geometry','--validate-heading-fit'],explicitTotalSlideCount:6,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:['Arial']},verifyArtifactToolImport:true,receiptPath:root+'/build/validation.json'});"
-    },
     {
       "file": "v1/production/capture-source/render_v2.py",
       "line": 3,
@@ -84,7 +29,7 @@
     {
       "file": "v1/production/capture-source/package_docs.py",
       "line": 47,
-      "text": "/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/export/."
+      "text": "/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/export/."
     },
     {
       "file": "v1/production/capture-source/qa.py",
@@ -94,12 +39,12 @@
     {
       "file": "v1/production/capture-source/qa.py",
       "line": 16,
-      "text": "assert hashlib.sha256(Path('export/FORM_TEXT.md').read_bytes()).hexdigest()==hashlib.sha256(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-draft/review-copy/FORM_TEXT.md').read_bytes()).hexdigest()"
+      "text": "assert hashlib.sha256(Path('export/FORM_TEXT.md').read_bytes()).hexdigest()==hashlib.sha256(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-draft/review-copy/FORM_TEXT.md').read_bytes()).hexdigest()"
     },
     {
       "file": "v1/production/original-workspace/tools/package.py",
       "line": 14,
-      "text": "old=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.1/export')"
+      "text": "old=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.1/export')"
     },
     {
       "file": "v1/production/original-workspace/tools/package.py",
@@ -109,12 +54,12 @@
     {
       "file": "v1/production/original-workspace/tools/package.py",
       "line": 75,
-      "text": "External files: `/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/`."
+      "text": "External files: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/`."
     },
     {
       "file": "v1/production/original-workspace/tools/revise.py",
       "line": 24,
-      "text": "rows=json.loads(Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.1/story.json').read_text())"
+      "text": "rows=json.loads(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.1/story.json').read_text())"
     },
     {
       "file": "v1/production/original-workspace/tools/render.py",
@@ -124,7 +69,7 @@
     {
       "file": "v1/production/original-workspace/tools/render.py",
       "line": 4,
-      "text": "old=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2')"
+      "text": "old=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2')"
     },
     {
       "file": "v1/production/original-workspace/tools/render.py",
@@ -139,7 +84,7 @@
     {
       "file": "v1/production/original-workspace/tools/finalize.py",
       "line": 11,
-      "text": "assert Path('export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.1/export/FORM_TEXT.md').read_bytes()"
+      "text": "assert Path('export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.1/export/FORM_TEXT.md').read_bytes()"
     },
     {
       "file": "v1/production/original-workspace/tools/voice.py",
@@ -150,6 +95,66 @@
       "file": "v1/production/original-workspace/tools/qa.py",
       "line": 4,
       "text": "ff='/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1'"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
+      "line": 16,
+      "text": "oldstory=json.loads(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/story.json').read_text())"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
+      "line": 31,
+      "text": "assert (ROOT/'export/FORM_TEXT.md').read_bytes()==Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/FORM_TEXT.md').read_bytes()"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/verify.py",
+      "line": 32,
+      "text": "result={'duration_seconds':238,'video_frames':7140,'resolution':'1920x1080','fps':30,'full_decode':'pass','caption_count':len(allsubs),'caption_overlaps':0,'spoken_words_unchanged':True,'section_order_unchanged':True,'architecture_text_unchanged':True,'source_files_verified':len(manifest),'captured_new_application_footage':False,'human_voice_replacement':'pending user recording','v1_sha256':hashlib.sha256(Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4').read_bytes()).hexdigest(),'video_bytes':video.stat().st_size}"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
+      "line": 11,
+      "text": "V1=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2')"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
+      "line": 12,
+      "text": "RAW=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips')"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
+      "line": 13,
+      "text": "REPO=Path('/Users/wantedtina/Repos/architecture-governance-copilot')"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2/production/source/prepare.py",
+      "line": 14,
+      "text": "FF='/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1'"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2-human-voice/source/transcribe.py",
+      "line": 6,
+      "text": " W=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2-human-voice/tools/whisper.cpp')"
+    },
+    {
+      "file": "v2/production/tool-assisted-v2-human-voice/source/replace_voice.py",
+      "line": 4,
+      "text": "ROOT=Path(__file__).resolve().parents[1];V2=ROOT.parent/'tool-assisted-v2';FF=json.loads((ROOT/'source/v2-runtime.json').read_text())['ffmpeg']"
+    },
+    {
+      "file": "v2/slides/build/build.mjs",
+      "line": 4,
+      "text": "const root=path.resolve('..'), build=path.join(root,'build'), base='/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals';"
+    },
+    {
+      "file": "v2/slides/build/finalize.mjs",
+      "line": 5,
+      "text": "const root=path.resolve('..'),skill='/Users/wantedtina/.codex/plugins/cache/openai-primary-runtime/presentations/26.904.11930/skills/presentations';"
+    },
+    {
+      "file": "v2/slides/build/finalize.mjs",
+      "line": 8,
+      "text": "const result=await finalizePresentation({workspaceDir:root,candidatePath:root+'/build/candidate.pptx',finalPath,pythonExecutable:'/Users/wantedtina/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3',integrityValidatorPath:skill+'/container_tools/inspect_presentation_package_integrity.py',layoutValidatorPath:skill+'/container_tools/inspect_presentation_layout_geometry.py',layoutArgs:['--expected-slide-size-emu','18288000,10287000','--validate-bullet-geometry','--validate-heading-fit'],explicitTotalSlideCount:6,requiredNativeTableOwnerSlides:[],requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:['Arial']},verifyArtifactToolImport:true,receiptPath:root+'/build/validation.json'});"
     }
   ]
 }

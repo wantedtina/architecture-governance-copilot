@@ -8,8 +8,8 @@ import fitz
 
 ROOT=Path(__file__).resolve().parents[2]
 P=ROOT/'production'
-V1=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2')
-RAW=Path('/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2/clips')
+V1=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2')
+RAW=Path('/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2/clips')
 REPO=Path('/Users/wantedtina/Repos/architecture-governance-copilot')
 FF='/Users/wantedtina/.cache/uv/archive-v0/UrHfmy6kUrGrSBmd/lib/python3.12/site-packages/imageio_ffmpeg/binaries/ffmpeg-macos-aarch64-v7.1'
 manifest=[]

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {Presentation,PresentationFile} from '@oai/artifact-tool';
-const root=path.resolve('..'), build=path.join(root,'build'), base='/Users/wantedtina/Deliverables/architecture-governance-copilot';
+const root=path.resolve('..'), build=path.join(root,'build'), base='/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals';
 const p=Presentation.create({slideSize:{width:1920,height:1080}});
 const inputs=JSON.parse(await fs.readFile('slides.json','utf8'));
 const story=JSON.parse(await fs.readFile(base+'/tool-assisted-v2-human-voice/source/story.json','utf8'));

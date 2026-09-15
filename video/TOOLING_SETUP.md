@@ -21,9 +21,9 @@ Installed, discoverable and successfully tested are distinct states. Versions ab
 - `v2/production/tool-assisted-v2/production/README.md` records the original SVG/FFmpeg pipeline.
 - `v2/production/tool-assisted-v2-human-voice/README.md` records voice normalization, retiming and local transcription.
 - `v2/slides/build/build.mjs` and `finalize.mjs` preserve PPTX construction/finalization sources. The bundled runtime link was intentionally not copied.
-- `PATH_DEPENDENCIES.json` identifies fixed paths requiring review. Original scripts remain byte-identical historical sources.
+- `PATH_DEPENDENCIES.json` identifies fixed paths requiring review. Historical source snapshots were initially copied byte for byte. Relevant scripts and input manifests subsequently received recorded root-path replacements; original bytes remain in the local path-migration backup.
 
-The two V2 production workspace names remain siblings in the new layout, preserving their relative relationship. Some paths, including deck inputs, cached tools, V1 audio/frames and original metadata, still refer to original locations or layouts. Do not run scripts over accepted assets. Copy into V3, rebase inputs/outputs and verify prerequisites first. The full external workspaces and protected V1 backup remain available.
+The two V2 production workspace names remain siblings in the new layout, preserving their relative relationship. Some paths, including deck inputs, cached tools, V1 audio/frames and original metadata, still refer to original locations or layouts. Do not run scripts over accepted assets. Copy into V3, rebase inputs/outputs and verify prerequisites first. The full original workspaces and protected V1 backup remain available in the project-local collection described below.
 
 ## Verification status
 
@@ -31,4 +31,10 @@ Archive checks: hashes, local file presence, primary document links, 12 original
 
 ## Lint boundary for archived source snapshots
 
-`video/.ruff.toml` inherits the application lint rules and excludes only the preserved historical Python source locations under this directory. It leaves the current archive utility and all application code in scope. Historical source bytes remain unchanged; formatting those snapshots would invalidate their provenance hashes. Future versions are not automatically excluded.
+`video/.ruff.toml` inherits the application lint rules and excludes only the preserved historical Python source locations under this directory. It leaves the current archive utility and all application code in scope. Only the recorded path replacements and local transcription-library resolution fix have changed the preserved sources; broad reformatting would obscure their provenance and invalidate recorded hashes. Future versions are not automatically excluded.
+
+## Physical storage of original workspaces
+
+The former Deliverables project is now physically under `video/archive/production-originals/` in the main project. Relevant script and input-manifest paths now use that location directly; the old directory and compatibility link have been retired. See `archive/PRODUCTION_ORIGINALS.md`. This relocation preserves files and directory relationships; it is not a new successful render or tool-installation check.
+
+The relocated `transcribe.py` resolves the original local whisper build when needed and explicitly supplies its adjacent dynamic-library directory. Compiled binaries retain historical embedded build paths, but the transcription entry point no longer needs the retired directory. Engine binaries and recordings were not modified.

@@ -9,7 +9,7 @@ This external workspace implements the approved targeted V2 proposal. It does no
 Run from this external workspace root, never from the application environment:
 
 ```bash
-cd /Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2
+cd /Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2
 uv run --offline --no-project --python 3.12 --with resvg-py==0.5.0 --with pymupdf==1.28.2 --with reportlab==5.0.1 python production/source/prepare.py
 python3 production/source/render.py
 python3 production/source/verify.py
@@ -36,10 +36,10 @@ Original repository: `/Users/wantedtina/Repos/architecture-governance-copilot`.
 Materials worktree: `/Users/wantedtina/Repos/architecture-governance-copilot-submission-materials`.
 Both remained at the locked HEAD. The original was clean; the materials worktree retained its pre-existing untracked `docs/submission/`. Both passed `git diff --check`. No remote fetch or company access action was performed.
 
-Accepted V1: `/Users/wantedtina/Deliverables/architecture-governance-copilot/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4`.
+Accepted V1: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/2026-09-14-v2.2/export/architecture-governance-copilot-v2.2-narrated.mp4`.
 SHA-256: `fe52d4bdf9cf42114a77d9646af4a27f2de2bc82108e845491cdc8f89282068a`.
-V1 backup: `/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2-preparation/V1_BACKUP_2026-09-14/`.
-Historical constraints: `/Users/wantedtina/Deliverables/architecture-governance-copilot/tool-assisted-v2-preparation/VIDEO_HANDOFF.md` and `TOOLING_SETUP.md`.
+V1 backup: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2-preparation/V1_BACKUP_2026-09-14/`.
+Historical constraints: `/Users/wantedtina/Repos/architecture-governance-copilot/video/archive/production-originals/tool-assisted-v2-preparation/VIDEO_HANDOFF.md` and `TOOLING_SETUP.md`.
 
 No model or reasoning-setting switch was performed. Exact active and historical settings are not exposed for independent equivalence verification.
 
