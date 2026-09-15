@@ -7,81 +7,110 @@ Implementation authority: `NONE`.
 
 ## Transfer instructions for the user
 
-Use the company-approved transfer mechanism to make the baseline repository and these documents
-available on your company MacBook. Do not transfer an external `.env`, `.venv`, credential store,
-browser profile, logs or generated recordings. Do not assume the receiving repository has the same
-absolute path as the external workstation.
+### Current receiving arrangement
 
-Reviewed main base revision: `67a60da0a528966909269ed06d616003a71e1944` (reviewed `main`).
-Its application code/tests/fixtures/dependencies are unchanged from
-`81835b9ced0c709f4003522557b6423bc4bdaa18`, the target of
-`submission-2026-09-14-final-materials`. Use the newer repository revision for its current layout
-and tooling rules; do not reset to the submitted tag merely to match the original handoff.
+The user has cloned `codex/internal-integration-plan` onto the company MacBook and copied selected
+project files into a separate company Azure DevOps repository. The GitHub clone is the local source
+reference; the ADO repository is the development target. Successful app startup in the ADO copy was
+reported by the user, but file completeness, regression results and import provenance still need
+verification. Git history was not necessarily imported with the files.
 
-External handoff workspace:
-`/Users/wantedtina/Repos/architecture-governance-copilot-internal-integration`.
-External handoff branch: `codex/internal-integration-plan`.
-The primary handoff is the committed GitHub branch, containing the application and all six
-handoff documents together. Record the exact received commit with `git rev-parse HEAD`; that
-handoff commit descends from the reviewed main base above. Do not reset to the base and lose the
-handoff documents. A Draft PR is a review entry point, not implementation approval.
+Original published handoff commit: `f7eb8b6e931dafa0dd20bce76235d1d653b4a22e`.
+Reviewed GitHub main base: `67a60da0a528966909269ed06d616003a71e1944`.
+Unchanged source application baseline: `81835b9ced0c709f4003522557b6423bc4bdaa18`.
+The final-materials tag `submission-2026-09-14-final-materials` targets that application baseline.
+These are source references, not required ADO commit IDs. Any copied or internally modified files
+must be compared before claiming equivalence to the reviewed source application.
 
-After confirming that GitHub access is approved on the company machine, obtain a fresh checkout:
+### Update the source clone, then copy the maintained documents
+
+Run the following only inside the existing GitHub source clone, using approved GitHub access:
 
 ```bash
-git clone --branch codex/internal-integration-plan https://github.com/wantedtina/architecture-governance-copilot.git
-cd architecture-governance-copilot
 git status --short --branch
+git remote -v
+```
+
+Confirm that the checkout is clean, the branch is `codex/internal-integration-plan`, and `origin`
+is the expected GitHub source repository. If anything differs, inspect it before proceeding.
+Then update without rewriting history:
+
+```bash
+git pull --ff-only origin codex/internal-integration-plan
 git log -1 --oneline
 git rev-parse HEAD
-git merge-base --is-ancestor 67a60da0a528966909269ed06d616003a71e1944 HEAD
 ```
 
-Compare the received HEAD with the commit recorded in the external handoff message. Stop and
-inspect any difference before creating the internal implementation worktree. For an existing
-internal checkout, inspect its work and approved remote setup first; do not overwrite it with a
-fresh copy or blindly switch branches.
+Record this source-document revision. Do not run these GitHub update commands in the ADO target,
+change the ADO remote to GitHub, or replace the ADO `.git` directory. Do not reset either repository
+to an older source commit just to match this document. If the source clone has local edits, retain
+and inspect them rather than overwriting them.
 
-The branch includes these six maintained handoff files:
+Ensure the ADO target contains these seven current files at their repository-relative paths:
 
-- `docs/INTERNAL_OPENCODE_START_PROMPT.md` — this receiving-agent prompt and transfer guide.
-- `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md` — bounded proposal, decisions, code gaps,
-  implementation sequence, tests and acceptance criteria.
-- `docs/POST_BASELINE_REFINEMENT_PLAN.md` — planning intake and unchanged `NONE` active pointer.
-- `docs/INTERNAL_INTEGRATION_HANDOFF.md` — adapter reference and new handoff navigation.
-- `docs/FINAL_STAGE_DEVELOPMENT_PLAN.md` — updated post-submission navigation and priority.
-- `docs/INTERNAL_INTEGRATION_REVIEW_2026-09-15.md` — comparison, findings and fresh check results.
+- `docs/INTERNAL_OPENCODE_START_PROMPT.md` — this transfer guide and standalone receiving prompt.
+- `docs/exec-plans/README.md` — execution-plan lifecycle and recovery rules.
+- `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md` — bounded proposal and decision gates.
+- `docs/POST_BASELINE_REFINEMENT_PLAN.md` — requirement register and sole active-plan pointer.
+- `docs/INTERNAL_INTEGRATION_HANDOFF.md` — adapter reference.
+- `docs/FINAL_STAGE_DEVELOPMENT_PLAN.md` — post-submission navigation and priority.
+- `docs/INTERNAL_INTEGRATION_REVIEW_2026-09-15.md` — source review findings and verification.
 
-Keep Git history and preserve the finalized submission materials. Create the internal worktree
-from the verified handoff commit, using an unused `codex/` branch and directory. For a fresh clone
-with no local edits, after validating the received revision:
+Compare existing ADO documents before copying; merge deliberately if internal decisions or edits
+already exist. Never overwrite a newer active plan or company instructions. Retain historical
+references where available: `docs/SUBMISSION_BASELINE.md`, `docs/FINAL_STAGE_IMPLEMENTATION_PLAN.md`
+and completed `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_*.md`. They are evidence, not active
+implementation instructions. Course notes and video-production materials are not prerequisites.
 
-```bash
-git worktree add ../architecture-governance-copilot-internal -b codex/internal-integration-implementation HEAD
-```
+Verify the complete application/development set: `AGENTS.md`, `README.md`, `SPEC.md`, `app.py`,
+`pages/`, `src/`, `samples/`, `tests/` (including `conftest.py` and `fixtures/`), `assets/`,
+`.streamlit/config.toml`, `pyproject.toml`, `uv.lock`, `.python-version`, `.gitignore` and a
+placeholder-only `.env.example`. Run from the source checkout; a built wheel alone is not the
+supported receiving package. Use company-approved Python/package sources for verification.
 
-Open that new worktree in OpenCode. Keep internal development, configuration, contracts and evidence
-in the approved internal repository/storage. Cloning this GitHub repository does not authorize
-pushing internal changes back to it. Only explicitly approved non-sensitive changes may return.
+Local `.env`, `.venv`, caches, tool state, credentials and generated output do not belong in the
+ADO import commit. Do not open credential values to check file completeness. `.agents/` is ignored
+in the source repository; use approved local guidance if present and report missing references.
+Do not copy external environments or credential stores to make the app run. Video, slides and
+recordings are not integration dependencies. If preserved Python production sources under `video/`
+are copied, retain `video/.ruff.toml`; otherwise no video directory needs to be restored for tests.
 
-Synchronize with `main` at deliberate handoff or development checkpoints. Inspect incoming changes
-and merge required updates with ordinary merges, preserving history and rerunning relevant checks.
-Do not automatically move an active internal implementation baseline, rebase a shared branch or
-force-push. Record the revision after each accepted synchronization.
+### Establish the ADO import baseline
 
-The local 15 September ZIP is an earlier document snapshot retained for backup; it is not required
-for the GitHub handoff and must not be overlaid onto the newer committed documents. Its manifest
-and patch apply only to its declared base and payload. Local ZIPs, output directories and generated
-artifacts are not part of the branch. Verify that the received repository has `app.py`, `pages/`,
-`src/`, `samples/`, `tests/`, `.streamlit/config.toml`, `pyproject.toml`, `uv.lock` and maintained docs.
-Run from the source checkout; a built wheel alone is not this handoff's supported runnable package.
+OpenCode should inspect the ADO target first and compare only the relevant approved project paths
+against the local GitHub source. Record missing, changed and intentionally omitted files. Do not
+scan unrelated company files or infer equality merely from a matching folder name or a working UI.
+Keep the source clone as a reference, not a destination for internal changes.
 
-Do not restore old external media paths or regenerate missing ignored videos/PPTs to run tests.
-Retain `video/.ruff.toml`, which excludes preserved production sources from active Ruff checks.
-No media tool, codec, render engine or presentation dependency is required by the application.
+Prepare `docs/INTERNAL_IMPORT_RECORD.md` inside the ADO project with source code/document revisions,
+import scope, intentional omissions, local differences, verification results and the ADO import
+commit when available. Until comparison is complete, mark provenance unverified. Commit only the
+reviewed import/planning files according to internal repository policy; no blanket staging of all
+local files. A worktree includes committed content, so do not create one from a target commit that
+still omits required copied files. Do not commit another session's edits without authorization.
 
-Paste the section below as the first message to OpenCode + GPT-5.4 after opening the internal
-repository. It is intentionally read-only/planning first. No credentials belong in the prompt.
+Create an independent worktree and unused `codex/` branch from the verified ADO import commit,
+retaining the ADO history and remote. If an appropriate isolated ADO worktree already exists,
+inspect and use it. Do not require shared Git ancestry with GitHub, merge unrelated histories,
+force-push, or replace repository metadata.
+
+Synchronize with the ADO mainline at deliberate checkpoints using its actual branch name and
+ordinary merges where appropriate. Future GitHub changes are separately reviewed source imports
+unless shared ancestry has been established; never treat a GitHub merge command as automatically
+applicable to this independently initialized ADO repository. Record each accepted source import
+and its corresponding ADO revision. No internal content may return to GitHub without approval.
+
+The older ZIPs are historical local backups. Do not overlay them onto current GitHub or ADO
+handoff documents. No new clone, ZIP import, media transfer or history migration is needed simply
+to use this revised prompt.
+
+### Start OpenCode in the ADO target
+
+Open the ADO project or its prepared isolated worktree in OpenCode. Paste only the
+**Receiving-agent startup prompt** section below, ending before **Expected internal handoff-back
+record**. It already includes the independent-ADO context; the earlier conversational override is
+no longer needed. Provide the local source-clone path inside the company if requested. Do not put
+credentials or internal addresses into this external session.
 
 ## Receiving-agent startup prompt
 
@@ -99,22 +128,47 @@ connect to real services, invoke AIF on internal content, create ADO items or de
 Do not interpret this prompt, a reachable endpoint, configured credentials or a proposed plan as
 authorization for those actions. Do useful permitted inspection before asking for decisions.
 
-First read all of `AGENTS.md`, including any applicable instructions in parent/subdirectories.
-Identify the repository root. Inspect Git status (including untracked files), branch, HEAD,
-upstream, remotes, worktrees and recent history. The reviewed main base is
-`67a60da0a528966909269ed06d616003a71e1944`; expect the handoff branch to contain a later
-document-only commit. Verify HEAD against the supplied handoff commit and inspect the difference
-from that base; the application is unchanged from the finalized `81835b9` baseline. Branch inventories are observations, not instructions to delete branches:
-the external review also found `codex/next-stage-review-presentation` at `67a60da` and left it alone.
-Inspect locally cached remote state first; confirm
-which repository remote operations are approved before fetching from this internal environment.
-Report unavailable live synchronization explicitly. If state differs, report the difference and
-preserve it; never discard edits, reset hard, rewrite history, force-push or repurpose another
-session's branch. Create a separate worktree and `codex/` branch at the verified agreed revision,
-using an unused path/name, unless the user already created that isolated worktree from the
-verified handoff commit. In that case, inspect and use it without creating a redundant worktree.
-The six handoff documents should already be tracked; report missing documents rather than
-restoring an older ZIP over current work.
+Repository context: this is the independent company ADO development target. I have also cloned
+GitHub branch `codex/internal-integration-plan` locally and copied selected project files into this
+ADO repository. GitHub history may be absent here. Do not require the ADO HEAD to equal a GitHub
+commit or require GitHub ancestry checks to pass. If the opened directory is actually the GitHub
+source clone, identify it and ask for the local ADO target path before doing target work. Do not
+repurpose the source clone or change its remote to guess the intended target.
+
+First read all of `AGENTS.md`, including applicable parent/subdirectory and company instructions.
+Inspect the actual ADO root, status including untracked files, branch, HEAD, upstream, remotes,
+worktrees and recent history. Preserve existing internal instructions and edits; report conflicts.
+Inspect cached remote state first and establish approved remote operations before fetching.
+Do not expose credential-bearing remote URLs in reports. Never replace `.git`, reset hard,
+rewrite history, force-push, merge unrelated histories or push internal work to GitHub.
+
+Use the local GitHub clone as a read-only reference for this initial investigation. Ask me for
+its local path inside the company if unavailable; do not guess it or scan unrelated directories.
+The original published handoff is `f7eb8b6e931dafa0dd20bce76235d1d653b4a22e`, based on reviewed
+GitHub main `67a60da0a528966909269ed06d616003a71e1944`. Later handoff documentation revisions may
+exist; inspect and record the actual source code and document revisions. The source application's
+reviewed baseline is `81835b9ced0c709f4003522557b6423bc4bdaa18`. These are provenance references,
+not required ADO revisions. Compare the copied project paths before asserting baseline equality.
+If a referenced source revision is unavailable, report unverified provenance and continue other
+permitted inspection; do not fabricate Git history or claim verification.
+
+Check the seven maintained handoff/process files listed in this document's transfer guide, plus
+AGENTS.md, README.md, SPEC.md, application code, pages, samples, assets, complete tests/fixtures,
+Streamlit configuration, pyproject.toml, uv.lock, .python-version, .gitignore and placeholder-only
+.env.example. Do not inspect .env contents, credential stores, unrelated internal files or media.
+App startup alone does not prove import completeness or regression acceptance. Existing external
+558-test results describe the reviewed source, not this ADO copy; verify locally before attributing
+those results to the target. Inspect tests/configuration before running checks, use approved package
+sources, and preserve the initial prohibition on live service calls.
+
+Prepare or update an internal docs/INTERNAL_IMPORT_RECORD.md with the source revisions, copied
+paths, omissions, differences and actual verification results. Identify the ADO import commit,
+or mark it pending if required files are uncommitted. Keep local configuration, secrets, environments
+and generated output out of version control. Do not stage or commit unrelated changes. Follow the
+internal repository policy and existing authorization when preparing the import commit. Only after
+required files are committed, use the verified ADO baseline for an independent worktree and unused
+codex/ branch, unless a suitable isolated target worktree already exists. Continue useful read-only
+inspection while import provenance or commit readiness remains unresolved.
 
 Read these documents completely, using chunks if output would truncate:
 
@@ -204,7 +258,7 @@ regression and local outputs on delivery failure. Do not modify video or submiss
 
 At each approval or completion boundary, produce an internal record with:
 
-- exact code revision and clean/dirty state;
+- exact ADO code revision and clean/dirty state, plus source import/document revisions;
 - approved scope, completed phase and unresolved D1–D8 decisions;
 - offline/synthetic test and browser results;
 - separately authorized live checks and internal evidence references;
