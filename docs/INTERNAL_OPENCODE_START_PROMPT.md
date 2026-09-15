@@ -39,8 +39,9 @@ Ensure the project has its working application and development inputs:
 
 - `AGENTS.md`, `README.md`, `SPEC.md` and applicable internal instructions.
 - `app.py`, complete `src/`, `pages/`, `samples/`, `assets/` and `tests/`, including test fixtures.
-- `pyproject.toml`, `uv.lock`, `.python-version`, `.streamlit/config.toml`, `.gitignore` and a
-  placeholder-only `.env.example`.
+- `pyproject.toml`, `uv.lock`, `.streamlit/config.toml`, `.gitignore` and a placeholder-only
+  `.env.example`. Python 3.12 is required by `pyproject.toml`; `.python-version` is optional local
+  tooling configuration, not a tracked source file or a startup prerequisite.
 - `docs/POST_BASELINE_REFINEMENT_PLAN.md` and `docs/exec-plans/README.md`.
 - The current internal execution plan named by the register, if one exists.
 - `docs/exec-plans/INTERNAL_INTEGRATION_BATCH_01.md`,
@@ -52,6 +53,10 @@ restoring obsolete instructions. Missing required code, fixtures or authoritativ
 must be reported and resolved locally. Missing historical media or a source commit is not a reason
 to stop unrelated permitted work. Video, slides, course notes and recordings are not integration
 dependencies. Retain `video/.ruff.toml` if preserved Python production sources are present there.
+
+The first inspection/planning prompt can run with uncommitted project files. Report and preserve
+them; do not require a clean commit, working credentials or completed production decisions merely
+to start planning. Required content must be available in any new worktree before using it.
 
 Keep `.env`, virtual environments, credentials, local tool state, caches and generated output out
 of Git. Use company-approved local skills and package sources. Do not read secret values merely to
