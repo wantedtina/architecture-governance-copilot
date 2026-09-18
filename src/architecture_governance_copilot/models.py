@@ -389,6 +389,25 @@ class MissingEvidence(_GovernanceModel):
     evidence: list[SourceEvidence] = Field(default_factory=list)
 
 
+NOT_EXTRACTED_NOTICE = (
+    "Not extracted in this version; no conclusion about whether such items exist."
+)
+
+
+class ReviewExtractionScope(_FrozenGovernanceModel):
+    """Application-owned scope of the bounded candidate review workflow."""
+
+    automated_categories: tuple[Literal["finding"], Literal["action"]] = ("finding", "action")
+    not_extracted_categories: tuple[
+        Literal["decisions"],
+        Literal["risks"],
+        Literal["open_questions"],
+        Literal["missing_evidence"],
+    ] = ("decisions", "risks", "open_questions", "missing_evidence")
+    review_outcome_origin: Literal["human_completed"] = "human_completed"
+    analysis_fingerprint: Sha256Fingerprint | None = None
+
+
 class GovernanceResult(_GovernanceModel):
     """The structured result of one Solution Intent review round."""
 
@@ -401,6 +420,16 @@ class GovernanceResult(_GovernanceModel):
     action_items: list[ActionItem] = Field(default_factory=list)
     open_questions: list[OpenQuestion] = Field(default_factory=list)
     missing_evidence: list[MissingEvidence] = Field(default_factory=list)
+    extraction_scope: ReviewExtractionScope | None = None
+
+    @model_validator(mode="after")
+    def preserve_bounded_extraction_scope(self) -> Self:
+        """Prevent scoped records from implying an excluded category was extracted."""
+        if self.extraction_scope is not None and any(
+            getattr(self, category) for category in self.extraction_scope.not_extracted_categories
+        ):
+            raise ValueError("Bounded candidate results cannot contain excluded categories")
+        return self
 
     @model_validator(mode="after")
     def require_stated_outcome_evidence(self) -> Self:
