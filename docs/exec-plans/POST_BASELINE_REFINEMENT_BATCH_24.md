@@ -1,6 +1,6 @@
 # Batch 24 — Finding/action candidates and human-completed review results
 
-Document status: `IN_PROGRESS`
+Document status: `COMPLETED_VERIFIED`
 Included refinement: R28
 Prepared: 2026-09-18
 Revision: Post-probe plan review, 2026-09-18
@@ -9,8 +9,9 @@ Approval: The user explicitly authorized implementation on 2026-09-18 after revi
 updated plan and reaffirming the integration/demo objective. R28 is now `In progress`.
 Implementation, verification, commit, and push are authorized within this bounded plan.
 
-The refinement register owns the sole active-plan pointer. This proposal does not reopen the
-agreed one-call, two-category design or authorize live integration.
+The refinement register owns the sole active-plan pointer, now cleared after verification.
+This completed batch implements the agreed one-call, two-category design; it does not authorize
+live integration.
 
 Primary objective: reduce the work and uncertainty for OpenCode with GPT-5.4 to integrate the
 internal AIF call behind the app's Analyze Review button, enabling the complete final hackathon
@@ -520,7 +521,7 @@ perform live integration in this checkout.
 - [x] Implement human completion, final validation, invalidation, scope and action identity.
 - [x] Synchronize maintained documentation, migration guide and ready OpenCode instruction.
 - [x] Complete automated and desktop/narrow browser acceptance.
-- [ ] Commit final documentation, push the branch and verify the remote revision.
+- [x] Commit final documentation, push the branch and verify the remote revision.
 
 ### Automated checks
 
@@ -588,10 +589,13 @@ QA directory. These are local synthetic acceptance evidence, not committed produ
 
 ## 11. Completion record
 
-Local implementation and acceptance are complete. Final documentation commit and branch push are
-pending. Reusable contracts: `d143b7c`. Coherent application/provider/UI/fixture migration: `51a70fc`.
-The migration guide and ready OpenCode instruction identify these commits and preserve the internal
-team's unseen working transports/configuration through surgical adaptation.
+Local implementation and acceptance are complete. The branch was successfully pushed to
+`origin/codex/analyze-review-candidates` on 2026-09-18. Reusable contracts: `d143b7c`;
+coherent application/provider/UI/fixture migration: `51a70fc`; documentation and evidence: `cf1fbfc`.
+The final lifecycle-only commit follows these on the same branch. R28 is Verified and the active
+execution-plan pointer is NONE. The migration guide and ready OpenCode instruction identify the
+implementation commits and preserve unseen internal transports/configuration through surgical
+adaptation. The dedicated QA browsers/server were stopped; user servers were untouched.
 
 Live AIF reliability, extraction quality with the revised prompt, internal button-to-output/ADO
 acceptance and R9b production acceptance remain unverified here. The internal final demo is complete

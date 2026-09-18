@@ -4,10 +4,11 @@ Updated: 2026-09-18
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `USER_APPROVED_BATCH_24` — the user explicitly authorized implementation
-on 2026-09-18 after reviewing the updated plan. R9b live release acceptance remains deferred.
+Execution authority: `NONE` — Batch 24 is completed and verified. No implementation batch is active.
+R9b live release acceptance remains deferred.
 
-Active execution plan: `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_24.md` (`IN_PROGRESS`).
+Active execution plan: `NONE`.
+Latest completed plan: `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_24.md` (`COMPLETED_VERIFIED`).
 
 Acceptance scope: Current user feedback targets demo/development and its regression tests.
 Production product behavior is not accepted by these refinements; internal integration and R9b
@@ -1000,7 +1001,7 @@ During the current user-testing period:
    in the execution plan; do not infer completion from a clean test run or the end of a session.
 
 No code, fixture, dependency, environment, or live-integration change is part of the current
-R28 is now authorized for execution in Batch 24 following explicit user approval.
+R28 was implemented and verified in Batch 24 following explicit user approval.
 
 ### R24 — Traceable action details and early delivery guidance
 
@@ -1048,7 +1049,7 @@ R28 is now authorized for execution in Batch 24 following explicit user approval
 
 ### R28 — Bounded finding/action candidates before human-completed governance results
 
-- **State:** `In progress`
+- **State:** `Verified`
 - **Primary purpose:** Reduce the difficulty of integrating the internal AIF LLM through OpenCode
   with GPT-5.4, particularly the actual Analyze Review button path, to complete the final hackathon
   demo quickly while preserving the coherence of its existing workflows and outputs. Prioritize
@@ -1058,8 +1059,8 @@ R28 is now authorized for execution in Batch 24 following explicit user approval
   explicitly requested inspection and a concrete execution plan for approval before code changes.
   Earlier discussion/probe preparation did not authorize implementation. After the live-probe plan
   revision, the user explicitly authorized implementation, verification, commit, and push on
-  2026-09-18. Batch 24 is the sole active implementation plan.
-- **Observed local behavior:** The local AIF boundary already makes one transport call with the
+  2026-09-18. Batch 24 is complete; no implementation plan remains active.
+- **Observed baseline behavior:** The local AIF boundary already makes one transport call with the
   complete SI, transcript, and context, but expects a complete `GovernanceResult`. Offline and
   Internal fake also populate the six-category result before human review. The reported internal
   six-stage extraction and real HTTP transport are not present in this checkout.
@@ -1095,3 +1096,9 @@ R28 is now authorized for execution in Batch 24 following explicit user approval
 - **Non-goals:** No real enterprise connections, authentication changes, agent framework,
   heuristic JSON repair, production activation, or video-production changes. No unresolved product
   design decision; execution was explicitly authorized for Batch 24.
+
+- **Verification:** Batch 24; 637 tests, both Ruff checks, build and diff checks passed.
+  Desktop Internal fake Analyze-to-Create/GET and independent 390px Offline review/output flows
+  passed. Four user files, original probes and all tracked sample fixtures were preserved.
+  Implementation commits `d143b7c` and `51a70fc`; migration/evidence docs `cf1fbfc`, pushed on
+  `codex/analyze-review-candidates`. Real internal AIF and final-demo acceptance remain separate.

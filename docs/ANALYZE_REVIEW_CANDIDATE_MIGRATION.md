@@ -29,7 +29,7 @@ Baseline: `67a60da`. Task branch: `codex/analyze-review-candidates`.
 | --- | --- |
 | `d143b7c` | Four reusable candidate/source/conversion/protocol modules, scoped domain metadata and focused contract tests. |
 | `51a70fc` | Coherent provider/service/runtime/UI/fixture migration, final confirmation and delivery safeguards with regression coverage. |
-| Documentation commits following `51a70fc` on `codex/analyze-review-candidates` | Maintained product documentation, versioned probe artifacts, this guide, ready OpenCode instruction and final verification record. |
+| `cf1fbfc` plus the following lifecycle record on `codex/analyze-review-candidates` | Maintained product documentation, versioned probe artifacts, this guide, ready OpenCode instruction and final verification record. |
 
 Review the commits in this order; port only the required functions after inspecting internal
 changes. These are not instructions to cherry-pick over working uncommitted transports. Batch
