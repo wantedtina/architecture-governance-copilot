@@ -1000,8 +1000,8 @@ During the current user-testing period:
 9. Stop a batch if a product decision is unresolved or verification fails. Record the exact state
    in the execution plan; do not infer completion from a clean test run or the end of a session.
 
-No code, fixture, dependency, environment, or live-integration change is part of the current
 R28 was implemented and verified in Batch 24 following explicit user approval.
+No implementation batch is currently active.
 
 ### R24 — Traceable action details and early delivery guidance
 

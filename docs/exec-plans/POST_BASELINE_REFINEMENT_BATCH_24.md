@@ -6,7 +6,7 @@ Prepared: 2026-09-18
 Revision: Post-probe plan review, 2026-09-18
 Baseline revision: `67a60da` on `main`, tracking `origin/main`
 Approval: The user explicitly authorized implementation on 2026-09-18 after reviewing the
-updated plan and reaffirming the integration/demo objective. R28 is now `In progress`.
+updated plan and reaffirming the integration/demo objective. R28 is now `Verified`.
 Implementation, verification, commit, and push are authorized within this bounded plan.
 
 The refinement register owns the sole active-plan pointer, now cleared after verification.
