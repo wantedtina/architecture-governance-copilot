@@ -36,7 +36,7 @@ must continue to work with all internal connections disabled.
 | Marker | Existing boundary | Internal input required | Existing fake evidence | Required live acceptance |
 | --- | --- | --- | --- | --- |
 | `TODO(INTERNAL-CONFLUENCE)` | `ConfluenceContentTransport.get_content()` in `integrations/confluence.py` | Approved base URL, page ID, authentication scheme, TLS/proxy requirements, timeout, deployed Confluence version | Content API response parsing; storage-body canonicalization; heading, paragraph, list, and table coverage; version/body drift and malformed-response tests | Read the designated synthetic page by explicit ID; verify HTTP status, JSON Content-Type, returned ID/title/space, `version.number`, `body.storage.representation`, complete nonempty body, canonical text, and stable content fingerprint |
-| `TODO(INTERNAL-AIF)` | `AifTransport.analyze()` in `integrations/aif.py` | Approved endpoint/deployment, authentication scheme, API version, timeout, request envelope, structured-response envelope, provider configuration identity | Request/schema contract; context match; refusal/timeout/malformed response; source quote/context validation; local trusted reference assignment | Analyze a previously unbundled synthetic page and transcript; verify returned context exactly; reject one deliberately invalid quote; ensure only validated locally assigned references enter Human Review |
+| `TODO(INTERNAL-AIF)` | `AifTransport.analyze()` in `integrations/aif.py` | Approved endpoint/deployment, authentication scheme, API version, timeout, request envelope, structured-response envelope, provider configuration identity | Single-call candidate/tool contract; application-owned context binding; refusal/timeout/malformed response; source-ID validation and local evidence resolution | Analyze a previously unbundled synthetic page and transcript through the real button; verify one model call; reject unknown/stale IDs; complete human review and original-source validation before outputs |
 | `TODO(INTERNAL-ADO)` | `AdoGateway` in `integrations/azure_devops.py` | Approved organization/project/type, field references, classification values, owner identities, parent ID, authentication scheme, API version, timeout | Encoded `$` work-item type; exact JSON Patch; correlation lookup; one Create; receipt mapping; GET field/relation verification; duplicate, stale, definite-failure, and unknown-result paths | Read the existing synthetic item first; confirm target/type/required fields/allowed classification/identity/parent mappings; then separately preview and confirm one designated Create; verify returned ID/revision/API URL/browser URL and every expected field/relation by GET |
 
 ## Deferred reference sequence — not active implementation scope
@@ -47,12 +47,15 @@ must continue to work with all internal connections disabled.
 2. **Implement Confluence read only.** Adapt the company response into `ConfluenceApiResponse` and
    reuse `ConfluenceContentApiReader`. Reject login HTML, collection-shaped responses, wrong IDs,
    missing versions, non-storage bodies, truncation, unsupported macros, and body/version drift.
-3. **Implement AIF transport only.** Adapt `AifGovernanceRequest` to the approved provider envelope
-   and return only its structured JSON result. Keep context and evidence validation in
-   `AifGovernanceExtractor`; do not trust provider-supplied evidence references.
+3. **Adapt the existing AIF call to candidates.** Follow
+   [the candidate migration guide](ANALYZE_REVIEW_CANDIDATE_MIGRATION.md). Preserve existing internal
+   HTTP/authentication/TLS/proxy configuration; reuse the pure request builder and tool decoder.
+   Return only the candidate object from `AifTransport.analyze()`. Do not replace internal `aif.py`
+   wholesale or leave old six-stage extraction running behind the real Analyze Review button.
 4. **Run new-input analysis acceptance.** Use a synthetic page that is not one of the bundled
-   fixtures. It must reach the shared Human Review. Repeat with one invalid quote and confirm the
-   response is rejected before Human Review.
+   fixtures. Verify one complete-source model call reaches candidate Human Review, then require
+   explicit field/outcome completion and final source validation before outputs. Unknown/stale IDs
+   must reject the response; valid but misclassified proposals must remain correctable by a human.
 5. **Confirm ADO mappings read-only.** GET the already-created designated synthetic item without a
    cookie jar. Verify the approved authentication scheme independently; do not infer that Bearer and
    PAT Basic authentication are interchangeable.
@@ -84,10 +87,20 @@ closed until a deterministic conversion rule and tests are approved.
 
 ### AIF
 
-The request includes the exact SI text, transcript, review context, JSON schema constraints,
-provider configuration identity, and source fingerprints. The internal transport may translate the
-wire envelope but must not omit or replace those facts. Provider errors must map to the existing safe
-categories without exposing response bodies or internal diagnostics to the UI.
+The request binds exact SI/transcript snapshots, confirmed context, provider identity, contract and
+source-index versions. The pure `build_candidate_request_body()` sends complete sources once as
+annotated lines, with the small `emit_review_candidates` tool schema. The model returns only
+`items` containing `kind`, `text` and `evidence_source_ids`; context and evidence quotes remain
+application-owned. Decode one expected tool's JSON-string arguments once with
+`decode_candidate_tool_response()`, then return the candidate object to the extractor. Refusal,
+timeout, truncation, malformed or ambiguous output must map to safe errors without repair/retry or
+synthetic fallback. Preserve the internal transport's existing outer HTTP JSON handling.
+
+Human Review now requires explicit finding title/severity/status, action priority and outcome;
+optional owner/date values start blank. Completed results carry bounded extraction scope. Existing
+ADO owner/date/parent checks remain unchanged. The local helpers do not establish live connectivity
+or semantic accuracy. See the [ready OpenCode instruction](OPENCODE_ANALYZE_REVIEW_MIGRATION_PROMPT.md)
+for the bounded internal task and separate button-to-output acceptance.
 
 ### Azure DevOps
 
@@ -117,7 +130,8 @@ Complete this record in the approved internal system, not in this public reposit
 | --- | --- | --- |
 | Previously unbundled synthetic Confluence page read and canonicalized | Not run | Page/version identity and redacted request/response structure |
 | New synthetic input reaches shared Human Review | Not run | Provider configuration identity and acceptance timestamp |
-| Invalid provider quote is rejected before Human Review | Passed with fake; live not run | Safe error category and test case identifier |
+| Unknown/stale candidate source ID is rejected before Human Review | Local candidate tests; live not run | Safe error category and test case identifier |
+| Valid but misclassified candidates can be corrected, completed and confirmed | Synthetic workflow tests; live not run | Original candidate quality and separate human-reviewed final outcome |
 | Existing synthetic ADO item read without cookies | Not run | Approved auth scheme, status, ID/revision, verified field names |
 | One separately confirmed Create and GET read-back | Passed with in-memory fake; live not run | Correlation, ID/revision, redacted field comparison, operator |
 | Stale, duplicate, and unknown-result branches | Passed with fakes; live not run | Test identifiers and reconciliation outcome |

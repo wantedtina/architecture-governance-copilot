@@ -97,10 +97,18 @@ Run tests and both Ruff checks after application changes. Run `git diff --check`
 The demo drafter supports user-supplied evidence within the bundled synthetic workspace using
 deterministic topic grouping and literal source excerpts. It is not general semantic AI drafting.
 The exact canonical package still produces its frozen draft. Offline review supports edited
-transcripts through literal candidate grouping and valid editable metadata, with unclassified text
-retained for human review. Its SI remains fixture-bound: a materially edited or custom-generated SI
-requires a future approved review provider. Internal fake supports edited transcript/metadata through a request-aware synthetic transport,
-while retaining its separate fixed SI and strict AIF context/evidence contract.
+transcripts through literal finding/action candidate grouping and valid editable metadata.
+Unclassified text remains available in complete source context; it is not Missing Evidence.
+Both analysis modes return source-bound candidates, never a completed GovernanceResult or default
+business values. Human completion and explicit confirmation build the final domain result and
+revalidate original evidence. Findings/Actions are the only automated categories; excluded
+categories must be disclosed as not extracted, and the outcome is human-completed.
+
+The SI remains fixture-bound: a materially edited or custom-generated SI requires a future approved
+review provider. Internal fake supports edited transcript/metadata through a request-aware synthetic
+transport while retaining its separate fixed SI and strict candidate/source/context binding.
+The pure AIF candidate protocol helper adds no network connection and must not replace internal
+HTTP/authentication/TLS/proxy code during migration.
 
 Internal fake accepts free-form nonblank owners and governance tickets via deterministic local
 simulated aliases, never enterprise identity/parent verification. Missing required Delivery fields

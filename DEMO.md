@@ -1,530 +1,156 @@
-# Architecture Governance Copilot — Demo Plan
-
-Document role: `VERIFIED_BASELINE_DEMO_PROCEDURE`. This file demonstrates the checked-out baseline;
-it does not authorize application changes or define future implementation scope.
-
-## Demo objective
-
-In less than four minutes, demonstrate the independent governance-review workflow: acquire a
-versioned authoritative synthetic Solution Intent, transcript, and metadata; confirm their exact
-manifest; produce a source-backed governance proposal; let a human reviewer edit and confirm the
-record; and generate review minutes plus Azure DevOps work-item previews. Briefly show that SI
-drafting is a separate peer workflow. Formal governance decisions remain with the Domain Architect.
-
-The target runtime is **3 minutes 35 seconds**, leaving a 25-second safety margin. The demo does
-not show a second review round.
-
-The landing page exposes **Draft a Solution Intent** and **Review a Solution Intent** as peer
-tasks. The recording follows the three-step review path: **Review Inputs → Human Review → Generated
-Outputs**. Drafting has its own two-step path and never supplies an authoritative review source.
-
-## Synthetic scenario
-
-The fictional **Digital Payment Notification Service** team has prepared version **1.2** of its
-Solution Intent. Its status is `under_review`, and the demo covers review round 2 only. Fictional
-Domain Architect **Jordan Lee** reviews the SI with Lead Developer **Alex Chen** and Product
-Owner **Priya Shah** in a Teams-style meeting.
-
-The finalized synthetic SI contains concise sections for:
-
-- Document Information
-- Executive Summary
-- Scope
-- Conceptual Architecture
-- Detailed Application Design
-- Data Design
-- Availability and Resilience
-- Security
-- Observability
-- Deployment Design
-- Operational Support
-- Assumptions and Open Items
-
-The review scenario must yield:
-
-- a **Changes Requested** outcome;
-- three open findings covering traffic failover, missing RTO/RPO values, and production support
-  ownership;
-- the traffic-failover finding mapped to **Availability and Resilience**;
-- one confirmed decision accepting managed PostgreSQL as the system of record;
-- one risk that pending production database sizing may affect the planned August release;
-- two actions:
-  - Alex updates the resilience section and deployment diagram by 24 July 2026;
-  - Priya confirms RTO and RPO values by 25 July 2026;
-- one unresolved question about whether Redis should be used;
-- missing RTO/RPO values and production support ownership; and
-- evidence drawn from both the SI and the review transcript.
-
-The record may contain more supporting detail, but the recording should focus on these items. All
-names, documents, ticket IDs, dates, and quotes must be obviously synthetic.
-
-### Optional Internal fake acceptance rehearsal
-
-The opt-in Internal fake path uses a separate **Synthetic Order Routing Service** package and is
-not part of the primary four-minute recording. Its 1,083-word version 0.8 SI is represented by fake
-Confluence page `synthetic-page-204` version 8, and its 28-line transcript contains four fictional
-roles. The canonical fake AIF result proposes three findings, one decision, one risk, two actions, one
-open question, and two missing-evidence items.
-
-When rehearsing this path, enable it explicitly, load the three input components in a non-default
-order, confirm the exact manifest, inspect every Human Review collection, and restore any test edit
-or exclusion before confirmation. On Generated Outputs, select **Continue to Work Item Delivery**.
-Verify that both actions are Ready with mapped owners, dates, priorities, and parent 204. Select
-an action, choose **Preview Azure DevOps request**, inspect **Work item summary** and **Request JSON**,
-then **Confirm request → Create work item**. Verify the receipt and GET read-back. Repeat separately
-for the other action and confirm both receipts survive Back/Return navigation. Test a custom
-owner and ticket such as SYN-205 and verify successful fake Delivery. Then clear an owner/date,
-regenerate outputs, inspect the named blockers, and restore the required values. Excluding the preceding action must never permit an
-already succeeded or unknown surviving action to be created again. State that
-the entire path is synthetic and no-network; its greater fixture depth does not demonstrate live
-enterprise connectivity or general semantic extraction.
-
-## Preconditions
-
-- Use a clean local checkout with the finalized synthetic fixtures.
-- Complete `uv sync` before recording.
-- Start the app with `uv run streamlit run app.py` in the default demo profile.
-- For fake rehearsal, use development/test with explicit `AGC_INTERNAL_FAKE_ENABLED=1`.
-  The legacy flag-only command also resolves to development. Do not enable fake in explicit demo.
-- Production is an unavailable policy screen, not a demonstration or a production-ready deployment.
-- Use **Deterministic demo mode**.
-- Reset Streamlit session state before the take.
-- Use the rehearsed browser resolution and zoom.
-- Disable notifications and close unrelated or sensitive applications.
-- Confirm that the workflow works with network access disabled.
-
-## Exact click-by-click workflow and expected state
-
-### Step 1 — Launch the application
-
-**Action:** Start `uv run streamlit run app.py` and open the local Streamlit URL.
-
-**Expected state:**
-
-- **Architecture Governance Copilot** and the Solution Intent review subtitle are visible.
-- A single global disclosure states **Demo Mode · Synthetic Data · No External Connections**.
-- The workflow landing page is active.
-- Both peer workflow choices are visible.
-- Briefly note that drafting opens an authorized synthetic inventory and requires confirmation of
-  an exact fingerprint-bound `Selected Source Package`; it does not scan or contact a repository.
-- No analysis or outputs are displayed.
-
-### Step 2 — Enter the governance-review workflow
-
-**Action:** Point out **Draft a Solution Intent**, then click **Review a Solution Intent**.
-
-**Expected state:**
-
-- The browser navigates to **Review step 1 — Review Inputs**.
-- Review progress contains Review Inputs, Human Review, Generated Outputs, and conditional
-  Work Item Delivery. Local completion remains at Generated Outputs.
-- Offline demo mode is selected and no source is implied to be loaded.
-- Analyze is disabled.
-
-### Step 3 — Acquire the review package in independent parts
-
-**Click:** **Load synthetic transcript**, then **Load synthetic metadata**, then **Load authoritative
-SI snapshot**.
-
-**Expected state:**
-
-- Component loading works in any order and does not clear already valid inputs.
-- The SI is read-only and exposes synthetic page identity, version, retrieval time, canonicalizer,
-  and content fingerprint.
-- The SI opens in **Rendered** form and exposes **Canonical Markdown source** for exact inspection.
-- Transcript and metadata remain separately editable.
-- Readiness shows all three components as loaded, while Analyze remains disabled.
-
-### Step 4 — Confirm the exact review-input manifest
-
-**Click:** **Confirm review input manifest**.
-
-**Expected state:**
-
-- SI, transcript, and metadata each show **Confirmed**.
-- The exact source, transcript, metadata, mode, and provider identity are fingerprint-bound.
-- **Analyze review** becomes enabled only after confirmation.
-- No output is generated and no source is published.
-
-### Step 5 — Analyze the review
-
-**Click:** **Analyze Review**.
-
-**Expected state:**
-
-- A short processing panel validates the review package, runs governance extraction, and prepares
-  the human-review workspace.
-- Analysis completes after an intentional approximately 1.2-second deterministic demo transition.
-- The browser navigates to `/human-review`.
-- The progress indicator advances to review step 2.
-- **Review step 2 — Human Review** replaces the full input view.
-- A compact analyzed-input summary and **Draft Structured Review** appear.
-- Outcome shows **Changes Requested**.
-- Metrics show one decision, three findings, one risk, two actions, one open question, and two
-  missing-information entries.
-- Counted tabs organize Decisions, Findings, Risks, Actions, Questions, and Missing Information.
-- **Pending human changes** explicitly reports that current values still match the analyzed
-  proposal.
-- Every required item offers supporting evidence.
-- No generated minutes or ADO work items appear automatically.
-
-### Step 6 — Review the outcome and counts
-
-**Action:** Point to **Changes Requested** and scan the seven summary metrics.
-
-**Expected state:**
-
-- The structured proposal is clearly labeled draft.
-- Human review is visibly separated from deterministic analysis.
-
-### Step 7 — Make a human edit
-
-**Action:** Open **Actions · 2** and change the first action owner from **Alex Chen** to
-**Taylor Kim**.
-
-**Expected state:**
-
-- The edited owner remains in the form.
-- The pending summary reports one modified field and the Actions tab/item show one unconfirmed
-  pending item.
-- Evidence remains visible and unchanged.
-- The record remains a human-reviewed draft, not a formal SI approval.
-
-### Step 8 — Exclude the production-support finding
-
-**Click:** Open **Findings · 3**, then clear **Include in reviewed record** for **Undefined
-production support ownership**.
-
-**Expected state:**
-
-- The finding's evidence remains read-only in the current form.
-- The finding is marked for omission from the reviewed result.
-- The pending summary and Findings tab update, and the still-visible item is labelled excluded and
-  unconfirmed.
-- **Production support ownership is not specified** remains in Missing Information, so excluding
-  the proposed finding does not create a misleadingly clean record.
-
-### Step 9 — Confirm the reviewed record
-
-**Click:** **Confirm Reviewed Record & Generate Outputs**.
-
-**Expected state:**
-
-- A short processing panel validates the human-reviewed record, generates minutes, and prepares
-  two Azure DevOps work-item previews.
-- The UI confirms output generation without claiming formal SI approval.
-- The browser navigates to `/generated-outputs`.
-- The progress indicator advances to review step 3.
-- **Review step 3 — Generated Outputs** replaces the edit form.
-- A **Governance package ready** completion panel clearly marks the workflow as complete.
-- Summary cards show completion, outcome, one minutes artifact, and the work-item preview count.
-- **Start New Review** provides a deliberate reset for the next rehearsal.
-- The reviewed record excludes the production-support finding but retains the matching missing
-  information.
-- Two action work-item previews remain because no action was excluded.
-- Nothing is sent to an external service.
-
-### Step 10 — Show the generated minutes
-
-**Action:** Show the **Rendered** view, then briefly select **Markdown source**.
-
-**Expected state:**
-
-- The generated record shows **Changes Requested** and the edited action owner.
-- The Human Review change summary shows the owner edit and the excluded production-support
-  finding.
-- The evidence-to-output comparison shows the original source quote beside the Taylor Kim action,
-  its actual minutes entry, and its matching ADO preview.
-- The accountability notice says the record must be reviewed before publication.
-
-### Step 11 — Show the Azure DevOps work-item previews
-
-**Action:** Scroll to **Azure DevOps Work Item Previews**.
-
-**Expected state:**
-
-- Exactly two work-item preview cards are visible.
-- The first item is assigned to **Taylor Kim**.
-- Parent ID, due dates, priorities, tags, descriptions, and source indices are visible.
-- The page states: **No real Azure DevOps work item has been created.**
-
-### Step 12 — Close on accountability and scope
-
-**Action:** Return to the completion panel and point to **Start New Review** without clicking it.
-
-**Expected state:**
-
-- The complete human-controlled one-round workflow is clear.
-- The completion state and optional restart action are unambiguous.
-- Each workflow stage has a dedicated view with Back and Reset navigation.
-- Demo mode, synthetic data, and the preview-only integration disclosure remain visible.
-- Formal governance responsibility remains with the Domain Architect.
-- There is no review history, second round, SI diff, or automatic finding resolution.
-
-## Preliminary narration
-
-1. “A Solution Intent is the project's detailed architecture design. This PoC starts by drafting
-   one from a synthetic template, selected code context, and supporting notes.”
-2. “Drafting and review are separate tasks. Review starts from its own authoritative, read-only SI
-   snapshot rather than a locally generated draft.”
-3. “We can acquire the transcript, metadata, and SI in any order, but analysis stays disabled until
-   a human confirms the exact manifest.”
-4. “This finding maps back to the SI's Availability and Resilience section, and its evidence
-   includes both the document and the meeting.”
-5. “The machine proposes the record; the Domain Architect remains responsible for review and
-   formal approval.”
-6. “I’ll change one action owner and exclude the production-support finding; the underlying
-   missing information remains visible.”
-7. “Only the validated, human-reviewed state generates minutes and Azure DevOps work-item
-   previews.”
-8. “There is no live Confluence, Teams, or Azure DevOps integration and no multi-round workflow
-   in this MVP.”
-
-## Video structure
-
-| Time | Segment | Focus |
-| --- | --- | --- |
-| 0:00–0:20 | Problem and scope | SI governance problem, one-round PoC, human accountability. |
-| 0:20–0:35 | Choose workflow | Show the two peer tasks and enter Review. |
-| 0:35–1:10 | Review inputs | Load three components independently and confirm the manifest. |
-| 1:10–1:40 | Analyze | Show Changes Requested, counts, and read-only evidence. |
-| 1:40–2:15 | Human review | Edit one owner, exclude one finding, and emphasize human control. |
-| 2:15–3:15 | Confirm and generate | Show rendered/raw minutes and two ADO work-item previews. |
-| 3:15–3:35 | Close | State real versus mocked scope and no multi-round behavior. |
-
-Hard stop at 3:35. Do not show environment setup, code, a second review round, optional LLM mode,
-or every output field.
-
-## What is real and what is mocked
-
-### Real in the PoC
-
-- Loading local synthetic SI and transcript content.
-- Generating a fixture-backed SI draft from local synthetic context.
-- Validating one-round review metadata and results with Pydantic.
-- Distinguishing SI evidence from transcript evidence.
-- Mapping findings to SI sections where supported.
-- Showing findings, decisions, risks, actions, questions, and missing information.
-- Editing and removing proposed review items in the session.
-- Guided one-stage-at-a-time navigation with workflow-local progress.
-- Explicit human confirmation before output generation.
-- Generating deterministic structured output and minutes from the reviewed record.
-- Generating local JSON-ready mock ADO action work items.
-- Showing normalized human changes and tracing an action from immutable evidence into minutes and
-  its ADO preview.
-- Automated validation and transformation tests.
-
-### Mocked or simulated
-
-- The SI resembles content normally held in Confluence but is loaded locally.
-- The transcript resembles Teams output but is loaded locally.
-- Deterministic analysis returns a curated fixture for the bundled pair.
-- Offline ADO action work items are previews and are never submitted. An opt-in development mode
-  can send an exact separately confirmed request only to an in-memory fake gateway.
-- No identity, authorization, persistence, audit history, or production operations exist.
-- The `review_round` field does not implement multi-round tracking.
-
-## Deterministic demo mode
-
-- It is the default and required recording mode.
-- It matches both bundled inputs and validated metadata.
-- It returns a known `GovernanceResult` fixture.
-- It requires no LLM, API key, SDK, network, Confluence page, Teams meeting, or ADO account.
-- It fails clearly when either input does not match the sample.
-- The narration must disclose that it is fixture-backed.
-- It proves review, traceability, human control, and downstream generation—not general-purpose
-  extraction intelligence.
-
-## Failure fallbacks
-
-| Failure | Response |
+# Architecture Governance Copilot — Demo Procedure
+
+Document role: `CURRENT_DEMO_PROCEDURE`. This describes the candidate workflow. The 14 September
+recordings under `video/` are historical; their six-category review screens are not the current
+acceptance target. Verification evidence belongs in the active/completed execution plan.
+
+## Demonstration objective
+
+Show one coherent review: acquire an authoritative synthetic SI, transcript and metadata; confirm
+the exact manifest; Analyze Review; inspect finding/action candidates and complete human review;
+generate consistent records; then use the already-configured Delivery capability where available.
+Briefly show the independent SI-drafting entry point. The Domain Architect retains formal
+architecture authority throughout.
+
+Analysis supplies candidate descriptions and source IDs only. It does not choose business values or
+approve the SI. Decisions, Risks, Open Questions and Missing Evidence are not extracted in this
+version. Their exclusion does not mean the source contains none.
+
+## Preparation
+
+1. Run `uv sync`, then `uv run streamlit run app.py` for Offline. To rehearse Internal fake use
+   `AGC_DEPLOYMENT_PROFILE=development AGC_INTERNAL_FAKE_ENABLED=1 uv run streamlit run app.py`.
+2. Use synthetic data only. Internal fake is entirely in memory and makes no network requests.
+   Production remains an unavailable capability screen and must not fall back to synthetic work.
+3. Preserve another running server by selecting an available dedicated port when necessary.
+4. Rehearse the full workflow at the recording resolution before timing a take. Required human
+   fields now start blank; allow time to complete them instead of relying on old fixture defaults.
+5. Use **Start New Review** for an ordinary review reset. For repeated fake Create demonstrations,
+   use the separately confirmed **Start new demo run** only in development/test Internal fake.
+   It clears simulated results; ordinary resets retain reconciliation facts.
+
+## Current synthetic packages
+
+| Mode | Authoritative SI | Canonical candidates | Follow-up actions described by source |
+| --- | --- | --- | --- |
+| Offline | Digital Payment Notification Service, version 1.2 | Three findings, two actions | Alex Chen updates resilience/design by 24 July 2026; Priya Shah confirms RTO/RPO by 25 July 2026. |
+| Internal fake | Synthetic Order Routing Service, version 0.8 | Three findings, two actions | Riley Chen documents retry controls by 18 September 2026; Avery Patel schedules/documents failover exercise by 21 September 2026. |
+
+Candidate counts belong to these synthetic fixtures, not a runtime requirement. The model contract
+also accepts zero items, finding-only results, and different valid candidate counts. Complete source
+text includes decisions, risks and other discussion even though those categories are not extracted.
+
+## Main click-through
+
+1. At the landing page, point out **Draft a Solution Intent** and enter **Review a Solution Intent**.
+   Review and drafting are independent; a confirmed local draft never silently becomes the review SI.
+2. Load the synthetic transcript, metadata and authoritative SI snapshot in any order. Inspect the
+   SI's page/version/source identity. Sources remain independent; loading one preserves the others.
+3. Inspect and select **Confirm review input manifest**. Analyze is unavailable until the exact
+   source/transcript/context/provider package is confirmed.
+4. Select **Analyze Review**. Successful analysis opens Human Review with candidate text, original
+   source evidence and the extraction-scope disclosure. No minutes or work items are generated.
+5. Inspect one finding's SI and transcript evidence. Open the complete sources to inspect surrounding
+   discussion, including later classification. Explain that traceability does not certify a model
+   interpretation. Required selectors and optional owner/date fields are initially blank.
+6. For each retained finding, supply a short title and explicitly select severity and status. Edit
+   the description if appropriate. For each retained action, inspect/edit its text and explicitly
+   select priority. Enter owners and dates from the source if they should appear in the final record;
+   the application does not silently parse them from candidate text.
+7. Select the review outcome explicitly, such as **Changes Requested** for the canonical scenario.
+   This is a human-completed record field, not automatic architecture approval.
+8. Demonstrate one human correction: edit candidate text or reclassify finding/action. Complete the
+   newly relevant required fields. Evidence and stable identity remain unchanged. Restore the kind
+   when appropriate for the scenario. Alternatively exclude an out-of-scope proposal. An excluded
+   incomplete item does not block confirmation and remains visible during review.
+9. Select **Confirm Reviewed Record & Generate Outputs**. Missing required fields must prevent
+   completion. With valid fields, full domain and original-source evidence validation run, and the
+   app advances to Generated Outputs with minutes and one preview per retained action.
+10. Show the structured JSON, rendered minutes, and evidence-to-output comparison. Confirm that
+    human values agree across outputs. The four excluded categories say **Not extracted in this
+    version; no conclusion about whether such items exist.** JSON carries typed scope metadata,
+    and work-item descriptions retain scope and the formal-governance authority note.
+11. Download the local records if desired. Offline is complete here; Delivery reports unavailable
+    because no provider is configured. No-action records report Delivery not applicable.
+
+For the Internal fake canonical demonstration, a convenient explicit human-completion rehearsal is:
+
+| Field | Source-supported rehearsal value |
 | --- | --- |
-| App is not running | Restart with the documented `uv` command and begin a new take. |
-| SI or transcript does not load | Reload the affected component and restart the take if needed. |
-| Deterministic input mismatch | Reload both bundled inputs without editing them before Analyze. |
-| Analysis fixture fails validation | Stop; align models and fixture before recording. |
-| An edit is lost | Stop; repair session-state behavior before making the human-review claim. |
-| Confirmation is blocked | Restore the rehearsed valid edit or reanalyze; never bypass validation. |
-| Outputs ignore the edit | Stop; fix generation from reviewed state before recording. |
-| Provider fails | Stop the affected review. Never substitute synthetic results; begin a separately labelled demo session deliberately if needed. |
-| Layout hides evidence | Restore rehearsed zoom and collapse unrelated sections. |
-| Runtime approaches 3:35 | Stop and record a shorter take; preserve evidence and confirmation steps. |
-| Network disconnects | Continue; deterministic mode is offline. |
+| Outcome | Changes Requested |
+| Finding titles | Retry controls; Regional failover evidence; Retention approval |
+| Finding severity/status | Reviewer selects suitable values after inspecting the evidence. |
+| Action priorities | Reviewer selects suitable values; no default is supplied. |
+| Retry action owner/date | Riley Chen / 2026-09-18 |
+| Failover action owner/date | Avery Patel / 2026-09-21 |
 
-## Recording checklist
+These are operator-entered rehearsal values, never automatic application defaults. Choosing not to
+enter optional owner/date values is valid for local outputs, but configured Delivery stays blocked.
 
-### Content
+## Internal fake Delivery
 
-- [ ] SI, transcript, people, ticket, and dates are synthetic.
-- [ ] Only one review round—round 2—is shown.
-- [ ] The landing page shows the two peer workflows.
-- [ ] Review progress contains three local artifact steps and a conditional Work Item Delivery step.
-- [ ] Transcript, metadata, and SI are loaded independently.
-- [ ] The authoritative SI is read-only and versioned.
-- [ ] Analyze stays disabled until the exact manifest is confirmed.
-- [ ] Changes Requested is shown.
-- [ ] At least one finding maps to an SI section.
-- [ ] One confirmed decision is visible.
-- [ ] One risk is visible.
-- [ ] Two actions are visible.
-- [ ] The production-support finding is visible before exclusion and absent from generated
-  findings, while its Missing Information entry remains.
-- [ ] SI and transcript evidence are both demonstrated.
-- [ ] The human edit persists.
-- [ ] Outputs remain hidden until reviewed-record confirmation.
-- [ ] Generated outputs reflect the edit.
-- [ ] ADO content is clearly labeled preview-only and not submitted.
+1. From completed outputs, select **Continue to Work Item Delivery**.
+2. Inspect each retained action's owner, mapped simulated assignee, due date, priority and parent.
+   Missing owner/date/parent blocks request preparation. Use **Back to Human Review**, correct the
+   draft and reconfirm outputs. Free-form nonblank owner/ticket values use deterministic local
+   simulated mappings, never enterprise identity or parent verification.
+3. Select one ready action and choose **Preview Azure DevOps request**. Compare **Work item summary**
+   with **Request JSON**. No request has been sent at this point.
+4. Select **Confirm request**, then **Create work item**. Inspect the fake receipt and GET read-back.
+   Succeeded, submitting and uncertain operations must not allow direct repeat Create.
+5. Deliver the other ready action separately. Verify that Back/Return preserves receipts and local
+   outputs. Excluding or reclassifying another candidate must not shift the surviving action into
+   an unprotected identity. Changed evidence IDs, candidate wording or order do not prove a new action.
+6. End with local artifact completion, separate Delivery status and human accountability visible.
+   No real Azure DevOps record has been created by this checkout.
 
-### Technical rehearsal
+## Targeted acceptance rehearsals
 
-- [ ] `uv sync` succeeds.
-- [ ] `uv run pytest` passes.
-- [ ] `uv run ruff check .` passes.
-- [ ] `uv run ruff format --check .` passes.
-- [ ] `uv run streamlit run app.py` starts the implemented app.
-- [ ] Deterministic mode works offline.
-- [ ] The exact click path succeeds twice before recording.
+- **Incomplete completion:** try confirming before outcome/severity/status/priority/title selection;
+  expect localized corrections and no eligible outputs. Excluded incomplete items are ignored.
+- **Unknown optional fields:** keep owner/date blank; local records retain unknown values, while
+  configured Delivery names the missing requirements.
+- **Human semantic correction:** replay a synthetic five-finding/two-action candidate response with
+  the two extra findings corresponding to alert thresholds and support roster. It is structurally
+  valid and reaches review. Inspect the later explicit source clarification, exclude those two
+  candidates and retain the three findings/two actions. This is a constructed quality test, not a
+  transcription of a live golden response. Do not hard-code topics or target counts in the parser.
+- **Edited transcript:** preserve the bundled SI, edit transcript/valid metadata, reconfirm the
+  manifest and Analyze. Current literal finding/action evidence is used; unmatched lines remain in
+  complete context. Structured owner/date/business values remain blank for human entry.
+- **Stale or failed analysis:** change inputs/provider binding or fail a same-input Analyze retry;
+  old analysis cannot remain eligible. Direct navigation must not recover old outputs.
+- **Pending and failed confirmation:** unsubmitted edits preserve the last confirmed snapshot with
+  a pending-edit disclosure. An explicit invalid reconfirmation revokes old output eligibility.
+- **Empty analysis:** zero or all-excluded candidates still require explicit outcome and confirmation;
+  outputs do not imply the four excluded categories are absent.
+- **State and delivery:** ordinary reset retains reconciliation history. Only the confirmed fake
+  new-demo-run command can discard local simulated records. Production/non-fake state is protected.
+- **Separate drafting:** save custom synthetic evidence, confirm Context, generate/edit/confirm a
+  draft and download it. Review state does not become populated from that draft.
 
-### Recording safety and quality
+Check desktop and narrow layouts for readable source evidence, visible validation errors, primary
+controls, route identity and console errors. Programmatic tests cover malformed envelopes, unknown
+IDs, provider failures, reanalysis identity drift and unknown delivery outcomes.
 
-- [ ] Rehearsal is 3:35 or shorter.
-- [ ] Notifications and unrelated applications are closed.
-- [ ] No credentials, secrets, account data, or confidential material are visible.
-- [ ] Text is legible at the recording resolution.
-- [ ] Cursor movement and scrolling are easy to follow.
-- [ ] Audio is clear.
-- [ ] Narration states synthetic data, offline analysis, human control, and preview-only outputs.
-- [ ] Final video is shorter than four minutes.
-- [ ] Exported video is played through once before submission.
-- [ ] Submission requirements and the 14 September 2026 deadline are confirmed.
+## Suggested narration
 
-## Project Context acceptance walkthrough
+“The application starts with a confirmed SI, transcript and review context. Analysis proposes only
+findings and explicitly stated follow-up actions. Each candidate points back to original evidence,
+and I can inspect the full discussion. I correct the interpretation and enter the required review
+fields myself. Only my valid confirmation produces the complete record and consistent action
+outputs. Categories outside this extraction scope are disclosed. Delivery has its own exact
+request preview, confirmation and reconciliation. The Domain Architect retains formal authority.”
 
-Open **Draft a Solution Intent**, then **Open Demonstration Project**. The governed template and
-governance metadata are read-only. Select **Repository** and its **Repository revision** from the
-synthetic inventory; this does not connect to ADO or discover live permissions.
+## Internal live demonstration
 
-Supporting evidence starts empty. Use **Add notes** or upload synthetic UTF-8 `.txt`/`.md` files and
-click **Add uploaded documents**. Inspect, edit, or remove their text. Each item is limited to 1 MiB,
-with at most 10 items. Custom text is retained across refresh and navigation, but the deterministic
-provider assembles custom Evidence into a template-shaped offline draft. No sample is silently substituted.
+The user's photographed AIF probe supports feasibility of a single tool response. It showed five
+findings and two actions, including two out-of-scope findings and action dates weakened to “the
+proposed date.” It is not raw replay evidence or an app end-to-end pass.
 
-For the offline generation walkthrough, remove custom items and choose **Add sample evidence**.
-Click **Save evidence**, inspect the source manifest, then click **Confirm Context & Continue**, generate the draft, and complete
-human confirmation. Returning to Project Context and editing evidence revokes that draft's
-confirmation and artifacts. Uploaded content remains session-local and is not externally verified.
-
-Evidence changes require **Save evidence** before **Confirm Context & Continue**. Saving is local to
-the session; the visible status changes back to unsaved after editing, adding, or removing content.
-Valid saved custom evidence can reach the drafting step. The existing offline demo drafter accepts custom Evidence and reflects it in the draft.
-No API or additional mode is required.
-
-Custom Evidence drafting uses the existing demo workflow: save, confirm Context, generate, edit,
-and human-confirm. English keyword grouping places literal source excerpts into template chapters;
-unmapped text remains in the complete source appendix. Missing design details remain To be confirmed.
-This is deterministic demo assembly, not semantic AI analysis; no external API is called. The exact
-sample package retains its canonical output. Custom drafts do not become supported inputs for the
-governance review extractor, which still requires the bundled authoritative SI.
-
-Project Context displays SI Template, Repository context, and Governance Metadata in independently
-expanded sections by default; users may collapse them after review. Evidence appears once in its
-editable input area. Governance metadata remains read-only. Source identity details and the full
-source-package manifest are collapsed by default and remain available for traceability inspection.
-
-Workflow pages keep the current primary action in a shared fixed bottom area: Context confirmation;
-draft generation/confirmation/download; review-input confirmation/analysis; reviewed-record
-confirmation; continue to delivery; and the current ready delivery preview/confirmation/create
-action. Secondary actions remain inline. Existing disabled conditions, human confirmation, and
-protected delivery outcomes still apply. The page reserves bottom space for readable scrolling.
-
-Human Review shows outcome and item-level supporting evidence expanded by default. Source labels,
-location metadata, and exact quotes remain read-only. Users may collapse evidence after inspecting
-it; items without a direct quote explicitly say so. Human confirmation remains mandatory.
-
-Human Review distinguishes reviewer edits with highlighted cards and explicit Edited by you /
-Excluded by you / Needs correction labels. Changed fields show Original and Your edit values nearby;
-long comparisons expand on demand. Tabs count edited/excluded/invalid items, while the fixed
-confirmation area summarizes unconfirmed changes. Restoring the original normalized value removes
-its change indication. Source evidence remains read-only and separate from reviewer changes.
-
-Edited Offline review transcripts use current literal evidence and line references. Unclassified
-lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
-The canonical transcript retains its original result with current editable metadata. Review category,
-severity, priority, owner, date and outcome still require human inspection and confirmation.
-Shared operation failures remain visible above the persistent action area, including on narrow
-screens. Input corrections clear stale errors; delivery history and protected results remain intact.
-
-For a predictable edited-transcript demonstration, enter lines such as:
-
-```text
-Finding: synthetic failover is not defined.
-Action: test synthetic recovery.
-Risk: capacity is uncertain.
-Question: who owns the recovery test?
-Additional context for manual review.
-```
-
-Edit Domain Architect or review round, confirm the input manifest, and analyze. Inspect current
-line evidence, assign the action owner/date during Human Review, and confirm before generating
-outputs. Unclassified content can be clarified in the transcript and reanalyzed after confirming
-the changed manifest. No automatic approval or real API call is demonstrated.
-
-In demo/development (and automated test), Human Review permits every outcome without mandatory
-transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
-its generated record carries non-production human provenance. Supporting transcript lines remain
-optional, read-only references. Provider-generated stated outcomes still require source evidence.
-Production remains unavailable pending internal integration and separate release acceptance; these
-demo refinements do not define or approve future production outcome policy.
-
-Internal fake in development/test accepts edited transcript and editable review metadata through
-its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
-changed text uses the same conservative literal grouping as Offline without invoking that provider.
-AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
-supported through deterministic local simulated mappings; no sample allowlist is required.
-Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
-no real AIF, Confluence or ADO is used.
-
-
-Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
-`by 18 September 2026` as candidate action owner/date evidence. Dates require an explicit `by`,
-`due` / `due on`, or trailing `due date` cue. Invalid, multiple or unsupported dates remain unset.
-An ownership acknowledgement is attached to a preceding action only when speaker, date and literal
-non-date task words uniquely match; otherwise it remains an unclassified line for human review.
-This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
-
-Human Review labels owner/date as required for configured fake Delivery, offers optional sample
-owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
-choices, not automatic assignments. Local output confirmation remains available for incomplete
-actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
-now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
-
-
-Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
-receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque
-positive local IDs. These IDs do not represent verified enterprise users or existing ADO records.
-Review Inputs shows the simulated parent ID; Human Review shows the simulated assignee. Reviewed
-names and ticket text remain unchanged in outputs. Preview confirmation binds these resolved maps;
-changing a reviewed value revokes the preview while stable correlations retain duplicate guards.
-Offline continues to accept custom review values for local outputs, without a Delivery capability.
-
-
-Delivery action feedback: Preview brings the prepared request into view and explains that nothing
-has been sent. Confirm moves attention to the confirmed/not-sent notice and the Create next step.
-Create shows a submission notification, then focuses the selected result with receipt or failure/
-reconciliation guidance. Floating actions repeat the current state and next step. Focus/scroll is
-one-shot per explicit action, respects reduced motion, and is cleared when the preview becomes
-stale. Normal reruns do not request focus. No confirmation or duplicate-protection rule changes.
-
-
-For repeat Internal fake demonstrations, select **Start new demo run** in any review stage, read
-its cleanup scope, then choose **Clear demo run & restart**. Opening or closing the panel does not
-change state. Confirmation discards this session's review inputs, edits, outputs, request previews,
-simulated work items, receipts and delivery history, including uncertain simulated results. It
-preserves drafting and returns to empty Review Inputs in Internal fake. Load inputs and complete
-both human confirmations again; the same sample can be delivered in the new run without a restart.
-
-Ordinary **Reset review**, **Start New Review**, and **Reset all local demo state** continue to
-retain delivery reconciliation facts and duplicate protection. Only the explicit new-demo-run
-command discards the local simulation. It is available only in development/test Internal fake with
-a known local fake gateway, never Offline or production, and never deletes remote records.
+The [migration guide](docs/ANALYZE_REVIEW_CANDIDATE_MIGRATION.md) defines separate internal acceptance:
+preserve existing Confluence/AIF/ADO connection code, use the implementation-generated request,
+click the real Analyze Review button, verify exactly one model call, complete human review, inspect
+all outputs and exercise only already-authorized Delivery. Record semantic quality separately from
+successful human correction and workflow completion. Do not activate missing enterprise capabilities
+or production solely to complete this demo.

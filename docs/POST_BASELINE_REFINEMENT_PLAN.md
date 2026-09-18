@@ -1,13 +1,13 @@
 # Post-baseline refinement register
 
-Updated: 2026-09-11
+Updated: 2026-09-18
 
 Document status: `ACTIVE_CHANGE_REGISTER`
 
-Execution authority: `NONE` — Batch 23 completed and verified.
-The user approved splitting R9 into policy foundation now and live release acceptance later.
+Execution authority: `USER_APPROVED_BATCH_24` — the user explicitly authorized implementation
+on 2026-09-18 after reviewing the updated plan. R9b live release acceptance remains deferred.
 
-Active execution plan: `NONE`
+Active execution plan: `docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_24.md` (`IN_PROGRESS`).
 
 Acceptance scope: Current user feedback targets demo/development and its regression tests.
 Production product behavior is not accepted by these refinements; internal integration and R9b
@@ -990,7 +990,7 @@ During the current user-testing period:
 6. After accepted-scope planning is authorized, create the smallest coherent execution plan using
    `docs/exec-plans/README.md` and set the active-plan pointer at the top of this register. Keep the
    plan in `PROPOSED_AWAITING_USER_APPROVAL` and its items no higher than `Ready` until the user
-   explicitly approves the plan; move included items to `Verified` only when implementation
+   explicitly approves the plan; move included items to `In progress` only when implementation
    actually starts.
 7. Keep component details, implementation steps, detailed tests, progress, discoveries, and
    verification evidence in that execution plan rather than this register.
@@ -1000,7 +1000,7 @@ During the current user-testing period:
    in the execution plan; do not infer completion from a clean test run or the end of a session.
 
 No code, fixture, dependency, environment, or live-integration change is part of the current
-requirements-intake update.
+R28 is now authorized for execution in Batch 24 following explicit user approval.
 
 ### R24 — Traceable action details and early delivery guidance
 
@@ -1045,3 +1045,53 @@ requirements-intake update.
 - **Verification:** Batch 23; 558 tests and repository checks passed. Desktop/narrow Chrome
   verified two successful runs without restarting the app, explicit reset confirmation and
   retained within-run duplicate protection.
+
+### R28 — Bounded finding/action candidates before human-completed governance results
+
+- **State:** `In progress`
+- **Primary purpose:** Reduce the difficulty of integrating the internal AIF LLM through OpenCode
+  with GPT-5.4, particularly the actual Analyze Review button path, to complete the final hackathon
+  demo quickly while preserving the coherence of its existing workflows and outputs. Prioritize
+  directly reusable code, minimal internal adaptation, and end-to-end demonstration over general
+  abstractions or isolated protocol success.
+- **Origin and approval boundary:** On 2026-09-18 the user confirmed the target design and
+  explicitly requested inspection and a concrete execution plan for approval before code changes.
+  Earlier discussion/probe preparation did not authorize implementation. After the live-probe plan
+  revision, the user explicitly authorized implementation, verification, commit, and push on
+  2026-09-18. Batch 24 is the sole active implementation plan.
+- **Observed local behavior:** The local AIF boundary already makes one transport call with the
+  complete SI, transcript, and context, but expects a complete `GovernanceResult`. Offline and
+  Internal fake also populate the six-category result before human review. The reported internal
+  six-stage extraction and real HTTP transport are not present in this checkout.
+- **Accepted outcome:** Analyze Review returns only source-backed `finding` and `action`
+  candidates through the exact `{items: [{kind, text, evidence_source_ids}]}` contract. One model
+  call receives the complete SI, transcript, confirmed context, and deterministic source IDs.
+  The model classifies and describes explicitly stated issues/work; a finding does not imply an
+  action. Candidate structure and source references are validated before human review.
+- **Human completion:** Keep candidate state separate from a completed domain result. Humans
+  edit, exclude, and correct classifications, explicitly complete required business fields, and
+  confirm the result before output generation. Unknown business values have no invented defaults.
+  Preserve final domain/evidence validation, input invalidation, and existing ADO requirements.
+- **Probe-informed refinement:** A user-run live request produced a visibly conforming candidate
+  response but included two source-backed items from an excluded category. Treat structural/source
+  validation and semantic correctness as separate gates. Preserve complete review context for
+  human correction; do not fix category mistakes with extra model stages or hardcoded filtering.
+  Preserve explicitly stated action owners/dates in candidate text without populating structured
+  business fields. Detailed probe evidence and verification limits belong to Batch 24 and its
+  linked probe record, not to a claim of completed integration.
+- **Scope disclosure:** Decisions, Risks, Open Questions, and Missing Evidence are not automated
+  categories in this version. UI and generated records must distinguish “not extracted” from an
+  assertion that no such items exist. The review outcome is human-completed, not model-extracted.
+- **Compatibility and acceptance:** Preserve deterministic synthetic Offline/Internal fake paths,
+  source traceability, human governance authority, production synthetic denial, and no live-to-fake
+  fallback. Migrate active candidate fixtures and their tests together; keep historical full-result
+  fixtures clearly identified. This supersedes earlier full-result extraction, automatic business
+  field population, and unclassified-text-as-Missing-Evidence behavior for the new review path;
+  earlier verification records remain historical evidence.
+- **Internal handoff:** Provide focused reusable candidate/source/conversion modules and a bounded
+  migration guide with exact contract, prompt requirements, regression commands, and manual live
+  acceptance. Preserve internal Confluence and HTTP/authentication/TLS/proxy configuration; do not
+  require replacing the whole internal `aif.py`. Local tests cannot establish live AIF reliability.
+- **Non-goals:** No real enterprise connections, authentication changes, agent framework,
+  heuristic JSON repair, production activation, or video-production changes. No unresolved product
+  design decision; execution was explicitly authorized for Batch 24.

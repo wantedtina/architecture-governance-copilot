@@ -7,9 +7,10 @@ approved post-baseline implementation scope.
 ## Document purpose
 
 This document defines a hackathon proof of concept (PoC) for drafting and reviewing a Solution
-Intent (SI). The current execution horizon is the repository and sub-four-minute video submission
-due on 14 September 2026. The PoC proves one reliable, human-controlled drafting handoff and SI
-review round; it is not a production platform.
+Intent (SI). The 14 September submission is a historical baseline. The current refinement narrows
+automated review to finding/action candidates so the internal team can connect its existing AIF
+transport with less orchestration while preserving one complete human-controlled demo. The PoC
+is not a production platform.
 
 ## Domain context
 
@@ -56,14 +57,14 @@ produce an editable SI draft for human confirmation and manual transfer. Indepen
 authoritative synthetic SI snapshot, a synthetic Teams-style review transcript, and explicit
 review metadata, confirm their exact manifest and produce a structured proposal containing:
 
-- the current review-round outcome;
-- review findings mapped to SI sections where possible;
-- confirmed architecture decisions;
-- risks;
-- actions, owners, due dates, and priorities;
-- open questions;
-- missing governance information; and
-- supporting evidence from the SI or meeting transcript.
+- source-supported finding/action candidate descriptions;
+- original SI/transcript evidence resolved locally from versioned source IDs; and
+- complete source context for human inspection.
+
+The reviewer supplies required titles and business classifications, optional owner/date values, and
+the outcome. Decisions, Risks, Open Questions, and Missing Evidence are outside automated scope;
+they are not treated as absent or inferred into findings. Source traceability does not prove that
+a candidate's interpretation is correct. Human review can edit, exclude, and reclassify candidates.
 
 After human review and confirmation of the reviewed record, generate:
 
@@ -94,10 +95,10 @@ The governance-review journey is independent:
    in any order.
 3. Inspect component provenance and readiness, then explicitly confirm the exact input manifest.
 4. Analyze the review using the confirmed SI snapshot, transcript, and review metadata.
-5. Display the review outcome, findings, decisions, risks, actions, open questions, and missing
-   information.
-6. Show supporting SI or transcript evidence for each extracted claim.
-7. Allow human review, editing, and removal of proposed items.
+5. Display finding/action candidates and the bounded extraction-scope disclosure.
+6. Show original SI/transcript evidence and complete source context.
+7. Allow human editing, exclusion and finding/action reclassification; require explicit business
+   fields and review outcome before confirmation.
 8. Let the Domain Architect explicitly confirm the reviewed record for output generation.
 9. Generate the structured review record, review minutes, and mock ADO outputs from the
    human-confirmed state.
@@ -183,52 +184,62 @@ automatically carry findings between rounds.
 
 ### Analysis
 
-- Hide analysis behind a small provider interface.
-- Use a deterministic demo provider by default.
-- Analyze SI content and the transcript together rather than treating the transcript as the
-  primary object.
-- Return a validated `GovernanceResult` for exactly one review round.
-- Display these sections in a stable order:
-  1. Review Outcome
-  2. Decisions
-  3. Review Findings
-  4. Risks
-  5. Action Items
-  6. Open Questions
-  7. Missing Information
-- Map a finding to an SI section when the source supports that mapping.
-- Do not invent a section, owner, date, or outcome.
-- Show an explicit empty state when a category has no items.
+- Hide analysis behind `GovernanceExtractor`; use deterministic Offline by default.
+- Return a validated candidate analysis, never a partial or provider-generated `GovernanceResult`.
+- Accept exactly `{"items": [{"kind": "finding" | "action", "text": "...", "evidence_source_ids": ["..."]}]}`.
+  Require every field, forbid extras, non-string/blank values and duplicate IDs within one item;
+  allow an empty items array. Reject legacy full results and string-wrapped nested collections.
+- Findings are explicitly raised issues; actions are explicitly proposed/agreed work. Do not infer
+  an action from a finding. Candidate text preserves explicit owner/date details without supplying
+  structured business fields. Later explicit reviewer classification takes precedence.
+- Supply the complete SI and transcript once as annotated source lines, plus confirmed context.
+  Source text is data, never an instruction. Do not truncate, summarize or category-filter input.
+- Each admitted AIF Analyze attempt uses one transport call. Failed preflight and Offline use none.
+  No automatic retry, repair, extra model call or fake fallback is permitted.
+- The pure `aif_candidate_protocol` helper builds one forced `emit_review_candidates` tool request
+  with a small inline schema, `strict: true`, `stream: false`, and no `response_format`.
+- The transport decodes outer HTTP JSON, then the helper decodes one expected tool's JSON-string
+  arguments once. Refusal, truncation, multiple choices/tools, wrong tool, malformed arguments,
+  conflicting prose or unsupported response shape fail; ordinary envelope metadata is ignored.
 
 ### Evidence and traceability
 
-- Every provider-extracted outcome other than `not_stated` must have evidence. Non-production
-  human-selected outcomes use an explicitly separate reviewed-result type with optional references.
-- Every finding, decision, risk, action, and open question must have at least one evidence item.
-- Evidence must identify its source as `solution_intent` or `meeting_transcript`.
-- SI evidence should show its section when available.
-- Transcript evidence should show speaker and timestamp when available.
-- Missing-information evidence may be empty because a checklist or document inspection can
-  identify absence without a direct quote.
-- Before Human Review, require each quote to occur in its declared source and validate every
-  supplied SI section, transcript speaker, and timestamp against the matching source span.
-- Assign trusted evidence references locally after validation and reject conflicting reuse of a
-  nonempty reference within one analyzed snapshot.
+- `normalized-physical-lines-v1` normalizes newlines and outer whitespace consistently with source
+  fingerprints and assigns opaque type/digest/physical-line IDs. Repeated text stays position-distinct.
+- Keep exact original snapshots locally. Resolve cited IDs into original quotes and only locators
+  actually present in the source; reject unknown or stale IDs atomically for the entire response.
+- Context, provider identity, source fingerprints and contract/index versions are application-owned
+  analysis bindings. The provider does not echo or own context, quotes, locators, or scope metadata.
+- Every candidate has at least one source ID; every completed finding/action retains original,
+  read-only evidence. Complete source context remains accessible beyond selected citations.
+- Schema and source membership are mechanical checks, not proof of entailment, completeness or
+  correct classification. Structurally valid false positives reach human review for exclusion.
+- Confirmation reruns full domain validation and `validate_governance_evidence()` against the
+  analyzed snapshots. Historical full-result source-evidence rules remain compatible.
 
 ### Human review and confirmation
 
-- Allow the reviewer to edit meaningful extracted fields.
-- Allow the reviewer to remove proposed list items.
+- Keep an independent candidate review draft with stable identities and original analysis.
+- Allow text edits, exclusions, and finding/action reclassification without losing evidence.
+- Require human finding title, severity and status; action priority; and review outcome. Required
+  selectors start unselected, including finding status despite its legacy domain default.
+- Optional owner/date/category/recommended-change values start blank, never parsed from text.
+- Excluded incomplete items do not block confirmation; fields for another kind do not leak.
+- Empty/all-excluded proposals still require explicit outcome selection and confirmation.
 - Keep supporting evidence visible during review.
 - Treat evidence as traceability metadata rather than freeform text to casually rewrite.
-- Prevent output generation when the reviewed record fails validation.
+- Construct the complete domain result only at explicit confirmation; validate its fields and
+  original-source evidence before generating or storing any output atomically.
 - Require an explicit **Confirm Reviewed Record & Generate Outputs** action.
 - Advance to Human Review after successful analysis and to Generated Outputs after successful
   reviewed-result validation.
 - Show only the active routed stage, with browser-style Back and Reset navigation.
 - State that formal governance decisions remain the Domain Architect's responsibility.
 - Generate outputs from the confirmed, edited state rather than the original provider response.
-- Invalidate reviewed outputs after reanalysis or subsequent input edits.
+- Revoke prior candidate eligibility before every Analyze attempt, including unchanged-input
+  failure. Source/context/provider/version changes invalidate analysis and outputs.
+- Preserve the last confirmed snapshot during unsubmitted edits with pending disclosure; explicit
+  failed reconfirmation revokes output eligibility before validation.
 - Show a normalized summary of human field changes and exclusions after confirmation without
   treating evidence as an editable field.
 - Preserve routed form state during navigation; navigation alone must not invalidate analysis.
@@ -239,7 +250,7 @@ automatically carry findings between rounds.
 
 ### Action dates
 
-- Use nullable date inputs for Human Review action due dates, initialized from the analyzed value.
+- Use nullable date inputs for Human Review action due dates, initially blank until human entry.
 - Provide an explicit Clear due date action; preserve genuine `None` when cleared and deterministic
   ISO serialization in reviewed outputs.
 - Preserve dates across routed navigation and apply no unapproved business date bounds.
@@ -253,12 +264,13 @@ automatically carry findings between rounds.
   - review context;
   - review outcome;
   - findings with SI sections;
-  - decisions;
-  - risks;
   - actions;
-  - open questions;
-  - missing information; and
+  - explicit not-extracted notices for Decisions, Risks, Open Questions and Missing Evidence; and
   - evidence references.
+- Completed candidate results carry typed application-owned `extraction_scope`: automated
+  Findings/Actions and human-completed outcome. Excluded collections must stay empty and display
+  `Not extracted in this version; no conclusion about whether such items exist.` in UI/minutes.
+  JSON contains scope metadata; mock work-item descriptions carry the same scope and authority note.
 - Generate one mock ADO action work item per included reviewed action.
 - Allow mock work items to reference the parent ticket, SI section, and acceptance criteria.
 - In offline mode, clearly state that no payload is sent to Azure DevOps.
@@ -411,10 +423,11 @@ The PoC is done when:
 - The sample SI, matching review transcript, and metadata load together.
 - Basic review metadata identifies one SI review round.
 - Analyze works in deterministic mode without network or API credentials.
-- The seven required result sections appear in the planned order.
+- Findings/Actions appear as candidates; excluded categories are clearly labelled not extracted.
 - At least one finding maps to an SI section.
 - Evidence is visibly distinguished as SI or transcript evidence.
-- Review Outcome and all required list items contain valid evidence.
+- Candidate IDs resolve to original evidence; the explicitly human-completed outcome follows the
+  existing non-production provenance policy.
 - The reviewer can edit and remove proposed items.
 - Pending modifications, exclusions, affected sections, and validation issues are visible before
   confirmation and survive routed Back/Return without becoming an audit or approval record.
@@ -470,7 +483,9 @@ Governance service
     |       +--> AifGovernanceExtractor + in-memory fake (opt-in)
     |       \--> Real AIF transport (future internal work)
     |
-    +--> Source/reference validation + Pydantic one-round review models
+    +--> Candidate/source validation + independent human review draft
+    |       \--> Explicit confirmation + domain/evidence validation
+    |               \--> Completed GovernanceResult with extraction scope
     |
     +--> Review-record / minutes generator
     |
@@ -488,7 +503,11 @@ Governance service
   Review Inputs, Human Review, Generated Outputs, and Work Item Delivery.
 - `ui_support.py`: workflow identity, schema migration, scoped reset, provenance, readiness,
   manifest fingerprint, sample, optional-field, and reviewed-result helpers.
-- `models.py`: strict Pydantic enums and models for review-input manifests and one SI review round.
+- `models.py`: strict Pydantic enums and models for review-input manifests, completed results and scope.
+- `review_sources.py`: versioned deterministic source indexing and original-evidence resolution.
+- `review_candidates.py`: exact candidate contract and immutable source/context-bound analysis.
+- `candidate_review.py`: independent human draft, final conversion and action identity mapping.
+- `integrations/aif_candidate_protocol.py`: pure one-tool request builder/decoder with no HTTP.
 - `si_drafting.py`: drafting-provider protocol, deterministic provider, and drafting service.
 - `extractors.py`: provider protocol and deterministic fixture-backed provider.
 - `evidence_validation.py`: provider-neutral source-quote, locator, and reference validation.
@@ -501,7 +520,8 @@ Governance service
   in-memory fakes; no live transport implementation.
 - `publication.py`: exact-preview binding, separate confirmation, reconciliation, single-Create,
   read-back verification, and observable failure-state coordination.
-- `samples/`: frozen synthetic SI, review metadata, transcript, and expected result fixtures.
+- `samples/`: frozen synthetic sources, active candidate fixtures and legacy full-result examples.
+  `samples/README.md` identifies their roles; legacy domain examples are not runtime provider output.
 - `tests/`: validation and transformation tests independent of external services.
 
 Streamlit session state is the only runtime state. It holds the authorized drafting inventory,
@@ -542,7 +562,7 @@ Collection defaults use independent factories. All models serialize with
 | `SolutionIntentStatus` | `draft`, `under_review`, `changes_requested`, `conditionally_approved`, `approved`, `rejected` | Current overall SI lifecycle status. |
 | `ReviewOutcome` | `changes_requested`, `conditionally_approved`, `approved`, `rejected`, `pending`, `not_stated` | Outcome of this review round only. |
 | `FindingSeverity` | `low`, `medium`, `high`, `critical` | Impact of a review finding. |
-| `FindingStatus` | `open`, `resolved`, `deferred`, `accepted` | Finding tracking state; normally `open` in the MVP. |
+| `FindingStatus` | `open`, `resolved`, `deferred`, `accepted` | Human-selected finding tracking state. |
 | `RiskSeverity` | `low`, `medium`, `high`, `critical` | Severity of a risk. |
 | `ActionPriority` | `low`, `medium`, `high` | Priority of an action. |
 
@@ -584,7 +604,7 @@ identifier.
 | `category` | non-empty string or `None` | Optional. |
 | `si_section` | non-empty string or `None` | Optional mapping to the SI. |
 | `severity` | `FindingSeverity` | Required. |
-| `status` | `FindingStatus` | Defaults to `open`. |
+| `status` | `FindingStatus` | Legacy domain default `open`; candidate review requires explicit selection. |
 | `recommended_change` | non-empty string or `None` | Optional. |
 | `owner` | non-empty string or `None` | Optional; never invented. |
 | `due_date` | date or `None` | Optional. |
@@ -608,13 +628,14 @@ These models accept evidence from either source through `SourceEvidence`.
 | --- | --- | --- |
 | `context` | `SolutionIntentReviewContext` | Required. |
 | `review_outcome` | `ReviewOutcome` | Required. |
-| `outcome_evidence` | list of `SourceEvidence` | Provider results require evidence unless outcome is `not_stated`; non-production reviewer-selected results carry explicit human provenance instead. |
+| `outcome_evidence` | list of `SourceEvidence` | Standard domain results require evidence unless outcome is `not_stated`; non-production reviewer-selected results carry explicit human provenance instead. |
 | `findings` | list of `ReviewFinding` | Independent empty default. |
 | `decisions` | list of `Decision` | Independent empty default. |
 | `risks` | list of `Risk` | Independent empty default. |
 | `action_items` | list of `ActionItem` | Independent empty default. |
 | `open_questions` | list of `OpenQuestion` | Independent empty default. |
 | `missing_evidence` | list of `MissingEvidence` | Independent empty default. |
+| `extraction_scope` | `ReviewExtractionScope` or `None` | Required by candidate conversion; `None` permits legacy full-result examples. Scoped results reject nonempty excluded categories and carry the original analysis fingerprint for delivery reconciliation. |
 
 The result contains one round only. It excludes generated outputs, UI state, approval history,
 and multi-round history.
@@ -663,7 +684,7 @@ GovernanceExtractor.extract(
     solution_intent: str,
     review_transcript: str,
     context: SolutionIntentReviewContext,
-) -> GovernanceResult
+) -> ReviewCandidateAnalysis
 ```
 
 The governance service receives the provider explicitly. Provider-specific prompts, credentials,
@@ -695,27 +716,26 @@ The deterministic drafter:
 
 The deterministic review extractor:
 
-1. loads and validates the bundled synthetic SI, transcript, metadata, and expected result;
-2. normalizes line endings and outer whitespace and requires the bundled authoritative SI identity;
-3. accepts valid review round, date, Domain Architect and governance ticket edits;
-4. returns the original result with current metadata for the canonical transcript;
-5. groups edited transcript lines into literal keyword-based candidates; every nonblank line is
-   retained as an item or an unclassified manual-review entry under Missing Info; and
-6. leaves edited-transcript outcomes Not stated, extracts explicit owner/date candidates, and discloses medium
-   severity/priority as review defaults. Existing source-evidence validation still applies.
+1. loads the bundled synthetic SI, transcript, metadata and candidate fixture;
+2. requires the normalized authoritative SI identity while accepting valid editable metadata;
+3. returns frozen candidate proposals for the canonical transcript;
+4. uses conservative literal finding/action grouping for edited transcripts; and
+5. retains all unclassified text in complete source context without creating Missing Evidence or
+   filling outcome, severity, status, priority, owner or due date.
 
-No approval or semantic inference is claimed. The provider identity is offline-deterministic-v3,
-invalidating incompatible prior confirmations through existing provenance controls. No network,
-credential, model SDK, Confluence page, Teams API or ADO API is required.
+No semantic extraction or automatic approval is claimed. Source/context/provider/contract version
+bindings invalidate incompatible confirmations. No network, credential, model SDK, Confluence page,
+Teams API or ADO API is required.
 
-The opt-in Internal fake runtime uses a distinct 1,083-word Synthetic Order Routing Service SI,
-28 timestamped transcript lines across four fictional roles, and a canonical fake AIF response. The
-response contains three findings, one decision, one risk, two actions, one open question, and two
-missing-evidence items. The fake Confluence storage body canonicalizes exactly to the committed
-Markdown snapshot, and every proposed item is validated against exact SI or transcript evidence
-before locally trusted references are assigned. The richer package exercises the provider-shaped
-contracts and Human Review surface; it makes no network request. Edited transcripts use literal grouping and retain unclassified lines;
-editable metadata is carried into the result. The authoritative SI remains fixed.
+Internal fake uses a distinct 1,083-word Synthetic Order Routing Service SI, 28 timestamped lines
+across four fictional roles, and three finding/two action candidates. The fake Confluence body
+canonicalizes to the committed Markdown snapshot. The request-aware fake returns only candidates
+through the same one-call boundary and supports edited transcript/metadata for its fixed SI.
+Historical full-result fixtures remain unchanged as domain examples and never prefill Human Review.
+
+See [the migration guide](docs/ANALYZE_REVIEW_CANDIDATE_MIGRATION.md) for exact source/codec APIs,
+internal preservation requirements and separate live acceptance. A successful endpoint probe does
+not establish extraction quality or the app's button-to-output integration.
 
 ## Main technical and demo risks
 
@@ -727,14 +747,14 @@ editable metadata is carried into the result. The authoritative SI remains fixed
 | Findings are not traceable to the SI | Require typed evidence and map findings to SI sections where supported. |
 | Transcript is treated as the reviewed object | Keep SI content visually primary and require both documents as analysis inputs. |
 | The tool appears to approve architecture autonomously | Label the action as reviewed-record confirmation and state that formal decisions remain with the Domain Architect. |
-| Fixture and model drift | Validate the complete expected result in automated tests. |
+| Fixture and model drift | Validate active candidates, source IDs and explicit human-completion test data together. |
 | Streamlit reruns lose reviewed state | Define explicit state transitions and invalidate stale outputs. |
 | Generated outputs ignore human edits | Generate only from the validated reviewed model and test edited values. |
 | ADO previews look like live updates | Keep offline previews explicitly local; label fake publication as in-memory/no-network and require a second exact-preview confirmation. |
 | Provider evidence is plausible but unsupported | Match exact quotes and supported locators against immutable source snapshots before Human Review. |
 | Create is duplicated or times out ambiguously | Reconcile by correlation before Create, never retry automatically, and retain `unknown_result` for manual reconciliation. |
 | Multi-round capability expands the MVP | Store only `review_round`; exclude history, comparison, and resolution logic. |
-| Video exceeds four minutes | Use one round, one key finding, one decision, one risk, two actions, and one open item. |
+| Demo becomes fragmented | Rehearse one complete input-to-human-confirmation-to-output flow, with conditional Delivery. |
 | Network or LLM failure | Record in deterministic offline mode. |
 | Confidential data enters the demo | Use obviously fictional project, document, and people data only. |
 
@@ -784,7 +804,7 @@ confirmation; continue to delivery; and the current ready delivery preview/confi
 action. Secondary actions remain inline. Existing disabled conditions, human confirmation, and
 protected delivery outcomes still apply. The page reserves bottom space for readable scrolling.
 
-Human Review shows outcome and item-level supporting evidence expanded by default. Source labels,
+Human Review requires an explicit outcome selection and shows candidate supporting evidence. Source labels,
 location metadata, and exact quotes remain read-only. Users may collapse evidence after inspecting
 it; items without a direct quote explicitly say so. Human confirmation remains mandatory.
 
@@ -797,43 +817,27 @@ its change indication. Source evidence remains read-only and separate from revie
 Human Review retains the selected category when edits, exclusions, validation issues, or reverts
 change its tab counts. Switching categories remains an explicit user action within the review page.
 
-Edited Offline review transcripts use current literal evidence and line references. Unclassified
-lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
-The canonical transcript retains its original result with current editable metadata. Review category,
-severity, priority, owner, date and outcome still require human inspection and confirmation.
-Shared operation failures remain visible above the persistent action area, including on narrow
-screens. Input corrections clear stale errors; delivery history and protected results remain intact.
+Edited Offline and Internal fake transcripts use current literal evidence and versioned line IDs.
+Unclassified and out-of-scope lines remain in the full source viewer; they are not turned into
+Missing Evidence. Canonical inputs retain their frozen candidate proposals with current valid
+metadata. Candidate text can preserve an explicit owner or date, but structured owner/date fields
+remain blank until the reviewer enters them. Finding title, severity and status; action priority;
+and the review outcome all require explicit human completion. No medium/open/date defaults make an
+incomplete record appear ready.
 
-In demo/development (and automated test), Human Review permits every outcome without mandatory
-transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
-its generated record carries non-production human provenance. Supporting transcript lines remain
-optional, read-only references. Provider-generated stated outcomes still require source evidence.
-Production remains unavailable pending internal integration and separate release acceptance; these
-demo refinements do not define or approve future production outcome policy.
+In demo/development/test, human-selected outcomes use explicit reviewer-selected provenance with
+optional source references. This does not expand production outcome policy. Production remains
+unavailable pending internal integration and separate acceptance. Shared failures remain visible;
+a failed Analyze attempt cannot reuse the preceding analysis even when inputs are unchanged, and
+a failed explicit reconfirmation revokes old output eligibility. Unsubmitted edits retain the last
+confirmed snapshot with a pending-edit disclosure.
 
-Internal fake in development/test accepts edited transcript and editable review metadata through
-its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
-changed text uses the same conservative literal grouping as Offline without invoking that provider.
-AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
-supported through deterministic local simulated mappings; no sample allowlist is required.
-Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
-no real AIF, Confluence or ADO is used.
-
-
-Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
-`by 18 September 2026` as candidate action owner/date evidence. Dates require an explicit `by`,
-`due` / `due on`, or trailing `due date` cue. Invalid, multiple or unsupported dates remain unset.
-An ownership acknowledgement is attached to a preceding action only when speaker, date and literal
-non-date task words uniquely match; otherwise it remains an unclassified line for human review.
-This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
-
-Human Review labels owner/date as required for configured fake Delivery, offers optional sample
-owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
-choices, not automatic assignments. Local output confirmation remains available for incomplete
-actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
-now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
-
+Internal fake supports valid edited transcript/metadata for its own fixed SI through a request-aware
+synthetic transport. Candidate shape, source membership, confirmed-context binding and original
+evidence remain validated. Optional owners/dates stay unknown in local outputs; owner, due date
+and parent reference are still required for configured Delivery. Source, context, provider or
+contract-version changes require renewed input confirmation and analysis. No real AIF, Confluence
+or ADO is used.
 
 Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
 receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque

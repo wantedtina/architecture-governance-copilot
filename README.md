@@ -13,7 +13,8 @@ SI snapshot, a transcript, and explicit review metadata.
 A human Domain Architect remains responsible for reviewing, editing, and making the formal
 governance decision. Only a validated, human-confirmed reviewed record generates standardized
 review minutes and mock Azure DevOps outputs.
-The submission baseline supports the video and repository deliverables due on 14 September 2026.
+The 14 September submission materials remain historical. The current review path uses a bounded
+finding/action candidate contract to simplify the separate internal AIF integration.
 
 ## Final submission materials
 
@@ -42,12 +43,11 @@ The implemented deterministic Solution Intent Copilot can:
    any order;
 5. show component provenance and readiness, then require confirmation of the exact input manifest;
 6. analyze the confirmed review package with the deterministic fixture-backed extractor;
-7. display the outcome, findings, decisions, risks, actions, open questions, and missing
-   information;
+7. display source-backed finding/action candidates, with complete source context available;
 8. identify supporting evidence as either SI or transcript evidence;
 9. map findings to SI sections where supported;
-10. let a reviewer edit fields and exclude proposed items while evidence remains read-only and
-    live, unconfirmed change indicators show the affected sections; and
+10. let a reviewer edit, exclude, or reclassify candidates, supply required business fields and
+    select the review outcome while original evidence remains read-only; and
 11. validate the human-reviewed record before generating Markdown minutes and mock ADO action
    work items.
 
@@ -90,9 +90,9 @@ Authoritative synthetic SI snapshot + transcript + review metadata
         |                                 |
         v                                 v
 Extractor provider                 Pydantic models
-  - deterministic default            - review context
-  - opt-in internal fake              - findings and evidence
-                                      - decisions, risks, actions
+  - deterministic default            - candidate analysis + source IDs
+  - opt-in internal fake              - independent human review draft
+                                      - completed reviewed domain result
         |                                 |
         +----------------+----------------+
                          |
@@ -103,22 +103,31 @@ Extractor provider                 Pydantic models
                            guarded fake Create
 ```
 
-The deterministic extractor is the required offline demo path. It validates the bundled SI identity and current metadata. The original transcript returns
-an independent copy of the known result with current metadata; edited transcripts use literal
-candidate grouping and retain unclassified lines. It does not perform semantic extraction of
-arbitrary text. Pure deterministic generators now transform a validated result into Markdown
-review minutes and typed mock ADO action work items. `GovernanceReviewService` intentionally
-keeps analysis separate from output generation so the Streamlit UI can place human review and
-editing between them. Explicit session state holds only the current one-round inputs, analysis,
-reviewed record, generated outputs, stale-input fingerprint, and active route stage; there is no
-database.
+The deterministic extractor is the required offline demo path. It validates the bundled SI identity
+and current metadata. The canonical transcript returns frozen finding/action candidates; edited
+transcripts use conservative literal grouping. Complete source text remains available even when a
+line is not classified. No structured owner, date, severity, status, priority, or outcome is supplied
+by either analysis mode. This local behavior is deterministic, not general semantic extraction.
 
-An opt-in internal fake mode exercises Confluence read, AIF analysis, and guarded ADO Create
-contracts entirely in memory without network access. Its separate Synthetic Order Routing Service
-package contains a 1,083-word SI, a 28-line four-participant transcript, and representative
-nonempty findings, decisions, risks, actions, questions, and missing evidence. It is an
-integration-development aid, not evidence of live enterprise connectivity or general semantic
-extraction. Microsoft Teams ingestion and every real transport remain deferred.
+`GovernanceExtractor.extract()` and `GovernanceReviewService.analyze_review()` return a candidate
+analysis, not a partial `GovernanceResult`. A versioned physical-line source index resolves cited
+IDs into original evidence locally. Human Review starts required selectors unselected and optional
+fields blank. Only explicit, valid human confirmation constructs a completed result, validates its
+evidence against the analyzed sources, and generates consistent minutes and mock work items.
+
+The completed record declares automated Findings/Actions and a human-completed outcome. Decisions,
+Risks, Open Questions, and Missing Evidence state: **Not extracted in this version; no conclusion
+about whether such items exist.** Their legacy domain models remain available for historical records;
+empty collections must not be read as proof of absence. Scope is carried in JSON, minutes and mock
+work-item descriptions. Source traceability does not certify interpretation or formal approval.
+
+Opt-in Internal fake uses the separate Synthetic Order Routing Service package: a 1,083-word SI,
+a 28-line four-participant transcript, and three finding/two action candidates. It exercises
+Confluence read, one AIF-shaped candidate call, and guarded ADO Create entirely in memory. There is
+no real enterprise transport in this checkout. A pure request builder and tool-response decoder
+allow the internal team to reuse the contract without replacing its existing HTTP/authentication
+code. Start with [the migration guide](docs/ANALYZE_REVIEW_CANDIDATE_MIGRATION.md) and the
+[ready OpenCode instruction](docs/OPENCODE_ANALYZE_REVIEW_MIGRATION_PROMPT.md).
 
 See [SPEC.md](SPEC.md) for the complete domain and technical design and [DEMO.md](DEMO.md) for
 the planned recording flow.
@@ -145,6 +154,9 @@ architecture-governance-copilot/
 │       ├── __init__.py
 │       ├── models.py
 │       ├── extractors.py
+│       ├── review_candidates.py
+│       ├── review_sources.py
+│       ├── candidate_review.py
 │       ├── governance_service.py
 │       ├── si_drafting.py
 │       ├── ui_support.py
@@ -156,6 +168,7 @@ architecture-governance-copilot/
 │       └── integrations/
 │           ├── confluence.py
 │           ├── aif.py
+│           ├── aif_candidate_protocol.py
 │           └── azure_devops.py
 ├── samples/
 │   ├── si_template.md
@@ -164,7 +177,9 @@ architecture-governance-copilot/
 │   ├── solution_intent.md
 │   ├── review_metadata.json
 │   ├── review_transcript.txt
-│   └── expected_result.json
+│   ├── expected_candidates.json
+│   ├── internal_fake_review_candidates.json
+│   └── expected_result.json  # Historical full-result example
 └── tests/
     ├── test_models.py
     ├── test_sample_data.py
@@ -184,7 +199,8 @@ architecture-governance-copilot/
 
 The samples freeze one fully synthetic Digital Payment Notification Service review scenario.
 Automated tests validate its metadata, model compatibility, evidence quotes, scenario
-cardinality, and basic data safety.
+cardinality, and basic data safety. [samples/README.md](samples/README.md) identifies active
+candidate fixtures and historical full-result examples.
 
 ## Setup and commands
 
@@ -317,7 +333,7 @@ sources → inspect the exact Selected Source Package manifest → Confirm Conte
 Generate SI Draft → human edit/confirm → inspect provenance or download Markdown**.
 
 The review flow is: **Review a Solution Intent → load the authoritative SI, transcript, and metadata
-in any order → Confirm review input manifest → Analyze review → edit or exclude items → Confirm
+in any order → Confirm review input manifest → Analyze review → edit/exclude/reclassify candidates and complete required fields → Confirm
 Reviewed Record & Generate Outputs**.
 The application uses a synthetic workspace. Drafting accepts custom Evidence through offline
 topic grouping; governance review accepts edited transcripts and metadata within the bundled SI scenario. Human draft edits are preserved in the drafting workflow, but the deterministic offline
@@ -345,9 +361,10 @@ at most once per protected operation, and verifies the known identifier with GET
 its own receipt; another ready action may be delivered separately. Succeeded, submitting, and
 unknown results block direct resubmission. Failed and unknown delivery do not erase local artifacts.
 
-Original analyzed action positions survive exclusions for delivery correlation, while local output
-indices remain compact. Legacy compact-position correlations are also checked so retained history
-cannot silently lose duplicate protection. Changing a selected action or any bound result, source,
+Original candidate identity and position survive exclusions and finding/action reclassification for
+delivery correlation, while local output indices remain compact. Existing success or uncertain
+receipts survive candidate/source-reference migration; an unprovable correspondence blocks Create
+for reconciliation rather than treating a changed index or wording as proof of a new action. Changing a selected action or any bound result, source,
 target, or mapping revokes the active request confirmation. Human Review action dates use a nullable
 calendar control and an explicit **Clear due date** action; clearing preserves `None`, and no business date horizon is imposed.
 
@@ -357,7 +374,9 @@ approval remains a human responsibility.
 
 ## Current implementation status
 
-**The deterministic routed PoC workflow is the verified 14 September submission baseline.**
+**The current candidate workflow builds on the 14 September submission baseline.**
+Batch-specific verification is recorded in
+[Batch 24](docs/exec-plans/POST_BASELINE_REFINEMENT_BATCH_24.md); internal live acceptance is separate.
 
 Implemented:
 
@@ -378,13 +397,14 @@ Implemented:
 - typed SI/transcript evidence;
 - Solution Intent review metadata;
 - SI-section-aware review findings;
-- existing decisions, risks, actions, questions, and missing-information models;
+- finding/action candidate analysis and separate human-completed review drafts;
+- legacy decisions, risks, questions, and missing-information domain models;
 - enriched mock ADO work-item preview fields;
 - comprehensive model validation tests;
 - a 1,136-word synthetic Solution Intent and 32-line matching review transcript;
 - a distinct 1,083-word Internal fake SI and 28-line matching transcript with representative
-  coverage across every review collection;
-- validated review metadata, expected governance result, and evidence-consistency tests;
+  source content covering categories beyond the bounded automated extraction;
+- validated review metadata, candidate fixtures, explicit test-only human completion, and evidence tests;
 - a synchronous `GovernanceExtractor` protocol; and
 - a fixture-validated `DeterministicDemoExtractor` for offline tests and the primary demo;
 - deterministic Markdown SI review-minutes generation; and
@@ -395,7 +415,7 @@ Implemented:
 - one deliberate project-level light theme for consistent native and branded surfaces;
 - editable human review with live pending-change and validation awareness, item exclusion, a
   normalized confirmed change summary, and read-only evidence;
-- exact source-quote and supported-locator validation before Human Review;
+- strict candidate/source-ID validation before Human Review and original-source validation at confirmation;
 - unified input, mode, source-version, and provider-identity invalidation;
 - an evidence-to-output comparison joining source quotes, the confirmed action, its minutes entry,
   and its generated ADO preview;
@@ -473,7 +493,7 @@ confirmation; continue to delivery; and the current ready delivery preview/confi
 action. Secondary actions remain inline. Existing disabled conditions, human confirmation, and
 protected delivery outcomes still apply. The page reserves bottom space for readable scrolling.
 
-Human Review shows outcome and item-level supporting evidence expanded by default. Source labels,
+Human Review requires an explicit outcome selection and shows candidate supporting evidence. Source labels,
 location metadata, and exact quotes remain read-only. Users may collapse evidence after inspecting
 it; items without a direct quote explicitly say so. Human confirmation remains mandatory.
 
@@ -486,43 +506,27 @@ its change indication. Source evidence remains read-only and separate from revie
 Human Review retains the selected category when edits, exclusions, validation issues, or reverts
 change its tab counts. Switching categories remains an explicit user action within the review page.
 
-Edited Offline review transcripts use current literal evidence and line references. Unclassified
-lines appear under Missing Info for manual classification; they are not inferred missing artifacts.
-The canonical transcript retains its original result with current editable metadata. Review category,
-severity, priority, owner, date and outcome still require human inspection and confirmation.
-Shared operation failures remain visible above the persistent action area, including on narrow
-screens. Input corrections clear stale errors; delivery history and protected results remain intact.
+Edited Offline and Internal fake transcripts use current literal evidence and versioned line IDs.
+Unclassified and out-of-scope lines remain in the full source viewer; they are not turned into
+Missing Evidence. Canonical inputs retain their frozen candidate proposals with current valid
+metadata. Candidate text can preserve an explicit owner or date, but structured owner/date fields
+remain blank until the reviewer enters them. Finding title, severity and status; action priority;
+and the review outcome all require explicit human completion. No medium/open/date defaults make an
+incomplete record appear ready.
 
-In demo/development (and automated test), Human Review permits every outcome without mandatory
-transcript support. A changed outcome is labelled Reviewer-selected and retains before/after history;
-its generated record carries non-production human provenance. Supporting transcript lines remain
-optional, read-only references. Provider-generated stated outcomes still require source evidence.
-Production remains unavailable pending internal integration and separate release acceptance; these
-demo refinements do not define or approve future production outcome policy.
+In demo/development/test, human-selected outcomes use explicit reviewer-selected provenance with
+optional source references. This does not expand production outcome policy. Production remains
+unavailable pending internal integration and separate acceptance. Shared failures remain visible;
+a failed Analyze attempt cannot reuse the preceding analysis even when inputs are unchanged, and
+a failed explicit reconfirmation revokes old output eligibility. Unsubmitted edits retain the last
+confirmed snapshot with a pending-edit disclosure.
 
-Internal fake in development/test accepts edited transcript and editable review metadata through
-its request-aware synthetic AIF transport. The canonical transcript preserves its curated result;
-changed text uses the same conservative literal grouping as Offline without invoking that provider.
-AIF schema/context/evidence checks remain mandatory. Fake Delivery binds to the current confirmed
-manifest for the configured synthetic SI/provider. Any nonblank owner and governance ticket is
-supported through deterministic local simulated mappings; no sample allowlist is required.
-Owner, due date and parent reference remain required for Delivery. Production policy is unchanged;
-no real AIF, Confluence or ADO is used.
-
-
-Edited synthetic transcripts recognize `[timestamp] Speaker: I will ... by YYYY-MM-DD` or
-`by 18 September 2026` as candidate action owner/date evidence. Dates require an explicit `by`,
-`due` / `due on`, or trailing `due date` cue. Invalid, multiple or unsupported dates remain unset.
-An ownership acknowledgement is attached to a preceding action only when speaker, date and literal
-non-date task words uniquely match; otherwise it remains an unclassified line for human review.
-This is bounded deterministic extraction, not semantic AI. Canonical fixture outputs are unchanged.
-
-Human Review labels owner/date as required for configured fake Delivery, offers optional sample
-owner buttons alongside free-form owner input, and names missing delivery fields before confirmation. These are explicit human
-choices, not automatic assignments. Local output confirmation remains available for incomplete
-actions; their fake Delivery stays blocked until required fields are supplied. Default synthetic provider identities are
-now v3; re-confirm and re-analyze existing inputs to obtain the new candidates. Production is unchanged.
-
+Internal fake supports valid edited transcript/metadata for its own fixed SI through a request-aware
+synthetic transport. Candidate shape, source membership, confirmed-context binding and original
+evidence remain validated. Optional owners/dates stay unknown in local outputs; owner, due date
+and parent reference are still required for configured Delivery. Source, context, provider or
+contract-version changes require renewed input confirmation and analysis. No real AIF, Confluence
+or ADO is used.
 
 Internal fake free-form mapping policy: canonical aliases remain unchanged; other owner values
 receive deterministic reserved `@example.invalid` aliases and other ticket references receive opaque
