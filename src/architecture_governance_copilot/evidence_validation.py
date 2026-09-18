@@ -13,6 +13,10 @@ from architecture_governance_copilot.models import (
     SolutionIntentReviewContext,
     SourceEvidence,
 )
+from architecture_governance_copilot.review_candidates import (
+    ReviewCandidateAnalysis,
+    validate_candidate_analysis_binding,
+)
 
 _HEADING_PATTERN = re.compile(
     r"^(?P<marks>#{1,6})\s+(?:(?P<number>\d+)\.\s+)?(?P<title>.+?)\s*$",
@@ -64,12 +68,17 @@ class EvidenceValidatingExtractor:
         solution_intent: str,
         review_transcript: str,
         context: SolutionIntentReviewContext,
-    ) -> GovernanceResult:
-        """Delegate extraction once, then reject unresolved or conflicting evidence."""
+    ) -> ReviewCandidateAnalysis:
+        """Delegate once and validate the complete candidate/source/context binding."""
         result = self._extractor.extract(solution_intent, review_transcript, context)
-        # Providers cannot claim human provenance to bypass their evidence contract.
-        GovernanceResult.model_validate(result.model_dump())
-        validate_governance_evidence(result, solution_intent, review_transcript)
+        if not isinstance(result, ReviewCandidateAnalysis):
+            raise EvidenceValidationError("The analysis provider must return review candidates.")
+        try:
+            validate_candidate_analysis_binding(result, solution_intent, review_transcript, context)
+        except ValueError as exc:
+            raise EvidenceValidationError(
+                "Candidate evidence or request binding is invalid."
+            ) from exc
         return result
 
 

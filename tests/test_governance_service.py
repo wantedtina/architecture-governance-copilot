@@ -13,6 +13,10 @@ import pytest
 import architecture_governance_copilot.governance_service as governance_service_module
 from architecture_governance_copilot import GovernanceOutputs, GovernanceReviewService
 from architecture_governance_copilot.ado_generator import generate_mock_ado_work_items
+from architecture_governance_copilot.candidate_review import (
+    complete_candidate_review,
+    create_candidate_review_draft,
+)
 from architecture_governance_copilot.evidence_validation import EvidenceValidationError
 from architecture_governance_copilot.extractors import (
     DeterministicDemoExtractor,
@@ -24,8 +28,11 @@ from architecture_governance_copilot.models import (
     FindingSeverity,
     GovernanceResult,
     MockAdoWorkItem,
-    ReviewOutcome,
     SolutionIntentReviewContext,
+)
+from architecture_governance_copilot.review_candidates import (
+    ReviewCandidateAnalysis,
+    build_candidate_analysis,
 )
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -81,9 +88,8 @@ def sample_context() -> SolutionIntentReviewContext:
 @pytest.fixture
 def source_free_result(sample_context: SolutionIntentReviewContext) -> GovernanceResult:
     """Build a valid result without evidence for service delegation tests."""
-    return GovernanceResult(
-        context=sample_context,
-        review_outcome=ReviewOutcome.NOT_STATED,
+    return build_candidate_analysis(
+        {"items": []}, "SI", "transcript", sample_context, provider_configuration_identity="test"
     )
 
 
@@ -113,7 +119,7 @@ def test_public_method_annotations_match_the_service_contract() -> None:
         "solution_intent": str,
         "review_transcript": str,
         "context": SolutionIntentReviewContext,
-        "return": GovernanceResult,
+        "return": ReviewCandidateAnalysis,
     }
     assert get_type_hints(GovernanceReviewService.generate_outputs) == {
         "reviewed_result": GovernanceResult,
@@ -143,6 +149,13 @@ def test_analyze_review_delegates_exact_arguments_once_without_rewriting(
     solution_intent = "".join(["  Synthetic SI", "\r\n", "with final spaces  "])
     transcript = "".join(["\n", "  [10:00] Synthetic transcript", "\r\n"])
     context_before = sample_context.model_dump(mode="json")
+    source_free_result = build_candidate_analysis(
+        {"items": []},
+        solution_intent,
+        transcript,
+        sample_context,
+        provider_configuration_identity="test",
+    )
     extractor = RecordingExtractor(source_free_result)
     service = GovernanceReviewService(extractor)
 
@@ -212,7 +225,7 @@ def test_analyze_review_rejects_invalid_provider_evidence_after_one_delegation(
     solution_intent = SOLUTION_INTENT_PATH.read_text(encoding="utf-8")
     transcript = TRANSCRIPT_PATH.read_text(encoding="utf-8")
 
-    with pytest.raises(EvidenceValidationError, match=r"outcome_evidence\[0\]"):
+    with pytest.raises(EvidenceValidationError, match="must return review candidates"):
         service.analyze_review(solution_intent, transcript, sample_context)
 
     assert extractor.calls == [(solution_intent, transcript, sample_context)]
@@ -282,7 +295,7 @@ def test_analysis_and_output_generation_remain_separate_public_stages(
 
     analysis = service.analyze_review("SI", "transcript", sample_context)
 
-    assert isinstance(analysis, GovernanceResult)
+    assert isinstance(analysis, ReviewCandidateAnalysis)
     assert not isinstance(analysis, GovernanceOutputs)
     assert list(inspect.signature(service.generate_outputs).parameters) == ["reviewed_result"]
     assert not hasattr(service, "analyze_and_generate")
@@ -379,17 +392,17 @@ def test_realistic_deterministic_service_flow_requires_no_external_integration()
     )
     service = GovernanceReviewService(DeterministicDemoExtractor())
 
-    result = service.analyze_review(solution_intent, transcript, context)
-    outputs = service.generate_outputs(result)
-
-    assert result.review_outcome.value == "changes_requested"
-    assert len(result.decisions) == 1
-    assert len(result.findings) == 3
-    assert len(result.risks) == 1
-    assert len(result.action_items) == 2
-    assert len(result.open_questions) == 1
-    assert "**Outcome:** Changes Requested" in outputs.review_minutes
-    assert len(outputs.ado_work_items) == 2
+    analysis = service.analyze_review(solution_intent, transcript, context)
+    draft = create_candidate_review_draft(analysis)
+    # An explicit simulated human excludes incomplete candidates and selects an outcome.
+    for item in draft.items:
+        item.included = False
+    draft.review_outcome = "not_stated"
+    completed = complete_candidate_review(analysis, draft, allow_reviewer_selected_outcome=True)
+    outputs = service.generate_outputs(completed.result)
+    assert completed.result.extraction_scope is not None
+    assert "Not extracted in this version" in outputs.review_minutes
+    assert not outputs.ado_work_items
 
 
 def test_minutes_generator_exception_propagates_and_stops_output_generation(

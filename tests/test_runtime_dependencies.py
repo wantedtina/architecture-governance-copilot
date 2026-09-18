@@ -88,13 +88,8 @@ def test_internal_fake_runtime_uses_separate_synthetic_sources_and_explicit_call
     assert snapshot.body_format.value == "storage"
     assert snapshot.version == 8
     assert "## 10. Decisions, Assumptions, and Gaps" in snapshot.canonical_text
-    assert result.context == runtime.review_context
-    assert len(result.findings) == 3
-    assert len(result.decisions) == 1
-    assert len(result.risks) == 1
-    assert len(result.action_items) == 2
-    assert len(result.open_questions) == 1
-    assert len(result.missing_evidence) == 2
+    assert result.context.model_dump() == runtime.review_context.model_dump()
+    assert [i.kind for i in result.items] == ["finding"] * 3 + ["action"] * 2
 
 
 def test_delivery_configuration_is_explicit_and_bound_to_fake_package() -> None:
@@ -188,7 +183,6 @@ def test_production_never_constructs_a_provider(mode: ReviewMode, monkeypatch) -
 
 
 def test_internal_fake_response_uses_current_metadata_and_transcript():
-    from architecture_governance_copilot.models import ReviewOutcome
 
     runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
     si = runtime.confluence_reader.get_page(runtime.confluence_page_id).canonical_text
@@ -196,15 +190,15 @@ def test_internal_fake_response_uses_current_metadata_and_transcript():
         update={"domain_architect": "Demo Reviewer", "review_round": 2}
     )
     metadata_only = runtime.extractor.extract(si, runtime.review_transcript, context)
-    assert metadata_only.context == context
-    assert len(metadata_only.findings) == 3
+    assert metadata_only.context.model_dump() == context.model_dump()
+    assert sum(i.kind == "finding" for i in metadata_only.items) == 3
     transcript = "Action: test synthetic failover.\nUnclassified synthetic text."
     edited = runtime.extractor.extract(si, transcript, context)
-    assert edited.review_outcome is ReviewOutcome.NOT_STATED
-    assert edited.action_items[0].title == "Action: test synthetic failover."
-    assert edited.action_items[0].evidence[0].quote in transcript
-    assert not edited.findings
-    assert edited.context == context
+    assert not hasattr(edited, "review_outcome")
+    assert edited.items[0].text == "Action: test synthetic failover."
+    assert edited.items[0].evidence[0].quote in transcript
+    assert all(i.kind == "action" for i in edited.items)
+    assert edited.context.model_dump() == context.model_dump()
 
 
 def test_dynamic_fake_capability_remains_bound_to_synthetic_source_and_mode():
@@ -273,14 +267,12 @@ def test_edited_sample_preserves_explicit_action_details_and_acknowledgements():
         transcript,
         runtime.review_context,
     )
-    assert len(result.action_items) == 2
-    assert [(a.owner, a.due_date.isoformat()) for a in result.action_items] == [
-        ("Riley Chen", "2026-09-18"),
-        ("Avery Patel", "2026-09-21"),
-    ]
-    for action in result.action_items:
-        assert len(action.evidence) == 2
-        assert all(e.quote in transcript for e in action.evidence)
+    actions = [i for i in result.items if i.kind == "action"]
+    assert len(actions) == 2
+    assert "18 September 2026" in actions[0].text
+    assert "21 September 2026" in actions[1].text
+    assert all(e.quote in transcript for action in actions for e in action.evidence)
+    assert all(not hasattr(action, "owner") for action in actions)
 
 
 @pytest.mark.parametrize(
@@ -293,33 +285,31 @@ def test_edited_sample_preserves_explicit_action_details_and_acknowledgements():
 def test_synthetic_rules_do_not_invent_commitment_owner(line):
     from architecture_governance_copilot.demo_review import group_transcript_candidates
 
-    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
-    result = group_transcript_candidates(line, runtime.review_context)
-    assert result.action_items[0].owner is None
+    result = group_transcript_candidates("Synthetic SI", line)
+    assert not hasattr(result.items[0], "owner")
 
 
 def test_synthetic_rules_retain_ambiguous_acknowledgement_and_dates():
     from architecture_governance_copilot.demo_review import group_transcript_candidates
 
-    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
     transcript = (
         "[09:00] Avery Patel: I will test recovery by 2026-09-20 or 2026-09-21.\n"
         "[09:01] Avery Patel: I accept ownership of the recovery action "
         "and its 2026-09-20 due date."
     )
-    result = group_transcript_candidates(transcript, runtime.review_context)
-    assert result.action_items[0].due_date is None
-    assert len(result.missing_evidence) == 1
+    result = group_transcript_candidates("Synthetic SI", transcript)
+    assert not hasattr(result.items[0], "due_date")
+    assert len(result.items) == 1
+    assert "2026-09-20 or 2026-09-21" in result.items[0].text
 
 
 def test_historical_date_is_not_a_due_date():
     from architecture_governance_copilot.demo_review import group_transcript_candidates
 
-    runtime = build_review_runtime(ReviewMode.INTERNAL_FAKE, {INTERNAL_FAKE_ENABLED_ENV: "1"})
     result = group_transcript_candidates(
-        "[09:00] Avery Patel: I will review the report from 2026-09-20.", runtime.review_context
+        "Synthetic SI", "[09:00] Avery Patel: I will review the report from 2026-09-20."
     )
-    assert result.action_items[0].due_date is None
+    assert not hasattr(result.items[0], "due_date")
 
 
 def test_dynamic_alias_capability_requires_confirmed_matching_metadata():

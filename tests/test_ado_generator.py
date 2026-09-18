@@ -9,6 +9,7 @@ import pytest
 
 from architecture_governance_copilot.ado_generator import generate_mock_ado_work_items
 from architecture_governance_copilot.models import (
+    NOT_EXTRACTED_NOTICE,
     ActionItem,
     ActionPriority,
     EvidenceSource,
@@ -16,6 +17,7 @@ from architecture_governance_copilot.models import (
     GovernanceResult,
     MissingEvidence,
     MockAdoWorkItem,
+    ReviewExtractionScope,
     ReviewFinding,
     ReviewOutcome,
     Risk,
@@ -168,6 +170,28 @@ def test_missing_optional_action_fields_remain_missing() -> None:
     assert item.si_section is None
     assert "Owner: Unassigned" in item.description
     assert "Due Date: Not specified" in item.description
+
+
+def test_scoped_work_item_description_carries_scope_without_changing_payload_fields() -> None:
+    action = ActionItem(
+        title="Human-confirmed action.",
+        priority=ActionPriority.HIGH,
+        evidence=[_transcript_evidence()],
+    )
+    result = _result_with_actions([action], extraction_scope=ReviewExtractionScope())
+
+    item = generate_mock_ado_work_items(result)[0]
+
+    assert "Automated categories: Findings and Actions." in item.description
+    assert "Review outcome: human-completed." in item.description
+    assert "Decisions, Risks, Open Questions, and Missing Evidence:" in item.description
+    assert NOT_EXTRACTED_NOTICE in item.description
+    assert "formal governance decision" in item.description
+    assert item.title == action.title
+    assert item.assigned_to is None
+    assert item.due_date is None
+    assert item.source_action_index == 0
+    assert "extraction_scope" not in item.model_dump()
 
 
 def test_direct_solution_intent_evidence_supplies_si_section() -> None:

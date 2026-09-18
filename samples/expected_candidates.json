@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "kind": "finding",
+      "text": "The design shows two replicas but does not define traffic behaviour when one application instance is unavailable.",
+      "evidence_source_ids": [
+        "si-b70d336d7685-149",
+        "transcript-a42f7926bfc9-012",
+        "transcript-a42f7926bfc9-015"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "The Solution Intent does not define recovery time or recovery point objectives.",
+      "evidence_source_ids": [
+        "si-b70d336d7685-150",
+        "transcript-a42f7926bfc9-017",
+        "transcript-a42f7926bfc9-019"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "The production support team and escalation path have not been assigned.",
+      "evidence_source_ids": [
+        "si-b70d336d7685-214",
+        "transcript-a42f7926bfc9-021"
+      ]
+    },
+    {
+      "kind": "action",
+      "text": "Update the resilience design and deployment diagram; Alex Chen agreed to complete this by 2026-07-24.",
+      "evidence_source_ids": [
+        "transcript-a42f7926bfc9-015"
+      ]
+    },
+    {
+      "kind": "action",
+      "text": "Confirm the RTO and RPO values; Priya Shah agreed to complete this by 2026-07-25.",
+      "evidence_source_ids": [
+        "transcript-a42f7926bfc9-019"
+      ]
+    }
+  ]
+}

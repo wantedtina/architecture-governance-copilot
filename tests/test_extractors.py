@@ -1,6 +1,4 @@
-"""Tests for governance extraction providers."""
-
-from __future__ import annotations
+"""Offline candidate contract, source binding, and deterministic fixture safeguards."""
 
 import inspect
 import json
@@ -9,488 +7,173 @@ from pathlib import Path
 from typing import get_type_hints
 
 import pytest
+from pydantic import ValidationError
 
 from architecture_governance_copilot.extractors import (
     DeterministicDemoExtractor,
     DeterministicFixtureError,
     GovernanceExtractor,
 )
-from architecture_governance_copilot.models import (
-    FindingSeverity,
-    GovernanceResult,
-    ReviewOutcome,
-    SolutionIntentReviewContext,
+from architecture_governance_copilot.models import SolutionIntentReviewContext
+from architecture_governance_copilot.review_candidates import (
+    ReviewCandidateAnalysis,
+    parse_candidate_payload,
+    validate_candidate_analysis_binding,
 )
 
-REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
-SAMPLES_DIR = REPOSITORY_ROOT / "samples"
-SOLUTION_INTENT_PATH = SAMPLES_DIR / "solution_intent.md"
-TRANSCRIPT_PATH = SAMPLES_DIR / "review_transcript.txt"
-METADATA_PATH = SAMPLES_DIR / "review_metadata.json"
-EXPECTED_RESULT_PATH = SAMPLES_DIR / "expected_result.json"
+SAMPLES = Path(__file__).resolve().parents[1] / "samples"
 
 
 @pytest.fixture
-def sample_inputs() -> tuple[str, str, SolutionIntentReviewContext]:
-    """Load the validated inputs for the deterministic sample."""
+def sample_inputs():
     return (
-        SOLUTION_INTENT_PATH.read_text(encoding="utf-8"),
-        TRANSCRIPT_PATH.read_text(encoding="utf-8"),
-        SolutionIntentReviewContext.model_validate_json(METADATA_PATH.read_text(encoding="utf-8")),
+        (SAMPLES / "solution_intent.md").read_text(),
+        (SAMPLES / "review_transcript.txt").read_text(),
+        SolutionIntentReviewContext.model_validate_json(
+            (SAMPLES / "review_metadata.json").read_text()
+        ),
     )
 
 
 @pytest.fixture
-def copied_samples(tmp_path: Path) -> Path:
-    """Copy the validated sample directory for one corrupt-fixture test."""
-    destination = tmp_path / "samples"
-    shutil.copytree(SAMPLES_DIR, destination)
-    return destination
+def copied_samples(tmp_path):
+    shutil.copytree(SAMPLES, tmp_path / "samples")
+    return tmp_path / "samples"
 
 
-@pytest.fixture
-def extracted_result(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> GovernanceResult:
-    """Extract the validated deterministic result."""
-    return DeterministicDemoExtractor().extract(*sample_inputs)
-
-
-def _load_json(path: Path) -> dict[str, object]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    assert isinstance(payload, dict)
-    return payload
-
-
-def _write_json(path: Path, payload: dict[str, object]) -> None:
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-
-
-def test_deterministic_extractor_conforms_to_protocol() -> None:
+def test_synchronous_candidate_protocol_and_canonical_payload(sample_inputs):
     extractor = DeterministicDemoExtractor()
-
     assert isinstance(extractor, GovernanceExtractor)
-
-
-def test_extractor_has_expected_synchronous_signature() -> None:
-    signature = inspect.signature(DeterministicDemoExtractor.extract)
-    annotations = get_type_hints(DeterministicDemoExtractor.extract)
-
-    assert list(signature.parameters) == [
-        "self",
-        "solution_intent",
-        "review_transcript",
-        "context",
+    assert get_type_hints(extractor.extract)["return"] is ReviewCandidateAnalysis
+    assert not inspect.iscoroutinefunction(extractor.extract)
+    result = extractor.extract(*sample_inputs)
+    expected = parse_candidate_payload((SAMPLES / "expected_candidates.json").read_text())
+    assert [(i.kind, i.text, list(i.evidence_source_ids)) for i in result.items] == [
+        (i.kind, i.text, i.evidence_source_ids) for i in expected.items
     ]
-    assert annotations == {
-        "solution_intent": str,
-        "review_transcript": str,
-        "context": SolutionIntentReviewContext,
-        "return": GovernanceResult,
-    }
-    assert not inspect.iscoroutinefunction(DeterministicDemoExtractor.extract)
+    assert [i.kind for i in result.items] == ["finding"] * 3 + ["action"] * 2
+    assert result.context.model_dump() == sample_inputs[2].model_dump()
+    assert not hasattr(result, "review_outcome")
+    validate_candidate_analysis_binding(result, *sample_inputs)
 
 
-def test_extraction_does_not_return_a_coroutine(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> None:
-    result = DeterministicDemoExtractor().extract(*sample_inputs)
-
-    assert isinstance(result, GovernanceResult)
-    assert not inspect.isawaitable(result)
-
-
-def test_default_sample_directory_produces_expected_result(
-    extracted_result: GovernanceResult,
-) -> None:
-    expected = GovernanceResult.model_validate_json(
-        EXPECTED_RESULT_PATH.read_text(encoding="utf-8")
-    )
-
-    assert extracted_result == expected
-
-
-def test_default_sample_directory_is_independent_of_working_directory(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-) -> None:
+def test_default_directory_is_independent_of_cwd(sample_inputs, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
-
-    result = DeterministicDemoExtractor().extract(*sample_inputs)
-
-    assert result.review_outcome is ReviewOutcome.CHANGES_REQUESTED
-
-
-def test_returned_context_matches_metadata(extracted_result: GovernanceResult) -> None:
-    expected_context = SolutionIntentReviewContext.model_validate_json(
-        METADATA_PATH.read_text(encoding="utf-8")
-    )
-
-    assert extracted_result.context == expected_context
-
-
-def test_successful_extraction_preserves_scenario(extracted_result: GovernanceResult) -> None:
-    assert extracted_result.review_outcome is ReviewOutcome.CHANGES_REQUESTED
-    assert len(extracted_result.decisions) == 1
-    assert len(extracted_result.findings) == 3
-    assert len(extracted_result.risks) == 1
-    assert len(extracted_result.action_items) == 2
-    assert len(extracted_result.open_questions) == 1
-
-
-@pytest.mark.parametrize(
-    ("prefix", "suffix"),
-    [
-        ("\n", ""),
-        ("", "\n"),
-        ("\n", "\n"),
-    ],
-)
-def test_solution_intent_outer_whitespace_is_accepted(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    prefix: str,
-    suffix: str,
-) -> None:
-    solution_intent, transcript, context = sample_inputs
-
-    result = DeterministicDemoExtractor().extract(
-        f"{prefix}{solution_intent}{suffix}", transcript, context
-    )
-
-    assert result.review_outcome is ReviewOutcome.CHANGES_REQUESTED
-
-
-@pytest.mark.parametrize(
-    ("prefix", "suffix"),
-    [
-        ("\n", ""),
-        ("", "\n"),
-        ("\n", "\n"),
-    ],
-)
-def test_transcript_outer_whitespace_is_accepted(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    prefix: str,
-    suffix: str,
-) -> None:
-    solution_intent, transcript, context = sample_inputs
-
-    result = DeterministicDemoExtractor().extract(
-        solution_intent, f"{prefix}{transcript}{suffix}", context
-    )
-
-    assert result.review_outcome is ReviewOutcome.CHANGES_REQUESTED
-
-
-@pytest.mark.parametrize("line_ending", ["\r\n", "\r"])
-def test_alternate_line_endings_are_accepted(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    line_ending: str,
-) -> None:
-    solution_intent, transcript, context = sample_inputs
-
-    result = DeterministicDemoExtractor().extract(
-        solution_intent.replace("\n", line_ending),
-        transcript.replace("\n", line_ending),
-        context,
-    )
-
-    assert result.review_outcome is ReviewOutcome.CHANGES_REQUESTED
-
-
-def test_substantive_solution_intent_change_is_rejected(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> None:
-    solution_intent, transcript, context = sample_inputs
-
-    with pytest.raises(ValueError, match="Solution Intent.*does not match"):
-        DeterministicDemoExtractor().extract(
-            solution_intent.replace(
-                "The initial release is planned for August 2026.",
-                "The initial release is planned for September 2026.",
-            ),
-            transcript,
-            context,
-        )
-
-
-def test_changed_transcript_uses_current_literal_evidence(sample_inputs) -> None:
-    from architecture_governance_copilot.evidence_validation import validate_governance_evidence
-
-    si, _, context = sample_inputs
-    transcript = (
-        "Action: prepare a synthetic failover test.\n"
-        "Risk: capacity is uncertain.\nUnclassified synthetic note."
-    )
-    result = DeterministicDemoExtractor().extract(si, transcript, context)
-    assert result.review_outcome is ReviewOutcome.NOT_STATED
-    assert result.action_items[0].title == "Action: prepare a synthetic failover test."
-    assert result.action_items[0].owner is None
-    assert result.action_items[0].due_date is None
-    assert len(result.risks) == 1
-    assert result.missing_evidence[0].evidence[0].reference == "transcript-line-3"
-    assert not result.findings
-    validate_governance_evidence(result, si, transcript)
-    assert result == DeterministicDemoExtractor().extract(si, transcript, context)
-
-
-def test_editable_metadata_is_carried_into_results(sample_inputs) -> None:
-    si, transcript, context = sample_inputs
-    changed = context.model_copy(
-        update={"review_round": 3, "domain_architect": "Demo Reviewer", "ado_ticket_id": "DEMO-123"}
-    )
-    result = DeterministicDemoExtractor().extract(si, transcript, changed)
-    assert result.context == changed
-    assert result.context is not changed
-    assert result.findings == DeterministicDemoExtractor().extract(*sample_inputs).findings
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    [
-        ("project_name", "Different Project"),
-        ("si_version", "1.3"),
-    ],
-)
-def test_changed_context_is_rejected(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    field: str,
-    value: str | int,
-) -> None:
-    solution_intent, transcript, context = sample_inputs
-    changed_context = context.model_copy(update={field: value})
-
-    with pytest.raises(ValueError, match="Review context.*does not match"):
-        DeterministicDemoExtractor().extract(solution_intent, transcript, changed_context)
-
-
-@pytest.mark.parametrize("solution_intent", ["", " ", "\n\t"])
-def test_blank_solution_intent_is_rejected(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    solution_intent: str,
-) -> None:
-    _, transcript, context = sample_inputs
-
-    with pytest.raises(ValueError, match="Solution Intent input must not be blank"):
-        DeterministicDemoExtractor().extract(solution_intent, transcript, context)
-
-
-@pytest.mark.parametrize("transcript", ["", " ", "\n\t"])
-def test_blank_transcript_is_rejected(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-    transcript: str,
-) -> None:
-    solution_intent, _, context = sample_inputs
-
-    with pytest.raises(ValueError, match="Review transcript input must not be blank"):
-        DeterministicDemoExtractor().extract(solution_intent, transcript, context)
-
-
-def test_successive_results_are_deep_independent_copies(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> None:
-    extractor = DeterministicDemoExtractor()
-    first = extractor.extract(*sample_inputs)
-    second = extractor.extract(*sample_inputs)
-
-    assert first == second
-    assert first is not second
-    assert first.findings is not second.findings
-    assert first.findings[0] is not second.findings[0]
-    assert first.findings[0].evidence is not second.findings[0].evidence
-    assert first.action_items is not second.action_items
-    assert first.action_items[0] is not second.action_items[0]
-
-
-def test_mutation_does_not_affect_other_or_later_results(
-    sample_inputs: tuple[str, str, SolutionIntentReviewContext],
-) -> None:
-    extractor = DeterministicDemoExtractor()
-    first = extractor.extract(*sample_inputs)
-    second = extractor.extract(*sample_inputs)
-
-    first.findings[0].severity = FindingSeverity.LOW
-    first.action_items[0].title = "Edited title"
-    first.decisions.clear()
-    later = extractor.extract(*sample_inputs)
-
-    assert second.findings[0].severity is FindingSeverity.HIGH
-    assert second.action_items[0].title != "Edited title"
-    assert len(second.decisions) == 1
-    assert later == second
-
-
-@pytest.mark.parametrize(
-    "filename",
-    [
-        "solution_intent.md",
-        "review_transcript.txt",
-        "review_metadata.json",
-        "expected_result.json",
-    ],
-)
-def test_missing_fixture_file_is_rejected(
-    copied_samples: Path,
-    filename: str,
-) -> None:
-    (copied_samples / filename).unlink()
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match=rf"sample file is missing: {filename}",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-@pytest.mark.parametrize(
-    "filename",
-    [
-        "solution_intent.md",
-        "review_transcript.txt",
-        "review_metadata.json",
-        "expected_result.json",
-    ],
-)
-def test_unreadable_utf8_fixture_file_is_rejected(
-    copied_samples: Path,
-    filename: str,
-) -> None:
-    (copied_samples / filename).write_bytes(b"\xff")
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match=rf"sample file is unreadable: {filename}",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_invalid_metadata_json_is_rejected(copied_samples: Path) -> None:
-    (copied_samples / "review_metadata.json").write_text("{", encoding="utf-8")
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match="review metadata is not valid JSON",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_invalid_metadata_model_is_rejected(copied_samples: Path) -> None:
-    metadata_path = copied_samples / "review_metadata.json"
-    metadata = _load_json(metadata_path)
-    metadata["review_round"] = 0
-    _write_json(metadata_path, metadata)
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match="review metadata is invalid",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_invalid_expected_result_json_is_rejected(copied_samples: Path) -> None:
-    (copied_samples / "expected_result.json").write_text("{", encoding="utf-8")
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match="expected result is not valid JSON",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_invalid_expected_result_model_is_rejected(copied_samples: Path) -> None:
-    result_path = copied_samples / "expected_result.json"
-    result = _load_json(result_path)
-    result["review_outcome"] = "unknown"
-    _write_json(result_path, result)
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match="expected result is invalid",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_mismatched_fixture_context_is_rejected(copied_samples: Path) -> None:
-    result_path = copied_samples / "expected_result.json"
-    result = _load_json(result_path)
-    context = result["context"]
-    assert isinstance(context, dict)
-    context["project_name"] = "Different Project"
-    _write_json(result_path, result)
-
-    with pytest.raises(
-        DeterministicFixtureError,
-        match="expected-result context does not match review metadata",
-    ):
-        DeterministicDemoExtractor(copied_samples)
-
-
-@pytest.mark.parametrize(
-    ("filename", "message"),
-    [
-        ("solution_intent.md", "Solution Intent fixture is empty"),
-        ("review_transcript.txt", "review transcript fixture is empty"),
-    ],
-)
-def test_empty_text_fixture_is_rejected(
-    copied_samples: Path,
-    filename: str,
-    message: str,
-) -> None:
-    (copied_samples / filename).write_text(" \n\t", encoding="utf-8")
-
-    with pytest.raises(DeterministicFixtureError, match=message):
-        DeterministicDemoExtractor(copied_samples)
-
-
-def test_serialization_matches_expected_fixture(extracted_result: GovernanceResult) -> None:
-    serialized = extracted_result.model_dump(mode="json")
-    expected = GovernanceResult.model_validate_json(
-        EXPECTED_RESULT_PATH.read_text(encoding="utf-8")
-    ).model_dump(mode="json")
-
-    assert serialized == expected
-    assert serialized["review_outcome"] == "changes_requested"
-    context = serialized["context"]
-    assert isinstance(context, dict)
-    assert context["current_si_status"] == "under_review"
-    assert context["review_date"] == "2026-07-18"
-    action_items = serialized["action_items"]
-    assert isinstance(action_items, list)
-    assert action_items[0]["due_date"] == "2026-07-24"
+    assert len(DeterministicDemoExtractor().extract(*sample_inputs).items) == 5
 
 
 @pytest.mark.parametrize("ending", ["\n", "\r\n", "\r"])
-def test_custom_grouping_covers_every_line_and_never_infers_approval(sample_inputs, ending):
-    from architecture_governance_copilot.evidence_validation import validate_governance_evidence
-
-    si, _, context = sample_inputs
-    lines = [
-        "Decision: adopt a synthetic queue.",
-        "Finding: recovery is not defined.",
-        "Risk: capacity uncertainty.",
-        "Action: test recovery.",
-        "Question: who owns support?",
-        "The outcome is approved.",
-        "Unclassified note.",
-    ]
-    transcript = ending.join(lines)
+@pytest.mark.parametrize("surround", [False, True])
+def test_normalized_sources_preserve_ids_and_original_snapshots(sample_inputs, ending, surround):
+    si, transcript, context = sample_inputs
+    original = DeterministicDemoExtractor().extract(*sample_inputs)
+    si, transcript = si.replace("\n", ending), transcript.replace("\n", ending)
+    if surround:
+        si, transcript = f"\n{si}\n", f"\n{transcript}\n"
     result = DeterministicDemoExtractor().extract(si, transcript, context)
-    validate_governance_evidence(result, si, transcript)
-    quotes = [
-        e.quote
-        for name in (
-            "decisions",
-            "findings",
-            "risks",
-            "action_items",
-            "open_questions",
-            "missing_evidence",
-        )
-        for item in getattr(result, name)
-        for e in item.evidence
+    assert [i.evidence_source_ids for i in result.items] == [
+        i.evidence_source_ids for i in original.items
     ]
-    assert sorted(quotes) == sorted(lines)
-    assert result.review_outcome is ReviewOutcome.NOT_STATED
-    assert len(result.missing_evidence) == 2
+    assert result.solution_intent == si
+    assert result.review_transcript == transcript
+
+
+def test_edited_transcript_keeps_unmatched_source_without_new_categories(sample_inputs):
+    si, _, context = sample_inputs
+    transcript = (
+        "Finding: recovery is not defined.\nAction: test recovery.\n"
+        "Risk: capacity.\nUnclassified note."
+    )
+    result = DeterministicDemoExtractor().extract(si, transcript, context)
+    assert [i.kind for i in result.items] == ["finding", "action"]
+    assert result.review_transcript == transcript
+    assert all(i.evidence[0].quote in transcript for i in result.items)
+    assert result == DeterministicDemoExtractor().extract(si, transcript, context)
+    assert not hasattr(result, "missing_evidence")
+
+
+def test_edited_metadata_is_copied_but_si_identity_is_fixed(sample_inputs):
+    si, tr, context = sample_inputs
+    changed = context.model_copy(update={"review_round": 3, "domain_architect": "Demo Reviewer"})
+    result = DeterministicDemoExtractor().extract(si, tr, changed)
+    assert result.context.model_dump() == changed.model_dump()
+    assert result.context is not changed
+    with pytest.raises(ValueError, match="Review context"):
+        DeterministicDemoExtractor().extract(
+            si, tr, context.model_copy(update={"si_version": "99"})
+        )
+    with pytest.raises(ValueError, match="Solution Intent.*does not match"):
+        DeterministicDemoExtractor().extract(si + "Changed SI", tr, context)
+
+
+@pytest.mark.parametrize("blank", ["", " ", "\n\t"])
+@pytest.mark.parametrize("position", [0, 1])
+def test_blank_input_preflight_rejects(sample_inputs, blank, position):
+    inputs = list(sample_inputs)
+    inputs[position] = blank
+    with pytest.raises(ValueError, match="must not be blank"):
+        DeterministicDemoExtractor().extract(*inputs)
+
+
+def test_analysis_and_nested_evidence_are_immutable_and_independent(sample_inputs):
+    first = DeterministicDemoExtractor().extract(*sample_inputs)
+    second = DeterministicDemoExtractor().extract(*sample_inputs)
+    assert first == second and first is not second
+    with pytest.raises(ValidationError):
+        first.items[0].text = "changed"
+    with pytest.raises(ValidationError):
+        first.items[0].evidence[0].quote = "changed"
+    with pytest.raises(ValidationError):
+        first.context.project_name = "changed"
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "solution_intent.md",
+        "review_transcript.txt",
+        "review_metadata.json",
+        "expected_candidates.json",
+    ],
+)
+@pytest.mark.parametrize("failure", ["missing", "unreadable"])
+def test_missing_and_unreadable_fixtures_reject(copied_samples, name, failure):
+    if failure == "missing":
+        (copied_samples / name).unlink()
+    else:
+        (copied_samples / name).write_bytes(b"\xff")
+    with pytest.raises(DeterministicFixtureError, match=f"file is {failure}"):
+        DeterministicDemoExtractor(copied_samples)
+
+
+@pytest.mark.parametrize("name", ["review_metadata.json", "expected_candidates.json"])
+def test_invalid_fixture_json_rejects(copied_samples, name):
+    (copied_samples / name).write_text("{")
+    with pytest.raises(DeterministicFixtureError, match="not valid JSON"):
+        DeterministicDemoExtractor(copied_samples)
+
+
+@pytest.mark.parametrize("mutation", ["shape", "old_domain", "bad_id", "bad_metadata"])
+def test_invalid_fixture_contract_or_binding_rejects(copied_samples, mutation):
+    target = copied_samples / "expected_candidates.json"
+    payload = json.loads(target.read_text())
+    if mutation == "shape":
+        payload["items"][0]["kind"] = "risk"
+    elif mutation == "old_domain":
+        payload = json.loads((copied_samples / "expected_result.json").read_text())
+    elif mutation == "bad_id":
+        payload["items"][0]["evidence_source_ids"] = ["stale-id"]
+    else:
+        target = copied_samples / "review_metadata.json"
+        payload = json.loads(target.read_text())
+        payload["review_round"] = 0
+    target.write_text(json.dumps(payload))
+    with pytest.raises(DeterministicFixtureError, match="invalid"):
+        DeterministicDemoExtractor(copied_samples)
+
+
+@pytest.mark.parametrize("name", ["solution_intent.md", "review_transcript.txt"])
+def test_empty_fixture_rejects(copied_samples, name):
+    (copied_samples / name).write_text(" \n\t")
+    with pytest.raises(DeterministicFixtureError, match="empty"):
+        DeterministicDemoExtractor(copied_samples)

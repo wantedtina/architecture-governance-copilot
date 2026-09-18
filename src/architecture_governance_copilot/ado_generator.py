@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from architecture_governance_copilot.markdown_support import escape_markdown_text
 from architecture_governance_copilot.models import (
+    NOT_EXTRACTED_NOTICE,
     ActionItem,
     EvidenceSource,
     GovernanceResult,
@@ -62,6 +63,18 @@ def _build_description(result: GovernanceResult, action: ActionItem) -> str:
         "Supporting Evidence:",
     ]
     lines.extend(f"- {_format_evidence(evidence)}" for evidence in action.evidence)
+    if result.extraction_scope is not None:
+        lines.extend(
+            [
+                "",
+                "Extraction Scope:",
+                "Automated categories: Findings and Actions. Review outcome: human-completed.",
+                "Decisions, Risks, Open Questions, and Missing Evidence:",
+                NOT_EXTRACTED_NOTICE,
+                "Source references provide traceability; they do not verify an interpretation.",
+                "The Domain Architect remains responsible for the formal governance decision.",
+            ]
+        )
     lines.extend(
         [
             "",

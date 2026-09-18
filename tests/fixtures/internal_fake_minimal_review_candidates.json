@@ -1,0 +1,19 @@
+{
+  "items": [
+    {
+      "kind": "finding",
+      "text": "The current design identifies one availability zone without a documented recovery option.",
+      "evidence_source_ids": [
+        "si-30c2a963034f-004",
+        "transcript-2141c4d343d1-002"
+      ]
+    },
+    {
+      "kind": "action",
+      "text": "Document the recovery option; Casey Wong agreed to complete this by 2026-09-12.",
+      "evidence_source_ids": [
+        "transcript-2141c4d343d1-003"
+      ]
+    }
+  ]
+}

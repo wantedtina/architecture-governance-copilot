@@ -1,0 +1,27 @@
+{
+  "provenance": "Synthetic explicit human inputs; never provider defaults.",
+  "review_outcome": "changes_requested",
+  "items": [
+    {
+      "original_index": 0,
+      "kind": "finding",
+      "title": "Single-zone recovery option is not documented",
+      "description": "The current design identifies one availability zone without a documented recovery option.",
+      "category": "Resilience",
+      "si_section": "Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Document the agreed recovery option and its operating procedure.",
+      "owner": "Casey Wong",
+      "due_date": "2026-09-12"
+    },
+    {
+      "original_index": 1,
+      "kind": "action",
+      "title": "Document the recovery option",
+      "owner": "Casey Wong",
+      "due_date": "2026-09-12",
+      "priority": "high"
+    }
+  ]
+}

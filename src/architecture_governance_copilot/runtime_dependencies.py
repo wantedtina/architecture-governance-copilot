@@ -38,7 +38,7 @@ from architecture_governance_copilot.synthetic_delivery import resolve_synthetic
 
 INTERNAL_FAKE_ENABLED_ENV = "AGC_INTERNAL_FAKE_ENABLED"
 INTERNAL_FAKE_PROVIDER_ID_ENV = "AGC_INTERNAL_FAKE_PROVIDER_ID"
-OFFLINE_PROVIDER_CONFIGURATION_ID = "offline-deterministic-v3"
+OFFLINE_PROVIDER_CONFIGURATION_ID = "offline-candidates-v1"
 DEFAULT_INTERNAL_FAKE_PROVIDER_ID = "internal-fake-aif-v3"
 INTERNAL_FAKE_PAGE_ID = "synthetic-page-204"
 
@@ -200,7 +200,7 @@ def build_review_runtime(
     context = SolutionIntentReviewContext.model_validate_json(
         (samples_dir / "internal_fake_review_metadata.json").read_text(encoding="utf-8")
     )
-    response = (samples_dir / "internal_fake_aif_result.json").read_text(encoding="utf-8")
+    response = (samples_dir / "internal_fake_review_candidates.json").read_text(encoding="utf-8")
     confluence_response = (samples_dir / "internal_fake_confluence_page.json").read_text(
         encoding="utf-8"
     )
@@ -220,6 +220,7 @@ def build_review_runtime(
             (samples_dir / "internal_fake_solution_intent.md").read_text(encoding="utf-8"),
             transcript,
             response,
+            context=context,
         ),
     )
     extractor = AifGovernanceExtractor(

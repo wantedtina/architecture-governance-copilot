@@ -5,32 +5,35 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
-import re
 from collections.abc import Callable, Mapping, Sequence
 from enum import StrEnum
 from typing import Annotated, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, StringConstraints, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    StringConstraints,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
-from architecture_governance_copilot.evidence_validation import (
-    EvidenceValidationError,
-    validate_governance_evidence,
+from architecture_governance_copilot.integrations.aif_candidate_protocol import (
+    CandidateProtocolError,
 )
-from architecture_governance_copilot.models import (
-    EvidenceSource,
-    GovernanceResult,
-    SolutionIntentReviewContext,
-    SourceEvidence,
+from architecture_governance_copilot.models import SolutionIntentReviewContext
+from architecture_governance_copilot.review_candidates import (
+    CANDIDATE_CONTRACT_VERSION,
+    CandidateEvidenceError,
+    ReviewCandidateAnalysis,
+    build_candidate_analysis,
+    candidate_json_schema,
+    parse_candidate_payload,
 )
+from architecture_governance_copilot.review_sources import SOURCE_INDEX_VERSION
 
 NonEmptyString = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 SourceText = Annotated[str, StringConstraints(min_length=1)]
-
-_HEADING_PATTERN = re.compile(r"^#{1,6}\s+(?:\d+\.\s+)?(?P<title>.+?)\s*$", re.MULTILINE)
-_TRANSCRIPT_PATTERN = re.compile(
-    r"^\[(?P<timestamp>[^\]\r\n]+)\]\s+(?P<speaker>[^:\r\n]+):",
-    re.MULTILINE,
-)
 
 
 class AifErrorCategory(StrEnum):
@@ -62,6 +65,12 @@ class _BoundaryModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+class _RequestContext(SolutionIntentReviewContext):
+    """The confirmed metadata cannot change while the transport handles a request."""
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, frozen=True)
+
+
 class AifGovernanceRequest(_BoundaryModel):
     """Complete, explicit governance-analysis request sent to an AIF transport."""
 
@@ -72,6 +81,13 @@ class AifGovernanceRequest(_BoundaryModel):
     provider_configuration_identity: NonEmptyString
     solution_intent_source_fingerprint: NonEmptyString
     transcript_source_fingerprint: NonEmptyString
+    candidate_contract_version: str = CANDIDATE_CONTRACT_VERSION
+    source_index_version: str = SOURCE_INDEX_VERSION
+
+    @field_validator("context")
+    @classmethod
+    def freeze_confirmed_context(cls, value: SolutionIntentReviewContext) -> _RequestContext:
+        return _RequestContext.model_validate(value.model_dump())
 
     @model_validator(mode="after")
     def validate_sources(self) -> AifGovernanceRequest:
@@ -107,7 +123,7 @@ class AifTransport(Protocol):
     # docs/INTERNAL_INTEGRATION_HANDOFF.md without changing this validated boundary.
 
     def analyze(self, request: AifGovernanceRequest) -> str | Mapping[str, object]:
-        """Return one JSON-compatible structured provider response."""
+        """Return one candidate object after transport envelope decoding."""
         ...
 
 
@@ -159,13 +175,13 @@ class AifGovernanceExtractor:
         solution_intent: str,
         review_transcript: str,
         context: SolutionIntentReviewContext,
-    ) -> GovernanceResult:
-        """Call AIF once, enforce the request context, and assign trusted references."""
+    ) -> ReviewCandidateAnalysis:
+        """Call AIF once and resolve its candidate IDs against the exact original sources."""
         request = AifGovernanceRequest(
             solution_intent=solution_intent,
             review_transcript=review_transcript,
-            context=context,
-            schema_constraints=GovernanceResult.model_json_schema(),
+            context=_RequestContext.model_validate(context.model_dump()),
+            schema_constraints=candidate_json_schema(),
             provider_configuration_identity=self._provider_configuration_identity,
             solution_intent_source_fingerprint=_source_fingerprint(solution_intent),
             transcript_source_fingerprint=_source_fingerprint(review_transcript),
@@ -174,151 +190,27 @@ class AifGovernanceExtractor:
             response = self._transport.analyze(request)
         except AifTransportFailure as exc:
             raise AifAnalysisError(exc.category) from exc
+        except CandidateProtocolError as exc:
+            raise AifAnalysisError(AifErrorCategory(exc.category)) from exc
         except TimeoutError as exc:
             raise AifAnalysisError(AifErrorCategory.TIMEOUT) from exc
         except Exception as exc:
             raise AifAnalysisError(AifErrorCategory.PROVIDER_FAILURE) from exc
 
         try:
-            result = _parse_response(response)
+            payload = parse_candidate_payload(response)
         except (json.JSONDecodeError, TypeError, ValidationError, ValueError) as exc:
             raise AifAnalysisError(AifErrorCategory.INVALID_RESPONSE) from exc
-        if result.context != context:
-            raise AifAnalysisError(AifErrorCategory.CONTEXT_MISMATCH)
-
-        trusted_result = result.model_copy(deep=True)
-        for evidence in _iter_evidence(trusted_result):
-            evidence.reference = None
         try:
-            validate_governance_evidence(
-                trusted_result,
+            return build_candidate_analysis(
+                payload,
                 solution_intent,
                 review_transcript,
+                request.context,
+                provider_configuration_identity=self._provider_configuration_identity,
             )
-        except EvidenceValidationError as exc:
+        except CandidateEvidenceError as exc:
             raise AifAnalysisError(AifErrorCategory.INVALID_EVIDENCE) from exc
-        _assign_source_references(trusted_result, solution_intent, review_transcript)
-        return trusted_result
-
-
-def _parse_response(response: str | Mapping[str, object]) -> GovernanceResult:
-    if isinstance(response, str):
-        return GovernanceResult.model_validate_json(response)
-    if isinstance(response, Mapping):
-        return GovernanceResult.model_validate(dict(response))
-    raise TypeError("Unsupported response type")
-
-
-def _iter_evidence(result: GovernanceResult) -> list[SourceEvidence]:
-    evidence_items = list(result.outcome_evidence)
-    for collection_name in (
-        "findings",
-        "decisions",
-        "risks",
-        "action_items",
-        "open_questions",
-        "missing_evidence",
-    ):
-        for item in getattr(result, collection_name):
-            evidence_items.extend(item.evidence)
-    return evidence_items
-
-
-def _assign_source_references(
-    result: GovernanceResult,
-    solution_intent: str,
-    review_transcript: str,
-) -> None:
-    normalized_sources = {
-        EvidenceSource.SOLUTION_INTENT: _normalize_source(solution_intent),
-        EvidenceSource.MEETING_TRANSCRIPT: _normalize_source(review_transcript),
-    }
-    for evidence in _iter_evidence(result):
-        source = normalized_sources[evidence.source_type]
-        span = _resolve_unique_span(source, evidence)
-        if span is None:
-            continue
-        source_namespace = (
-            "si" if evidence.source_type is EvidenceSource.SOLUTION_INTENT else "transcript"
-        )
-        source_digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:12]
-        evidence.reference = f"{source_namespace}-{source_digest}-{span[0]}-{span[1]}"
-
-
-def _resolve_unique_span(source: str, evidence: SourceEvidence) -> tuple[int, int] | None:
-    quote = _normalize_source(evidence.quote)
-    spans = _quote_spans(source, quote)
-    if evidence.source_type is EvidenceSource.SOLUTION_INTENT and evidence.section is not None:
-        spans = _filter_si_section_spans(source, spans, evidence.section)
-    if evidence.source_type is EvidenceSource.MEETING_TRANSCRIPT and (
-        evidence.speaker is not None or evidence.timestamp is not None
-    ):
-        spans = _filter_transcript_spans(source, spans, evidence)
-    return spans[0] if len(spans) == 1 else None
-
-
-def _quote_spans(source: str, quote: str) -> list[tuple[int, int]]:
-    spans: list[tuple[int, int]] = []
-    start = 0
-    while True:
-        index = source.find(quote, start)
-        if index < 0:
-            return spans
-        spans.append((index, index + len(quote)))
-        start = index + 1
-
-
-def _filter_si_section_spans(
-    source: str,
-    spans: list[tuple[int, int]],
-    section: str,
-) -> list[tuple[int, int]]:
-    headings = list(_HEADING_PATTERN.finditer(source))
-    normalized_section = " ".join(section.split())
-    section_ranges: list[tuple[int, int]] = []
-    for index, heading in enumerate(headings):
-        if " ".join(heading.group("title").split()) != normalized_section:
-            continue
-        level = len(heading.group(0)) - len(heading.group(0).lstrip("#"))
-        end = len(source)
-        for later in headings[index + 1 :]:
-            later_level = len(later.group(0)) - len(later.group(0).lstrip("#"))
-            if later_level <= level:
-                end = later.start()
-                break
-        section_ranges.append((heading.start(), end))
-    return [
-        span
-        for span in spans
-        if any(start <= span[0] and span[1] <= end for start, end in section_ranges)
-    ]
-
-
-def _filter_transcript_spans(
-    source: str,
-    spans: list[tuple[int, int]],
-    evidence: SourceEvidence,
-) -> list[tuple[int, int]]:
-    utterances = list(_TRANSCRIPT_PATTERN.finditer(source))
-    matched: list[tuple[int, int]] = []
-    for span in spans:
-        for index, utterance in enumerate(utterances):
-            end = utterances[index + 1].start() if index + 1 < len(utterances) else len(source)
-            if not (utterance.start() <= span[0] and span[1] <= end):
-                continue
-            if (
-                evidence.speaker is not None
-                and utterance.group("speaker").strip() != evidence.speaker
-            ):
-                continue
-            if (
-                evidence.timestamp is not None
-                and utterance.group("timestamp").strip() != evidence.timestamp
-            ):
-                continue
-            matched.append(span)
-            break
-    return matched
 
 
 def _normalize_source(value: str) -> str:

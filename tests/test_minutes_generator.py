@@ -11,6 +11,7 @@ from architecture_governance_copilot.minutes_generator import (
     generate_review_minutes,
 )
 from architecture_governance_copilot.models import (
+    NOT_EXTRACTED_NOTICE,
     ActionItem,
     ActionPriority,
     Decision,
@@ -19,6 +20,7 @@ from architecture_governance_copilot.models import (
     GovernanceResult,
     MissingEvidence,
     OpenQuestion,
+    ReviewExtractionScope,
     ReviewFinding,
     ReviewOutcome,
     Risk,
@@ -318,6 +320,51 @@ def test_empty_collections_are_rendered_explicitly() -> None:
     ):
         assert _NONE_RECORDED_LINE in _section(minutes, heading, next_heading)
     assert minutes.count(_NONE_RECORDED_LINE) == 6
+
+
+def test_candidate_scope_distinguishes_not_extracted_from_empty_reviewed_items() -> None:
+    result = _minimal_result(extraction_scope=ReviewExtractionScope())
+
+    minutes = generate_review_minutes(result)
+
+    assert "Review outcome: human-completed." in minutes
+    assert "Source references provide traceability" in minutes
+    excluded_sections = [
+        ("## Confirmed Decisions", "## Review Findings"),
+        ("## Risks", "## Action Items"),
+        ("## Open Questions", "## Missing Governance Information"),
+        ("## Missing Governance Information", "## Governance Note"),
+    ]
+    for heading, next_heading in excluded_sections:
+        section = _section(minutes, heading, next_heading)
+        assert NOT_EXTRACTED_NOTICE in section
+        assert _NONE_RECORDED_LINE not in section
+    assert minutes.count(NOT_EXTRACTED_NOTICE) == 4
+    assert _NONE_RECORDED_LINE in _section(minutes, "## Review Findings", "## Risks")
+    assert _NONE_RECORDED_LINE in _section(minutes, "## Action Items", "## Open Questions")
+    assert "Domain Architect remains responsible for the formal governance decision" in minutes
+
+
+def test_scoped_minutes_preserve_human_completed_action_values(
+    sample_result: GovernanceResult,
+) -> None:
+    data = sample_result.model_dump(mode="json")
+    data.update(
+        extraction_scope=ReviewExtractionScope(),
+        decisions=[],
+        risks=[],
+        open_questions=[],
+        missing_evidence=[],
+    )
+    reviewed = GovernanceResult.model_validate(data)
+    reviewed.action_items[0].owner = "Human-selected owner"
+
+    minutes = generate_review_minutes(reviewed)
+
+    assert "Human-selected owner" in minutes
+    assert reviewed.action_items[0].evidence[0].quote in minutes
+    assert "**Priority:** High" in minutes
+    assert NOT_EXTRACTED_NOTICE in minutes
 
 
 def test_minutes_are_deterministic_ordered_and_do_not_mutate_input(

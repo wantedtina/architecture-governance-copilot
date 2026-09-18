@@ -6,6 +6,7 @@ from datetime import date
 
 from architecture_governance_copilot.markdown_support import escape_markdown_text
 from architecture_governance_copilot.models import (
+    NOT_EXTRACTED_NOTICE,
     ActionItem,
     EvidenceSource,
     GovernanceResult,
@@ -46,9 +47,20 @@ def generate_review_minutes(result: GovernanceResult) -> str:
         lines.insert(-1, "**Outcome origin:** Reviewer-selected in a non-production human review.")
     _append_evidence(lines, result.outcome_evidence)
 
+    if result.extraction_scope is not None:
+        lines.extend(
+            [
+                "",
+                "## Extraction Scope",
+                "",
+                "Automated categories: Findings and Actions. Review outcome: human-completed.",
+                "Source references provide traceability; they do not verify an interpretation.",
+            ]
+        )
+
     lines.extend(["", "## Confirmed Decisions", ""])
     if not result.decisions:
-        lines.append(_NONE_RECORDED)
+        lines.append(_empty_category_notice(result))
     for index, decision in enumerate(result.decisions, start=1):
         lines.append(f"{index}. **{escape_markdown_text(decision.statement)}**")
         if decision.rationale is not None:
@@ -81,7 +93,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
 
     lines.extend(["", "## Risks", ""])
     if not result.risks:
-        lines.append(_NONE_RECORDED)
+        lines.append(_empty_category_notice(result))
     for index, risk in enumerate(result.risks, start=1):
         lines.extend(
             [
@@ -100,7 +112,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
 
     lines.extend(["", "## Open Questions", ""])
     if not result.open_questions:
-        lines.append(_NONE_RECORDED)
+        lines.append(_empty_category_notice(result))
     for index, question in enumerate(result.open_questions, start=1):
         lines.append(f"{index}. **{escape_markdown_text(question.question)}**")
         _append_optional_field(lines, "Owner", question.owner)
@@ -108,7 +120,7 @@ def generate_review_minutes(result: GovernanceResult) -> str:
 
     lines.extend(["", "## Missing Governance Information", ""])
     if not result.missing_evidence:
-        lines.append(_NONE_RECORDED)
+        lines.append(_empty_category_notice(result))
     for index, missing in enumerate(result.missing_evidence, start=1):
         lines.append(f"{index}. **{escape_markdown_text(missing.item)}**")
         _append_optional_field(lines, "Reason", missing.reason)
@@ -129,6 +141,10 @@ def generate_review_minutes(result: GovernanceResult) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def _empty_category_notice(result: GovernanceResult) -> str:
+    return NOT_EXTRACTED_NOTICE if result.extraction_scope is not None else _NONE_RECORDED
 
 
 def format_action_item_entry(action: ActionItem, position: int) -> str:

@@ -1,0 +1,55 @@
+{
+  "provenance": "Synthetic explicit human inputs; never provider defaults.",
+  "review_outcome": "changes_requested",
+  "items": [
+    {
+      "original_index": 0,
+      "kind": "finding",
+      "title": "Retry controls are undefined",
+      "description": "The design does not define the retry budget, backoff limits, or automatic-processing stop condition for ambiguous provider responses.",
+      "category": "Integration Resilience",
+      "si_section": "Integration Behavior",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Document a bounded retry budget, exponential-backoff limits, and the stop condition before another provider submission."
+    },
+    {
+      "original_index": 1,
+      "kind": "finding",
+      "title": "Regional failover evidence is missing",
+      "description": "The warm standby design has neither a scheduled exercise nor a measured recovery result.",
+      "category": "Resilience",
+      "si_section": "Resilience and Recovery",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Schedule the regional exercise and record measured recovery results against the draft targets."
+    },
+    {
+      "original_index": 2,
+      "kind": "finding",
+      "title": "Routing-record retention lacks approval",
+      "description": "The proposed 30-day routing-record retention period has not received formal governance confirmation.",
+      "category": "Security and Privacy",
+      "si_section": "Security and Privacy",
+      "severity": "medium",
+      "status": "open",
+      "recommended_change": "Obtain and record governance approval for the retention period before release readiness."
+    },
+    {
+      "original_index": 3,
+      "kind": "action",
+      "title": "Document retry and backoff controls",
+      "owner": "Riley Chen",
+      "due_date": "2026-09-18",
+      "priority": "high"
+    },
+    {
+      "original_index": 4,
+      "kind": "action",
+      "title": "Schedule and document the regional failover exercise",
+      "owner": "Avery Patel",
+      "due_date": "2026-09-21",
+      "priority": "high"
+    }
+  ]
+}

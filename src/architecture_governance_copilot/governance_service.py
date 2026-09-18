@@ -13,6 +13,7 @@ from architecture_governance_copilot.models import (
     MockAdoWorkItem,
     SolutionIntentReviewContext,
 )
+from architecture_governance_copilot.review_candidates import ReviewCandidateAnalysis
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,7 +35,7 @@ class GovernanceReviewService:
         solution_intent: str,
         review_transcript: str,
         context: SolutionIntentReviewContext,
-    ) -> GovernanceResult:
+    ) -> ReviewCandidateAnalysis:
         """Delegate review analysis to the configured extractor."""
         return self._extractor.extract(solution_intent, review_transcript, context)
 

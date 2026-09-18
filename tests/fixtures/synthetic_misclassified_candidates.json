@@ -1,0 +1,56 @@
+{
+  "items": [
+    {
+      "kind": "finding",
+      "text": "The design does not define the retry budget, backoff limits, or automatic-processing stop condition for ambiguous provider responses.",
+      "evidence_source_ids": [
+        "si-2149aae56b2e-017",
+        "transcript-3d7d65837021-007"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "The warm standby design has neither a scheduled exercise nor a measured recovery result.",
+      "evidence_source_ids": [
+        "si-2149aae56b2e-020",
+        "transcript-3d7d65837021-009"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "The proposed 30-day routing-record retention period has not received formal governance confirmation.",
+      "evidence_source_ids": [
+        "si-2149aae56b2e-023",
+        "transcript-3d7d65837021-013"
+      ]
+    },
+    {
+      "kind": "action",
+      "text": "Document retry and backoff controls; Riley Chen agreed to complete this by 2026-09-18.",
+      "evidence_source_ids": [
+        "transcript-3d7d65837021-008"
+      ]
+    },
+    {
+      "kind": "action",
+      "text": "Schedule and document the regional failover exercise; Avery Patel agreed to complete this by 2026-09-21.",
+      "evidence_source_ids": [
+        "transcript-3d7d65837021-010"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "Approved numeric alert thresholds and an evidence-backed on-call response target are not available yet.",
+      "evidence_source_ids": [
+        "transcript-3d7d65837021-015"
+      ]
+    },
+    {
+      "kind": "finding",
+      "text": "The runbook does not identify the production support escalation roster or approved after-hours handoff.",
+      "evidence_source_ids": [
+        "transcript-3d7d65837021-016"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+{
+  "context": {
+    "project_name": "Digital Payment Notification Service",
+    "si_title": "Solution Intent - Digital Payment Notification Service",
+    "si_version": "1.2",
+    "current_si_status": "under_review",
+    "review_round": 2,
+    "ado_ticket_id": "ARCH-POC-1024",
+    "domain_architect": "Jordan Lee",
+    "review_date": "2026-07-18"
+  },
+  "review_outcome": "changes_requested",
+  "outcome_evidence": [],
+  "findings": [
+    {
+      "title": "Missing traffic-failover behaviour",
+      "description": "The design shows two replicas but does not define traffic behaviour when one application instance is unavailable.",
+      "category": "Resilience",
+      "si_section": "Availability and Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Describe the failure path and update the deployment diagram to show how traffic is handled when a replica is unavailable.",
+      "owner": "Alex Chen",
+      "due_date": "2026-07-24",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "behaviour when one replica becomes unavailable is not described. Recovery time objective (RTO)",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Availability and Resilience",
+          "reference": "si-b70d336d7685-149"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:11] Jordan Lee: The deployment design shows two replicas, but it does not explain how traffic fails over when one instance becomes unavailable.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:11",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-012"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:14] Alex Chen: I will update the Availability and Resilience section and the deployment diagram by 24 July 2026.",
+          "speaker": "Alex Chen",
+          "timestamp": "10:14",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-015"
+        }
+      ]
+    },
+    {
+      "title": "Missing RTO and RPO",
+      "description": "The Solution Intent does not define recovery time or recovery point objectives.",
+      "category": "Resilience",
+      "si_section": "Availability and Resilience",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Record the product-approved RTO and RPO values in the Solution Intent.",
+      "owner": "Priya Shah",
+      "due_date": "2026-07-25",
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "and recovery point objective (RPO) values are not yet defined. Regional disaster recovery and",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Availability and Resilience",
+          "reference": "si-b70d336d7685-150"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:16] Jordan Lee: The RTO and RPO have not been stated, so that remains an open finding.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:16",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-017"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:18] Priya Shah: I will confirm the RTO and RPO values by 25 July 2026.",
+          "speaker": "Priya Shah",
+          "timestamp": "10:18",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-019"
+        }
+      ]
+    },
+    {
+      "title": "Undefined production support ownership",
+      "description": "The production support team and escalation path have not been assigned.",
+      "category": "Operational Readiness",
+      "si_section": "Operational Support",
+      "severity": "medium",
+      "status": "open",
+      "recommended_change": "Name the production support owner and document the escalation path before release approval.",
+      "owner": null,
+      "due_date": null,
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Production support ownership has not yet been assigned. Until an owning team and escalation path",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Operational Support",
+          "reference": "si-b70d336d7685-214"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:20] Jordan Lee: Production support ownership is not defined in the current Solution Intent.",
+          "speaker": "Jordan Lee",
+          "timestamp": "10:20",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-021"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "risks": [],
+  "action_items": [
+    {
+      "title": "Update the resilience design and deployment diagram",
+      "owner": "Alex Chen",
+      "due_date": "2026-07-24",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:14] Alex Chen: I will update the Availability and Resilience section and the deployment diagram by 24 July 2026.",
+          "speaker": "Alex Chen",
+          "timestamp": "10:14",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-015"
+        }
+      ]
+    },
+    {
+      "title": "Confirm the RTO and RPO values",
+      "owner": "Priya Shah",
+      "due_date": "2026-07-25",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[10:18] Priya Shah: I will confirm the RTO and RPO values by 25 July 2026.",
+          "speaker": "Priya Shah",
+          "timestamp": "10:18",
+          "section": null,
+          "reference": "transcript-a42f7926bfc9-019"
+        }
+      ]
+    }
+  ],
+  "open_questions": [],
+  "missing_evidence": [],
+  "extraction_scope": {
+    "automated_categories": [
+      "finding",
+      "action"
+    ],
+    "not_extracted_categories": [
+      "decisions",
+      "risks",
+      "open_questions",
+      "missing_evidence"
+    ],
+    "review_outcome_origin": "human_completed",
+    "analysis_fingerprint": "b95afdca33fbb6c403390e3bc5c360c6a3eae9ae5a6911410f61be8f0e55204d"
+  },
+  "outcome_origin": "reviewer_selected"
+}

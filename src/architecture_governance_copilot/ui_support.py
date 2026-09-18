@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime
@@ -11,6 +12,11 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
+from architecture_governance_copilot.candidate_review import (
+    CandidateReviewDraft,
+    complete_candidate_review,
+    create_candidate_review_draft,
+)
 from architecture_governance_copilot.governance_service import GovernanceOutputs
 from architecture_governance_copilot.integrations.azure_devops import (
     FakeAdoGateway,
@@ -50,6 +56,11 @@ from architecture_governance_copilot.publication import (
     DeliveryStatus,
     PublicationStatus,
 )
+from architecture_governance_copilot.review_candidates import (
+    CANDIDATE_CONTRACT_VERSION,
+    ReviewCandidateAnalysis,
+)
+from architecture_governance_copilot.review_sources import SOURCE_INDEX_VERSION
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     DeploymentPolicy,
@@ -67,7 +78,7 @@ DRAFT_REPOSITORY_NAME_KEY = f"{STATE_PREFIX}draft_repository_name"
 DEPLOYMENT_POLICY_ID_KEY = f"{STATE_PREFIX}deployment_policy_id"
 REVIEW_POLICY_RECOVERY_KEY = f"{STATE_PREFIX}review_policy_recovery"
 REVIEW_WIDGET_PREFIX = f"{STATE_PREFIX}field_"
-STATE_SCHEMA_VERSION = 4
+STATE_SCHEMA_VERSION = 5
 STATE_SCHEMA_VERSION_KEY = f"{STATE_PREFIX}state_schema_version"
 ACTIVE_WORKFLOW_KEY = f"{STATE_PREFIX}active_workflow"
 
@@ -235,6 +246,7 @@ class ReviewFormData:
     open_questions: tuple[Mapping[str, object], ...]
     missing_evidence: tuple[Mapping[str, object], ...]
     outcome_evidence: tuple[SourceEvidence, ...] | None = None
+    outcome_evidence_source_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -264,6 +276,7 @@ class ReviewChangeSummary:
 
     field_changes: tuple[ReviewFieldChange, ...]
     excluded_items: tuple[ReviewExcludedItem, ...]
+    action_original_indices: tuple[int, ...] | None = None
 
     @property
     def has_changes(self) -> bool:
@@ -1092,7 +1105,11 @@ def current_analysis_invalidation(
         return existing
 
     analyzed_result = state.get(ANALYZED_RESULT_KEY)
-    if not isinstance(analyzed_result, GovernanceResult):
+    if isinstance(analyzed_result, GovernanceResult):
+        return invalidate_analysis_for_input_change(
+            state, "Legacy full-result analysis must be replaced by Analyze Review candidates."
+        )
+    if not isinstance(analyzed_result, ReviewCandidateAnalysis):
         return None
     fingerprint = state.get(ANALYZED_FINGERPRINT_KEY)
     if not isinstance(fingerprint, str):
@@ -1101,6 +1118,15 @@ def current_analysis_invalidation(
         manifest = current_review_input_manifest(state)
     except ValueError:
         return invalidate_analysis_for_input_change(state, "Review inputs changed.")
+    if isinstance(analyzed_result, ReviewCandidateAnalysis) and (
+        analyzed_result.contract_version != CANDIDATE_CONTRACT_VERSION
+        or analyzed_result.source_index_version != SOURCE_INDEX_VERSION
+        or analyzed_result.provider_configuration_identity
+        != manifest.provider_configuration_identity
+    ):
+        return invalidate_analysis_for_input_change(
+            state, "The candidate contract or provider changed."
+        )
     current_fingerprint = review_input_manifest_fingerprint(manifest)
     if (
         state.get(REVIEW_INPUT_CONFIRMATION_KEY) != current_fingerprint
@@ -1111,7 +1137,12 @@ def current_analysis_invalidation(
 
 
 def prepare_analysis_attempt(state: MutableMapping[str, Any]) -> None:
-    """Clear derived confirmation state without clearing an invalidation marker."""
+    """Revoke the previous analysis before every attempt, including same-input failures."""
+    invalidate_analysis_for_input_change(
+        state, "A new Analyze Review attempt requires a valid result."
+    )
+    state[ANALYZED_FINGERPRINT_KEY] = None
+    state[REVIEW_DRAFT_KEY] = None
     clear_review_widget_state(state)
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
@@ -1671,13 +1702,15 @@ def load_sample_review_companions_into_state(
 
 def store_analysis(
     state: MutableMapping[str, Any],
-    result: GovernanceResult,
+    result: ReviewCandidateAnalysis,
     fingerprint: str,
 ) -> None:
-    """Store an analysis and an independent draft while clearing old outputs."""
+    """Store candidate analysis and an independent draft while clearing old outputs."""
+    if not isinstance(result, ReviewCandidateAnalysis):
+        raise ValueError("Analyze Review must return candidates, not a completed result.")
     clear_review_widget_state(state)
     state[ANALYZED_RESULT_KEY] = result
-    state[REVIEW_DRAFT_KEY] = result.model_copy(deep=True)
+    state[REVIEW_DRAFT_KEY] = create_candidate_review_draft(result)
     state[REVIEWED_RESULT_KEY] = None
     state[REVIEW_CHANGE_SUMMARY_KEY] = None
     state[OUTPUTS_KEY] = None
@@ -1709,10 +1742,14 @@ def store_outputs(
         for item in change_summary.excluded_items
         if item.collection == "Action item"
     }
-    state[DELIVERY_ORIGINAL_INDICES_KEY] = tuple(
-        index
-        for index in range(len(reviewed_result.action_items) + len(excluded))
-        if index not in excluded
+    state[DELIVERY_ORIGINAL_INDICES_KEY] = (
+        change_summary.action_original_indices
+        if change_summary.action_original_indices is not None
+        else tuple(
+            index
+            for index in range(len(reviewed_result.action_items) + len(excluded))
+            if index not in excluded
+        )
     )
     state[DELIVERY_ACTION_SELECTION_KEY] = 0 if reviewed_result.action_items else None
     state.pop(DELIVERY_ACTION_WIDGET_KEY, None)
@@ -1925,8 +1962,160 @@ def parse_optional_iso_date(value: str) -> date | None:
         raise ValueError(f"Invalid date '{normalized}'. Use YYYY-MM-DD.") from exc
 
 
-def default_review_form_data(result: GovernanceResult) -> ReviewFormData:
-    """Create editable default values from an analyzed governance result."""
+def candidate_draft_from_form(
+    analysis: ReviewCandidateAnalysis, form: ReviewFormData
+) -> CandidateReviewDraft:
+    """Bind editable fields to immutable candidate identities, preserving source order."""
+    edits = (*form.findings, *form.action_items)
+    by_id = {row.get("candidate_id"): row for row in edits}
+    if len(by_id) != len(edits) or set(by_id) != {item.candidate_id for item in analysis.items}:
+        raise ValueError("Candidate identities do not match the analyzed proposal.")
+    items = []
+    for original in analysis.items:
+        row = dict(by_id[original.candidate_id])
+        row["included"] = row.pop("include")
+        for field in ("severity", "status", "priority"):
+            row[field] = row.get(field) or None
+        due = row.get("due_date")
+        row["due_date"] = due.isoformat() if type(due) is date else due or ""
+        items.append(row)
+    return CandidateReviewDraft.model_validate(
+        {
+            "items": items,
+            "review_outcome": form.review_outcome or None,
+            "outcome_evidence_source_ids": list(form.outcome_evidence_source_ids),
+        }
+    )
+
+
+def _candidate_pending_changes(
+    analysis: ReviewCandidateAnalysis,
+    form: ReviewFormData,
+    allow_reviewer_outcome: bool,
+) -> PendingReviewChanges:
+    """Validate pending required values without creating a completed governance result."""
+    changes: list[ReviewFieldChange] = []
+    excluded: list[ReviewExcludedItem] = []
+    issues: list[ReviewValidationIssue] = []
+    defaults = default_review_form_data(analysis)
+    if form.review_outcome:
+        changes.append(
+            ReviewFieldChange(
+                "Review outcome", None, "Governance outcome", "Outcome", None, form.review_outcome
+            )
+        )
+    else:
+        issues.append(
+            ReviewValidationIssue(
+                "Review outcome",
+                None,
+                "Governance outcome",
+                "Outcome",
+                "Select an outcome explicitly.",
+            )
+        )
+    if (
+        form.review_outcome
+        and form.review_outcome != "not_stated"
+        and not form.outcome_evidence_source_ids
+        and not allow_reviewer_outcome
+    ):
+        issues.append(
+            ReviewValidationIssue(
+                "Review outcome",
+                None,
+                "Governance outcome",
+                "Supporting evidence",
+                "Select supporting transcript evidence for the review outcome.",
+            )
+        )
+    if form.outcome_evidence_source_ids:
+        changes.append(
+            ReviewFieldChange(
+                "Review outcome",
+                None,
+                "Governance outcome",
+                "Supporting evidence",
+                None,
+                ", ".join(form.outcome_evidence_source_ids),
+            )
+        )
+    for attribute, collection in (("findings", "Finding"), ("action_items", "Action item")):
+        originals, edits = getattr(defaults, attribute), getattr(form, attribute)
+        _require_edit_count(collection, edits, len(originals))
+        for index, (before, edit) in enumerate(zip(originals, edits, strict=True)):
+            name = str(before.get("description") or before.get("title") or "Candidate")
+            if not _included(edit):
+                excluded.append(ReviewExcludedItem(collection, index, name))
+                continue
+            kind = edit.get("kind")
+            required = (
+                ("title", "description", "severity", "status")
+                if kind == "finding"
+                else ("title", "priority")
+            )
+            relevant = (*required, "kind", "owner", "due_date")
+            if kind == "finding":
+                relevant += ("category", "recommended_change")
+            for field in relevant:
+                old = before.get(field)
+                value = edit.get(field)
+                old_text = _summary_value(old)
+                value_text = _summary_value(value)
+                value_text = value_text.strip() if value_text else None
+                if field in required and not value_text:
+                    issues.append(
+                        ReviewValidationIssue(
+                            collection,
+                            index,
+                            name,
+                            _REVIEW_FIELD_LABELS.get(field, field.title()),
+                            "A value is required.",
+                        )
+                    )
+                if field == "due_date" and value_text:
+                    try:
+                        if re.fullmatch(r"[0-9]{4}-[0-9]{2}-[0-9]{2}", value_text) is None:
+                            raise ValueError("Use YYYY-MM-DD.")
+                        date.fromisoformat(value_text)
+                    except ValueError:
+                        issues.append(
+                            ReviewValidationIssue(
+                                collection, index, name, "Due date", "Use YYYY-MM-DD."
+                            )
+                        )
+                if (old_text or None) != value_text:
+                    changes.append(
+                        ReviewFieldChange(
+                            collection,
+                            index,
+                            name,
+                            _REVIEW_FIELD_LABELS.get(field, field.title()),
+                            old_text or None,
+                            value_text,
+                        )
+                    )
+    return PendingReviewChanges(tuple(changes), tuple(excluded), tuple(issues))
+
+
+def default_review_form_data(result: ReviewCandidateAnalysis | GovernanceResult) -> ReviewFormData:
+    """Create blank business fields for candidates, or historical domain edit values."""
+    if isinstance(result, ReviewCandidateAnalysis):
+        draft = create_candidate_review_draft(result)
+        rows = []
+        for item in draft.items:
+            row = item.model_dump(mode="json")
+            row["include"] = row.pop("included")
+            rows.append(row)
+        return ReviewFormData(
+            review_outcome="",
+            decisions=(),
+            findings=tuple(row for row in rows if row["kind"] == "finding"),
+            risks=(),
+            action_items=tuple(row for row in rows if row["kind"] == "action"),
+            open_questions=(),
+            missing_evidence=(),
+        )
     return ReviewFormData(
         review_outcome=result.review_outcome.value,
         decisions=tuple(
@@ -1990,7 +2179,9 @@ def default_review_form_data(result: GovernanceResult) -> ReviewFormData:
     )
 
 
-def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult) -> ReviewFormData:
+def current_review_form_data(
+    state: Mapping[str, Any], result: ReviewCandidateAnalysis | GovernanceResult
+) -> ReviewFormData:
     """Overlay current routed widget values on the analyzed proposal defaults."""
     defaults = default_review_form_data(result)
 
@@ -2008,8 +2199,11 @@ def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult)
             for index, item in enumerate(values)
         )
 
+    candidate_mode = isinstance(result, ReviewCandidateAnalysis)
     return ReviewFormData(
-        review_outcome=str(state.get(f"{REVIEW_WIDGET_PREFIX}outcome", defaults.review_outcome)),
+        review_outcome=str(
+            state.get(f"{REVIEW_WIDGET_PREFIX}outcome", defaults.review_outcome) or ""
+        ),
         decisions=collection_values(defaults.decisions, "decision"),
         findings=collection_values(defaults.findings, "finding"),
         risks=collection_values(defaults.risks, "risk"),
@@ -2021,19 +2215,22 @@ def current_review_form_data(state: Mapping[str, Any], result: GovernanceResult)
                 str(state.get(TRANSCRIPT_KEY, "")),
                 state.get("agc_field_outcome_lines", []),
             )
-            if not result.outcome_evidence
+            if not candidate_mode and not result.outcome_evidence
             else None
         ),
+        outcome_evidence_source_ids=tuple(state.get("agc_field_outcome_source_ids", [])),
     )
 
 
 def build_pending_review_changes(
-    analyzed_result: GovernanceResult,
+    analyzed_result: ReviewCandidateAnalysis | GovernanceResult,
     form_data: ReviewFormData,
     *,
     allow_reviewer_outcome: bool = False,
 ) -> PendingReviewChanges:
     """Compare an in-progress form without requiring it to be model-valid."""
+    if isinstance(analyzed_result, ReviewCandidateAnalysis):
+        return _candidate_pending_changes(analyzed_result, form_data, allow_reviewer_outcome)
     field_changes: list[ReviewFieldChange] = []
     excluded_items: list[ReviewExcludedItem] = []
     validation_issues: list[ReviewValidationIssue] = []
@@ -2189,12 +2386,18 @@ def build_pending_review_changes(
 
 
 def build_reviewed_result(
-    analyzed_result: GovernanceResult,
+    analyzed_result: ReviewCandidateAnalysis | GovernanceResult,
     form_data: ReviewFormData,
     *,
     allow_reviewer_outcome: bool = False,
 ) -> GovernanceResult:
     """Reconstruct and validate a reviewed result without mutating analysis."""
+    if isinstance(analyzed_result, ReviewCandidateAnalysis):
+        return complete_candidate_review(
+            analyzed_result,
+            candidate_draft_from_form(analyzed_result, form_data),
+            allow_reviewer_selected_outcome=allow_reviewer_outcome,
+        ).result
     _require_edit_count("decisions", form_data.decisions, len(analyzed_result.decisions))
     _require_edit_count("findings", form_data.findings, len(analyzed_result.findings))
     _require_edit_count("risks", form_data.risks, len(analyzed_result.risks))
@@ -2322,11 +2525,24 @@ def build_reviewed_result(
 
 
 def build_review_change_summary(
-    analyzed_result: GovernanceResult,
+    analyzed_result: ReviewCandidateAnalysis | GovernanceResult,
     reviewed_result: GovernanceResult,
     form_data: ReviewFormData,
 ) -> ReviewChangeSummary:
     """Compare validated reviewed values with their original analyzed positions."""
+    if isinstance(analyzed_result, ReviewCandidateAnalysis):
+        pending = _candidate_pending_changes(analyzed_result, form_data, True)
+        draft = candidate_draft_from_form(analyzed_result, form_data)
+        indices = {item.candidate_id: item.original_index for item in analyzed_result.items}
+        return ReviewChangeSummary(
+            field_changes=pending.field_changes,
+            excluded_items=pending.excluded_items,
+            action_original_indices=tuple(
+                indices[item.candidate_id]
+                for item in draft.items
+                if item.included and item.kind == "action"
+            ),
+        )
     field_changes: list[ReviewFieldChange] = []
     excluded_items: list[ReviewExcludedItem] = []
 
@@ -2557,6 +2773,8 @@ def delivery_status(
 
 def clear_review_action_due_date(state: MutableMapping[str, Any], index: int) -> None:
     """Explicitly clear a nullable calendar value before the next widget render."""
+    if ACTIVE_STAGE_KEY in state and active_stage(state) != REVIEW_STAGE:
+        return
     key = f"{REVIEW_WIDGET_PREFIX}action_{index}_due_date"
     state[key] = None
     preserve_review_widget_state(state)
@@ -2828,6 +3046,8 @@ def _evidence_summary(evidence) -> str:
 
 def choose_review_action_owner(state: MutableMapping[str, Any], index: int, owner: str) -> None:
     """Apply an explicit human choice without changing other action fields."""
+    if ACTIVE_STAGE_KEY in state and active_stage(state) != REVIEW_STAGE:
+        return
     state[f"agc_field_action_{index}_owner"] = owner
     preserve_review_widget_state(state)
 

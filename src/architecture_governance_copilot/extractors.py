@@ -10,14 +10,19 @@ from pydantic import ValidationError
 
 from architecture_governance_copilot.demo_review import group_transcript_candidates
 from architecture_governance_copilot.models import (
-    GovernanceResult,
     SolutionIntentReviewContext,
+)
+from architecture_governance_copilot.review_candidates import (
+    ReviewCandidateAnalysis,
+    ReviewCandidatePayload,
+    build_candidate_analysis,
+    parse_candidate_payload,
 )
 
 _SOLUTION_INTENT_FILENAME = "solution_intent.md"
 _TRANSCRIPT_FILENAME = "review_transcript.txt"
 _METADATA_FILENAME = "review_metadata.json"
-_EXPECTED_RESULT_FILENAME = "expected_result.json"
+_EXPECTED_RESULT_FILENAME = "expected_candidates.json"
 _REQUIRED_FILENAMES = (
     _SOLUTION_INTENT_FILENAME,
     _TRANSCRIPT_FILENAME,
@@ -28,15 +33,15 @@ _REQUIRED_FILENAMES = (
 
 @runtime_checkable
 class GovernanceExtractor(Protocol):
-    """Extract a structured governance result from one Solution Intent review."""
+    """Extract source-bound finding/action candidates from one Solution Intent review."""
 
     def extract(
         self,
         solution_intent: str,
         review_transcript: str,
         context: SolutionIntentReviewContext,
-    ) -> GovernanceResult:
-        """Return a validated governance result for the supplied review inputs."""
+    ) -> ReviewCandidateAnalysis:
+        """Return validated candidate analysis for the supplied review inputs."""
         ...
 
 
@@ -75,17 +80,23 @@ class DeterministicDemoExtractor:
 
         self._context = _validate_metadata(metadata_text)
         self._expected_result = _validate_expected_result(expected_result_text)
-        if self._expected_result.context != self._context:
-            raise DeterministicFixtureError(
-                "Deterministic expected-result context does not match review metadata."
+        try:
+            build_candidate_analysis(
+                self._expected_result,
+                self._solution_intent,
+                self._review_transcript,
+                self._context,
+                provider_configuration_identity="offline-candidates-v1",
             )
+        except ValueError as exc:
+            raise DeterministicFixtureError("Deterministic candidate evidence is invalid.") from exc
 
     def extract(
         self,
         solution_intent: str,
         review_transcript: str,
         context: SolutionIntentReviewContext,
-    ) -> GovernanceResult:
+    ) -> ReviewCandidateAnalysis:
         """Return canonical results or literal candidates with current review metadata."""
         if not solution_intent.strip():
             raise ValueError("Solution Intent input must not be blank.")
@@ -103,10 +114,16 @@ class DeterministicDemoExtractor:
             )
         context = SolutionIntentReviewContext.model_validate(context.model_dump())
         if _normalize_document(review_transcript) == _normalize_document(self._review_transcript):
-            result = self._expected_result.model_copy(deep=True)
-            result.context = context.model_copy(deep=True)
-            return result
-        return group_transcript_candidates(review_transcript, context)
+            payload = self._expected_result
+        else:
+            payload = group_transcript_candidates(solution_intent, review_transcript)
+        return build_candidate_analysis(
+            payload,
+            solution_intent,
+            review_transcript,
+            context,
+            provider_configuration_identity="offline-candidates-v1",
+        )
 
 
 def _read_text(path: Path, filename: str) -> str:
@@ -130,15 +147,15 @@ def _validate_metadata(raw_json: str) -> SolutionIntentReviewContext:
         raise DeterministicFixtureError("Deterministic review metadata is invalid.") from exc
 
 
-def _validate_expected_result(raw_json: str) -> GovernanceResult:
+def _validate_expected_result(raw_json: str) -> ReviewCandidatePayload:
     try:
         payload = json.loads(raw_json)
     except json.JSONDecodeError as exc:
         raise DeterministicFixtureError("Deterministic expected result is not valid JSON.") from exc
 
     try:
-        return GovernanceResult.model_validate(payload)
-    except ValidationError as exc:
+        return parse_candidate_payload(payload)
+    except (ValidationError, ValueError, TypeError) as exc:
         raise DeterministicFixtureError("Deterministic expected result is invalid.") from exc
 
 

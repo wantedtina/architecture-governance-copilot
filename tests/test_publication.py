@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import copy
+import json
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
+from architecture_governance_copilot.candidate_review import (
+    complete_candidate_review,
+    create_candidate_review_draft,
+)
 from architecture_governance_copilot.integrations.azure_devops import (
     AdoApiResponse,
     AdoFieldMapping,
@@ -78,6 +84,18 @@ def _preview_inputs() -> tuple[
         runtime.review_transcript,
         runtime.review_context,
     )
+    draft = create_candidate_review_draft(result)
+    completion = json.loads(
+        (Path(__file__).parent / "fixtures" / "internal_fake_human_completion.json").read_text()
+    )
+    draft_payload = draft.model_dump()
+    draft_payload["review_outcome"] = completion["review_outcome"]
+    for item, edit in zip(draft_payload["items"], completion["items"], strict=True):
+        for key, value in edit.items():
+            if key in item and key not in {"candidate_id", "kind"}:
+                item[key] = value
+    draft = type(draft).model_validate(draft_payload)
+    result = complete_candidate_review(result, draft, allow_reviewer_selected_outcome=True).result
     return result, snapshot, _target()
 
 
@@ -116,7 +134,7 @@ def test_preview_and_confirmation_fingerprints_cover_all_mutable_bindings() -> N
     result, snapshot, target = _preview_inputs()
     original = build_ado_publication_preview(result, snapshot, 0, target)
     changed_result = result.model_copy(deep=True)
-    changed_result.missing_evidence = []
+    changed_result.findings = []
     changed_mapping = target.model_copy(
         update={
             "fields": target.fields.model_copy(
@@ -254,7 +272,7 @@ def test_stale_or_unconfirmed_preview_never_calls_gateway() -> None:
     result, snapshot, target = _preview_inputs()
     preview = build_ado_publication_preview(result, snapshot, 0, target)
     stale_result = result.model_copy(deep=True)
-    stale_result.missing_evidence = []
+    stale_result.findings = []
     gateway = InMemoryFakeAdoGateway()
 
     with pytest.raises(PublicationValidationError, match="previewed and confirmed again"):
@@ -442,6 +460,7 @@ def test_original_action_identity_survives_exclusion_and_protects_history(status
 @pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
 def test_legacy_compacted_correlation_is_retained_after_restoration(status) -> None:
     result, snapshot, target = _preview_inputs()
+    result.extraction_scope = None
     compact = result.model_copy(deep=True)
     compact.action_items = [compact.action_items[1]]
     legacy = build_ado_publication_preview(compact, snapshot, 0, target)
@@ -467,6 +486,7 @@ def test_legacy_compacted_correlation_is_retained_after_restoration(status) -> N
 
 def test_legacy_gateway_match_prevents_create_without_local_history() -> None:
     result, snapshot, target = _preview_inputs()
+    result.extraction_scope = None
     compact = result.model_copy(deep=True)
     compact.action_items = [compact.action_items[1]]
     legacy = build_ado_publication_preview(compact, snapshot, 0, target)
@@ -625,3 +645,121 @@ def test_readable_summary_contains_every_exact_request_field_and_binding() -> No
     assert summary["Resolved assignee"] == target.owner_identities[result.action_items[1].owner]
     assert summary["Reviewed priority"] == result.action_items[1].priority.value
     assert summary["Correlation"] == preview.request.correlation_id
+
+
+@pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
+def test_candidate_reanalysis_cannot_bypass_protected_history(status):
+    from architecture_governance_copilot.publication import (
+        candidate_publication_reconciliation_blocker,
+    )
+
+    result, snapshot, target = _preview_inputs()
+    original = build_ado_publication_preview(result, snapshot, 0, target, original_action_index=3)
+    prior = AdoPublicationOperation(
+        status=status,
+        correlation_id=original.request.correlation_id,
+        request_binding_fingerprint=original.request.binding_fingerprint,
+        package_fingerprint=original.package_fingerprint,
+        analysis_fingerprint=original.analysis_fingerprint,
+        message="Retained protected result.",
+    )
+    # A changed source-ID scheme/reordered analysis cannot silently become a new action.
+    revised = result.model_copy(deep=True)
+    revised.extraction_scope = revised.extraction_scope.model_copy(
+        update={"analysis_fingerprint": "a" * 64}
+    )
+    revised.action_items.reverse()
+    preview = build_ado_publication_preview(revised, snapshot, 0, target, original_action_index=3)
+    history = {prior.correlation_id: prior}
+    assert "another analysis" in candidate_publication_reconciliation_blocker(preview, history)
+    gateway = InMemoryFakeAdoGateway()
+    with pytest.raises(PublicationValidationError, match="another analysis"):
+        AdoPublicationCoordinator(gateway).publish(
+            preview=preview,
+            confirmation=confirm_ado_publication_preview(preview),
+            reviewed_result=revised,
+            source_snapshot=snapshot,
+            target=target,
+            original_action_index=3,
+            prior_operations=history,
+        )
+    assert not gateway.create_calls
+    # Another retained action from the unchanged analysis remains independently deliverable.
+    sibling = build_ado_publication_preview(result, snapshot, 1, target, original_action_index=4)
+    assert candidate_publication_reconciliation_blocker(sibling, history) is None
+
+
+@pytest.mark.parametrize("status", [PublicationStatus.SUCCEEDED, PublicationStatus.UNKNOWN_RESULT])
+def test_pre_candidate_unbound_history_requires_reconciliation_before_create(status):
+    result, snapshot, target = _preview_inputs()
+    preview = build_ado_publication_preview(result, snapshot, 0, target, original_action_index=3)
+    legacy = AdoPublicationOperation(
+        status=status,
+        correlation_id="legacy-correlation-with-earlier-evidence-ids",
+        request_binding_fingerprint="legacy-binding",
+        message="Receipt from the previous full-result path.",
+    )
+    gateway = InMemoryFakeAdoGateway()
+    with pytest.raises(PublicationValidationError, match="legacy delivery result"):
+        AdoPublicationCoordinator(gateway).publish(
+            preview=preview,
+            confirmation=confirm_ado_publication_preview(preview),
+            reviewed_result=result,
+            source_snapshot=snapshot,
+            target=target,
+            original_action_index=3,
+            prior_operations={legacy.correlation_id: legacy},
+        )
+    assert not gateway.create_calls
+
+
+def test_prepared_create_description_preserves_bounded_extraction_scope():
+    from architecture_governance_copilot.models import NOT_EXTRACTED_NOTICE
+
+    result, snapshot, target = _preview_inputs()
+    preview = build_ado_publication_preview(result, snapshot, 0, target, original_action_index=3)
+    description = next(
+        item.value
+        for item in preview.request.operations
+        if item.path == "/fields/System.Description"
+    )
+    assert NOT_EXTRACTED_NOTICE in description
+    assert "Review outcome: human-completed" in description
+    assert "formal governance decision" in description
+
+
+def test_distinct_candidates_sharing_evidence_can_be_delivered_independently():
+    from architecture_governance_copilot.publication import delivery_action_correlations
+
+    result, snapshot, target = _preview_inputs()
+    result.action_items[1].evidence = [
+        item.model_copy(deep=True) for item in result.action_items[0].evidence
+    ]
+    first = build_ado_publication_preview(result, snapshot, 0, target, original_action_index=3)
+    second = build_ado_publication_preview(result, snapshot, 1, target, original_action_index=4)
+    assert first.request.correlation_id != second.request.correlation_id
+    assert delivery_action_correlations(result, snapshot, 1, 4, target) == (
+        second.request.correlation_id,
+    )
+    gateway = InMemoryFakeAdoGateway()
+    coordinator = AdoPublicationCoordinator(gateway)
+    first_operation = coordinator.publish(
+        preview=first,
+        confirmation=confirm_ado_publication_preview(first),
+        reviewed_result=result,
+        source_snapshot=snapshot,
+        target=target,
+        original_action_index=3,
+    )
+    second_operation = coordinator.publish(
+        preview=second,
+        confirmation=confirm_ado_publication_preview(second),
+        reviewed_result=result,
+        source_snapshot=snapshot,
+        target=target,
+        original_action_index=4,
+        prior_operations={first_operation.correlation_id: first_operation},
+    )
+    assert first_operation.status is PublicationStatus.SUCCEEDED
+    assert second_operation.status is PublicationStatus.SUCCEEDED
+    assert len(gateway.create_calls) == 2

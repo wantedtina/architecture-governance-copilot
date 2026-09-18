@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import runpy
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -53,7 +55,7 @@ def _review_inputs_app() -> AppTest:
     return app
 
 
-def _analyzed_app() -> AppTest:
+def _analyzed_app(*, complete_fields: bool = True) -> AppTest:
     app = _review_inputs_app()
     app.button(key="agc_load_review_transcript").click().run()
     app.button(key="agc_load_review_metadata").click().run()
@@ -65,6 +67,52 @@ def _analyzed_app() -> AppTest:
     # navigation triggered by Analyze Review.
     assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     app.switch_page("pages/human_review.py").run()
+    if complete_fields:
+        _complete_required_fields(app)
+    return app
+
+
+def _complete_required_fields(app: AppTest, *, force: bool = False) -> AppTest:
+    """Act as the synthetic human reviewer; these values are never app defaults."""
+    analysis = app.session_state[ANALYZED_RESULT_KEY]
+    marker = analysis.model_dump_json()
+    if not force and app.session_state.filtered_state.get("agc_test_completed_analysis") == marker:
+        return app
+    name = "internal_fake" if "Routing" in analysis.context.si_title else "offline"
+    overlay = json.loads(
+        (REPOSITORY_ROOT / "tests" / "fixtures" / f"{name}_human_completion.json").read_text()
+    )
+    counts = {"finding": 0, "action": 0}
+    for item in analysis.items:
+        ordinal = counts[item.kind]
+        counts[item.kind] += 1
+        prefix = f"agc_field_{item.kind}_{ordinal}_"
+        reviewed = next(
+            (
+                row
+                for row in overlay["items"]
+                if row["original_index"] == item.original_index and row["kind"] == item.kind
+            ),
+            {},
+        )
+        if item.kind == "finding":
+            app.text_input(key=prefix + "title").input(
+                reviewed.get("title", f"Reviewed finding {ordinal + 1}")
+            )
+            app.selectbox(key=prefix + "severity").set_value(reviewed.get("severity", "medium"))
+            app.selectbox(key=prefix + "status").set_value(reviewed.get("status", "open"))
+        else:
+            app.selectbox(key=prefix + "priority").set_value(reviewed.get("priority", "medium"))
+            if reviewed.get("owner"):
+                app.text_input(key=prefix + "owner").input(reviewed["owner"])
+            if reviewed.get("due_date"):
+                app.date_input(key=prefix + "due_date").set_value(
+                    date.fromisoformat(reviewed["due_date"])
+                )
+    if app.selectbox(key="agc_field_outcome").value is None:
+        app.selectbox(key="agc_field_outcome").set_value(overlay["review_outcome"])
+    app.session_state["agc_test_completed_analysis"] = marker
+    app.run()
     return app
 
 
@@ -158,6 +206,7 @@ def test_configured_internal_fake_flow_uses_separate_sources_and_human_review(
     app.switch_page("pages/human_review.py").run()
     assert any("Fake AIF" in item.value for item in app.caption)
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert [item.value for item in app.header] == ["Review step 3 — Generated Outputs"]
@@ -575,23 +624,20 @@ def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None
     assert all(item.key != SOLUTION_INTENT_WIDGET_KEY for item in app.text_area)
     assert all(item.key != TRANSCRIPT_WIDGET_KEY for item in app.text_area)
     assert app.button(key="agc_back_to_inputs")
-    assert [(item.label, item.value) for item in app.metric] == [
-        ("Outcome", "Changes Requested"),
-        ("Decisions", "1"),
-        ("Findings", "3"),
-        ("Risks", "1"),
-        ("Actions", "2"),
-        ("Open Questions", "1"),
-        ("Missing Information", "2"),
+    assert [(item.label, item.value) for item in app.metric][:3] == [
+        ("Finding candidates", "3"),
+        ("Action candidates", "2"),
+        ("Review outcome", "Human completion required"),
     ]
-    assert [tab.label for tab in app.tabs] == [
-        "Decisions · 1",
-        "Findings · 3",
-        "Risks · 1",
-        "Actions · 2",
-        "Questions · 1",
-        "Missing Info · 2",
-    ]
+    assert any(tab.label.startswith("Finding proposals · 3") for tab in app.tabs)
+    assert any(tab.label.startswith("Action proposals · 2") for tab in app.tabs)
+    assert app.selectbox(key="agc_field_outcome").value is None
+    assert app.selectbox(key="agc_field_finding_0_status").value is None
+    assert app.selectbox(key="agc_field_action_0_priority").value is None
+    assert app.text_input(key="agc_field_finding_0_title").value == ""
+    assert app.text_input(key="agc_field_action_0_owner").value == ""
+    assert app.date_input(key="agc_field_action_0_due_date").value is None
+    assert any("Not extracted in this version" in item.value for item in app.caption)
     assert any(
         "no outputs were generated automatically" in item.value.lower() for item in app.success
     )
@@ -601,13 +647,14 @@ def test_sample_load_and_analysis_show_draft_without_automatic_outputs() -> None
 def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     app = _analyzed_app()
     evidence_sections = [
-        item for item in app.expander if "supporting evidence" in item.label.lower()
+        item for item in app.expander if "source traceability" in item.label.lower()
     ]
     assert evidence_sections
     assert all(item.proto.expanded for item in evidence_sections)
 
     app.text_input(key="agc_field_action_0_owner").input("Taylor Kim")
-    app.checkbox(key="agc_field_question_0_include").uncheck()
+    app.checkbox(key="agc_field_finding_2_include").uncheck()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
@@ -643,7 +690,8 @@ def test_human_edit_and_exclusion_generate_reviewed_outputs() -> None:
     )
     assert any("Taylor Kim" in item.value for item in app.markdown)
     assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
-    assert sum("Should Redis be used as a cache?" in item.value for item in app.markdown) == 1
+    assert app.session_state[REVIEWED_RESULT_KEY].open_questions == []
+    assert len(app.session_state[REVIEWED_RESULT_KEY].findings) == 2
     assert sum("Work Item Preview" in item.value for item in app.markdown) == 2
 
 
@@ -655,6 +703,7 @@ def test_output_comparison_uses_reviewed_index_with_duplicate_titles() -> None:
     app.text_input(key="agc_field_action_1_title").input(duplicate_title)
     app.text_input(key="agc_field_action_1_owner").input("Second Owner")
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
 
@@ -680,6 +729,7 @@ def test_output_comparison_reindexes_after_first_action_is_excluded() -> None:
     app = _analyzed_app()
     app.checkbox(key="agc_field_action_0_include").uncheck()
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     reviewed = app.session_state[REVIEWED_RESULT_KEY]
@@ -702,6 +752,7 @@ def test_output_comparison_has_clear_empty_state_without_actions() -> None:
     app.checkbox(key="agc_field_action_0_include").uncheck()
     app.checkbox(key="agc_field_action_1_include").uncheck()
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
@@ -713,18 +764,23 @@ def test_output_comparison_has_clear_empty_state_without_actions() -> None:
     assert not app.session_state[OUTPUTS_KEY].ado_work_items
 
 
-def test_no_change_confirmation_shows_explicit_review_summary_state() -> None:
+def test_required_human_completion_appears_in_review_summary() -> None:
     app = _analyzed_app()
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
     assert any(item.value == "Human Review Changes" for item in app.subheader)
-    assert any("No changes were made during human review" in item.value for item in app.info)
+    assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY].has_changes
+    assert any(
+        c.field == "Outcome" for c in app.session_state[REVIEW_CHANGE_SUMMARY_KEY].field_changes
+    )
 
 
 def test_start_new_review_clears_completed_workflow_and_returns_to_inputs() -> None:
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
 
@@ -741,31 +797,35 @@ def test_invalid_review_date_shows_error_without_stale_outputs() -> None:
     app = _analyzed_app()
     app.text_input(key="agc_field_finding_0_due_date").input("24 July 2026")
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
-    assert any("Use YYYY-MM-DD" in item.value for item in app.error)
+    assert any("YYYY-MM-DD" in item.value for item in app.error)
     assert all(item.value != "Review step 3 — Generated Outputs" for item in app.header)
 
 
 def test_generation_failure_clears_previous_review_change_summary() -> None:
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] is not None
 
     app.button(key="agc_back_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
     app.text_input(key="agc_field_finding_0_due_date").input("24 July 2026")
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert not app.exception
-    assert any("Use YYYY-MM-DD" in item.value for item in app.error)
+    assert any("YYYY-MM-DD" in item.value for item in app.error)
     assert app.session_state[REVIEW_CHANGE_SUMMARY_KEY] is None
     assert app.session_state[OUTPUTS_KEY] is None
 
 
 def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert any(item.value == "Review step 3 — Generated Outputs" for item in app.header)
 
@@ -793,6 +853,7 @@ def test_changed_inputs_make_analysis_stale_and_hide_previous_outputs() -> None:
 
 def test_returning_from_outputs_restores_sources_without_false_invalidation() -> None:
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
 
@@ -879,6 +940,7 @@ def test_missing_metadata_and_output_deep_link_route_to_invalid_review_snapshot(
 
 def test_unsubmitted_review_edits_do_not_replace_confirmed_snapshot() -> None:
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     confirmed_result = app.session_state[REVIEWED_RESULT_KEY]
     confirmed_summary = app.session_state[REVIEW_CHANGE_SUMMARY_KEY]
@@ -911,11 +973,9 @@ def test_routed_back_navigation_preserves_pending_review_edits() -> None:
     assert [item.value for item in app.header] == ["Review step 2 — Human Review"]
     app.switch_page("pages/human_review.py").run()
     assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Kim"
-    assert [(item.label, item.value) for item in app.metric][0] == (
-        "Outcome",
-        "Changes Requested",
-    )
+    assert [(item.label, item.value) for item in app.metric][0] == ("Finding candidates", "3")
 
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
 
     assert any("Action item 1" in item.value and "Owner" in item.value for item in app.markdown)
@@ -924,45 +984,26 @@ def test_routed_back_navigation_preserves_pending_review_edits() -> None:
 
 def test_pending_review_awareness_updates_reverts_and_survives_routing() -> None:
     app = _analyzed_app()
-    assert any("No pending human changes" in item.value for item in app.info)
-
+    baseline = {item.label: item.value for item in app.metric}
+    assert baseline["Validation issues"] == "0"
     original_owner = app.text_input(key="agc_field_action_0_owner").value
-    app.session_state["agc_human_review_tabs"] = "Actions · 2"
     app.text_input(key="agc_field_action_0_owner").input("Taylor Kim").run()
-    assert app.session_state["agc_human_review_tabs"] == "Actions · 2 · 1 edited"
-
-    metrics = {item.label: item.value for item in app.metric}
-    assert metrics["Modified fields"] == "1"
-    assert metrics["Excluded items"] == "0"
-    assert metrics["Affected sections"] == "1"
-    assert metrics["Validation issues"] == "0"
-    assert "Actions · 2 · 1 edited" in [tab.label for tab in app.tabs]
-    assert any("Edited by you · 1 field" in item.value for item in app.markdown)
-
-    assert any(item.value == "Original: Alex Chen → Your edit: Taylor Kim" for item in app.text)
-    assert any("Your changes: 1 field edited" in item.value for item in app.caption)
-    app.checkbox(key="agc_field_question_0_include").uncheck().run()
-    assert "Questions · 1 · 1 excluded" in [tab.label for tab in app.tabs]
-    assert any("Excluded by you" in item.value for item in app.markdown)
-
+    assert any("Your edit: Taylor Kim" in item.value for item in app.text)
+    app.checkbox(key="agc_field_finding_2_include").uncheck().run()
+    assert {item.label: item.value for item in app.metric}["Excluded items"] == "1"
     app.text_input(key="agc_field_finding_0_due_date").input("next Friday").run()
     assert any("Finding 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
-    assert {item.label: item.value for item in app.metric}["Validation issues"] == "1"
-
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
     app.button(key="agc_return_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
     assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Kim"
     assert any("Finding 1 · Due date: Use YYYY-MM-DD." in item.value for item in app.warning)
-
     app.text_input(key="agc_field_action_0_owner").input(original_owner).run()
-    app.text_input(key="agc_field_finding_0_due_date").input("2026-07-24").run()
-    app.checkbox(key="agc_field_question_0_include").check().run()
-    assert any("No pending human changes" in item.value for item in app.info)
-    assert all("edited" not in tab.label and "excluded" not in tab.label for tab in app.tabs)
-    assert not any("Changed by you" in item.value for item in app.markdown)
-    assert not any("Edited by you" in item.value for item in app.markdown)
+    app.text_input(key="agc_field_finding_0_due_date").input("").run()
+    app.checkbox(key="agc_field_finding_2_include").check().run()
+    assert {item.label: item.value for item in app.metric} == baseline
+    assert not app.exception
 
 
 def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> None:
@@ -974,6 +1015,7 @@ def test_incomplete_analysis_is_disabled_and_reset_restores_initial_screen() -> 
     app.button(key="agc_confirm_review_inputs").click().run()
     app.button(key="agc_analyze").click().run()
     app.switch_page("pages/human_review.py").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
     app.button(key="agc_reset_from_outputs").click().run()
@@ -994,7 +1036,8 @@ def test_nullable_action_date_clear_change_and_navigation() -> None:
     assert original == date(2026, 7, 24)
     app.button(key="agc_clear_action_0_due_date").click().run()
     assert app.date_input(key=key).value is None
-    assert {item.label: item.value for item in app.metric}["Modified fields"] == "1"
+    assert int({item.label: item.value for item in app.metric}["Modified fields"]) >= 1
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert app.session_state[REVIEWED_RESULT_KEY].action_items[0].due_date is None
     app.switch_page("pages/generated_outputs.py").run()
@@ -1010,7 +1053,7 @@ def test_nullable_action_date_clear_change_and_navigation() -> None:
     app.switch_page("pages/human_review.py").run()
     assert app.date_input(key=key).value == date(1990, 1, 1)
     app.date_input(key=key).set_value(original).run()
-    assert any("No pending human changes" in item.value for item in app.info)
+    assert {item.label: item.value for item in app.metric}["Validation issues"] == "0"
     assert not app.exception
 
 
@@ -1028,6 +1071,7 @@ def _fake_delivery_app(monkeypatch) -> AppTest:
     ):
         app.button(key=key).click().run()
     app.switch_page("pages/human_review.py").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
     app.button(key="agc_continue_delivery").click().run()
@@ -1051,6 +1095,7 @@ def test_delivery_offline_unavailable_empty_not_applicable_and_guard() -> None:
     app.switch_page("pages/work_item_delivery.py").run()
     assert [item.value for item in app.header] == ["Review step 1 — Review Inputs"]
     app = _analyzed_app()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     outputs = app.session_state[OUTPUTS_KEY]
     app.switch_page("pages/generated_outputs.py").run()
@@ -1064,6 +1109,7 @@ def test_delivery_offline_unavailable_empty_not_applicable_and_guard() -> None:
     app.switch_page("pages/human_review.py").run()
     for index in (0, 1):
         app.checkbox(key=f"agc_field_action_{index}_include").uncheck()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/work_item_delivery.py").run()
     assert any("Not applicable" in item.value for item in app.info)
@@ -1118,6 +1164,7 @@ def test_delivery_exclusion_retains_protection_and_legacy_history_after_reset(
     app.button(key="agc_delivery_back_review").click().run()
     app.switch_page("pages/human_review.py").run()
     app.checkbox(key="agc_field_action_0_include").uncheck()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/work_item_delivery.py").run()
     assert app.button(key="agc_prepare_ado_publication").disabled
@@ -1138,6 +1185,7 @@ def test_delivery_blockers_are_named_without_mutating_owner_or_date(monkeypatch)
     app.switch_page("pages/human_review.py").run()
     app.text_input(key="agc_field_action_0_owner").input("Unmapped Synthetic Owner")
     app.date_input(key="agc_field_action_0_due_date").set_value(None)
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/work_item_delivery.py").run()
     assert app.button(key="agc_prepare_ado_publication").disabled
@@ -1381,10 +1429,15 @@ def test_custom_review_inputs_reach_human_review_and_outputs() -> None:
     assert app.session_state[OUTPUTS_KEY] is None
     result = app.session_state[ANALYZED_RESULT_KEY]
     assert result.context.domain_architect == "Demo Reviewer"
-    assert result.action_items[0].title == "Action: test synthetic recovery."
-    assert result.missing_evidence[0].evidence[0].quote == "Unclassified note."
+    assert (
+        next(item.text for item in result.items if item.kind == "action")
+        == "Action: test synthetic recovery."
+    )
+    assert "Unclassified note." in result.review_transcript
+    assert all(item.kind in {"finding", "action"} for item in result.items)
     app.switch_page("pages/human_review.py").run()
     app.text_input(key="agc_field_action_0_owner").input("Demo Owner").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert not app.exception
     assert "Demo Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
@@ -1394,6 +1447,7 @@ def test_custom_review_inputs_reach_human_review_and_outputs() -> None:
 def test_review_error_uses_visible_feedback_and_clears_on_correction() -> None:
     app = _analyzed_app()
     app.text_input(key="agc_field_finding_0_due_date").input("next Friday").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert any("Unable to generate reviewed outputs" in item.value for item in app.error)
     assert any("Your inputs are retained" in item.value for item in app.caption)
@@ -1437,21 +1491,30 @@ def test_custom_outcome_allows_optional_evidence_and_preserves_selection_across_
     assert not app.button(key="agc_confirm_review").disabled
     app.selectbox(key="agc_field_outcome").set_value("changes_requested").run()
     assert not app.button(key="agc_confirm_review").disabled
-    assert any("Reviewer-selected" in item.value for item in app.info)
-    app.multiselect(key="agc_field_outcome_lines").set_value([2]).run()
+    assert any("Human-completed outcome" in item.value for item in app.caption)
+    from architecture_governance_copilot.review_sources import build_review_source_index
+
+    analyzed = app.session_state[ANALYZED_RESULT_KEY]
+    line_id = (
+        build_review_source_index(analyzed.solution_intent, analyzed.review_transcript)
+        .entries[-1]
+        .source_id
+    )
+    app.multiselect(key="agc_field_outcome_source_ids").set_value([line_id]).run()
     assert not app.button(key="agc_confirm_review").disabled
     app.text_input(key="agc_field_action_0_owner").input("Demo Owner").run()
-    assert app.multiselect(key="agc_field_outcome_lines").value == [2]
+    assert app.multiselect(key="agc_field_outcome_source_ids").value == [line_id]
     app.button(key="agc_back_to_inputs").click().run()
     app.switch_page("pages/review_inputs.py").run()
     app.button(key="agc_return_to_review").click().run()
     app.switch_page("pages/human_review.py").run()
-    assert app.multiselect(key="agc_field_outcome_lines").value == [2]
+    assert app.multiselect(key="agc_field_outcome_source_ids").value == [line_id]
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert not app.exception
     reviewed = app.session_state[ui_support.REVIEWED_RESULT_KEY]
     assert reviewed.outcome_evidence[0].quote == "The review outcome is changes requested."
-    assert reviewed.outcome_evidence[0].reference == "transcript-line-2"
+    assert reviewed.outcome_evidence[0].reference == line_id
     assert any(
         c.field == "Supporting evidence"
         for c in app.session_state[ui_support.REVIEW_CHANGE_SUMMARY_KEY].field_changes
@@ -1481,6 +1544,7 @@ def test_demo_human_outcome_without_transcript_support(outcome, profile, monkeyp
     app.switch_page("pages/human_review.py").run()
     app.selectbox(key="agc_field_outcome").set_value(outcome).run()
     assert not app.button(key="agc_confirm_review").disabled
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     assert not app.exception
     reviewed = app.session_state[ui_support.REVIEWED_RESULT_KEY]
@@ -1524,6 +1588,7 @@ def test_edited_internal_fake_inputs_reach_guarded_delivery(monkeypatch, ticket)
     assert app.text_input(key="agc_field_action_0_owner").value == "Taylor Demo / Platform"
     app.date_input(key="agc_field_action_0_due_date").set_value(date(2026, 9, 20)).run()
     app.selectbox(key="agc_field_outcome").set_value("approved").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
     assert "Demo Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
@@ -1558,6 +1623,7 @@ def test_offline_custom_review_values_remain_local_only(monkeypatch):
     app.button(key="agc_analyze").click().run()
     app.switch_page("pages/human_review.py").run()
     app.text_input(key="agc_field_action_0_owner").input("Custom Reviewer").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
     assert "Custom Reviewer" in app.session_state[OUTPUTS_KEY].review_minutes
@@ -1576,6 +1642,7 @@ def test_custom_owner_edit_revokes_preview_and_requires_confirmation(monkeypatch
     app.button(key="agc_delivery_back_review").click().run()
     app.switch_page("pages/human_review.py").run()
     app.text_input(key="agc_field_action_0_owner").input("New custom owner").run()
+    _complete_required_fields(app)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/work_item_delivery.py").run()
     assert app.session_state[ui_support.ADO_PUBLICATION_CONFIRMATION_KEY] is None
@@ -1632,6 +1699,7 @@ def test_new_demo_run_allows_another_create_without_restart(monkeypatch, unknown
     ):
         app.button(key=key).click().run()
     app.switch_page("pages/human_review.py").run()
+    _complete_required_fields(app, force=True)
     app.button(key="agc_confirm_review").click().run()
     app.switch_page("pages/generated_outputs.py").run()
     app.button(key="agc_continue_delivery").click().run()
@@ -1651,3 +1719,136 @@ def test_offline_has_no_new_fake_demo_run_control(monkeypatch):
     monkeypatch.setenv("AGC_DEPLOYMENT_PROFILE", "demo")
     app = _review_inputs_app()
     assert not any(button.key == "agc_confirm_new_demo_run" for button in app.button)
+
+
+def test_candidate_confirmation_requires_explicit_business_completion():
+    app = _analyzed_app(complete_fields=False)
+    app.button(key="agc_confirm_review").click().run()
+    assert app.session_state[REVIEWED_RESULT_KEY] is None
+    assert app.session_state[OUTPUTS_KEY] is None
+    assert app.error
+    app.selectbox(key="agc_field_outcome").set_value("not_stated").run()
+    for checkbox in app.checkbox:
+        if (
+            checkbox.key
+            and checkbox.key.startswith("agc_field_")
+            and checkbox.key.endswith("_include")
+        ):
+            checkbox.uncheck()
+    app.button(key="agc_confirm_review").click().run()
+    assert not app.exception
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    assert reviewed.findings == reviewed.action_items == []
+    assert reviewed.review_outcome.value == "not_stated"
+    assert reviewed.extraction_scope is not None
+    assert "Not extracted in this version" in app.session_state[OUTPUTS_KEY].review_minutes
+
+
+def test_candidate_kind_correction_preserves_evidence_and_delivery_identity():
+    app = _analyzed_app()
+    analyzed = app.session_state[ANALYZED_RESULT_KEY]
+    app.selectbox(key="agc_field_finding_0_kind").set_value("action").run()
+    assert app.selectbox(key="agc_field_finding_0_priority").value is None
+    app.selectbox(key="agc_field_finding_0_priority").set_value("high").run()
+    app.selectbox(key="agc_field_action_0_kind").set_value("finding").run()
+    assert app.selectbox(key="agc_field_action_0_severity").value is None
+    assert app.selectbox(key="agc_field_action_0_status").value is None
+    app.selectbox(key="agc_field_action_0_severity").set_value("medium")
+    app.selectbox(key="agc_field_action_0_status").set_value("open")
+    app.button(key="agc_confirm_review").click().run()
+    assert not app.exception
+    assert app.session_state[ui_support.DELIVERY_ORIGINAL_INDICES_KEY] == (0, 4)
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    assert len(reviewed.findings) == 3
+    assert len(reviewed.action_items) == 2
+    assert reviewed.action_items[0].evidence[0].reference == analyzed.items[0].evidence[0].reference
+    assert analyzed.items[0].kind == "finding"
+
+
+def test_same_input_failed_analysis_cannot_reuse_previous_candidates(monkeypatch):
+    from architecture_governance_copilot.governance_service import GovernanceReviewService
+
+    app = _analyzed_app()
+    app.button(key="agc_confirm_review").click().run()
+    app.switch_page("pages/generated_outputs.py").run()
+    app.button(key="agc_back_to_review").click().run()
+    app.switch_page("pages/human_review.py").run()
+    app.button(key="agc_back_to_inputs").click().run()
+    app.switch_page("pages/review_inputs.py").run()
+    before = app.session_state[ANALYZED_RESULT_KEY]
+
+    def fail(*args):
+        raise ValueError("Synthetic same-input provider failure")
+
+    monkeypatch.setattr(GovernanceReviewService, "analyze_review", fail)
+    app.button(key="agc_analyze").click().run()
+    assert app.session_state[ANALYZED_RESULT_KEY] == before
+    assert app.session_state[ANALYSIS_INVALIDATION_KEY] is not None
+    assert app.session_state[OUTPUTS_KEY] is None
+    assert app.session_state[REVIEWED_RESULT_KEY] is None
+    assert all(button.key != "agc_return_to_review" for button in app.button)
+    app.switch_page("pages/human_review.py").run()
+    assert all(button.key != "agc_confirm_review" for button in app.button)
+    assert not app.exception
+
+
+def test_semantic_mistakes_reach_review_and_are_explicitly_excluded(monkeypatch):
+    from architecture_governance_copilot.review_candidates import build_candidate_analysis
+
+    app = _fake_delivery_app(monkeypatch)
+    original = app.session_state[ANALYZED_RESULT_KEY]
+    payload = json.loads(
+        (
+            REPOSITORY_ROOT / "tests" / "fixtures" / "synthetic_misclassified_candidates.json"
+        ).read_text()
+    )
+    analysis = build_candidate_analysis(
+        payload,
+        original.solution_intent,
+        original.review_transcript,
+        original.context,
+        provider_configuration_identity=original.provider_configuration_identity,
+    )
+    state = app.session_state.filtered_state.copy()
+    ui_support.store_analysis(state, analysis, state[ui_support.ANALYZED_FINGERPRINT_KEY])
+    for key in app.session_state.filtered_state:
+        if key not in state:
+            del app.session_state[key]
+    for key, value in state.items():
+        app.session_state[key] = value
+    app.switch_page("pages/human_review.py").run()
+    assert len(analysis.items) == 7
+    assert any("Complete analyzed sources" in expander.label for expander in app.expander)
+    _complete_required_fields(app)
+    app.checkbox(key="agc_field_finding_3_include").uncheck()
+    app.checkbox(key="agc_field_finding_4_include").uncheck()
+    app.button(key="agc_confirm_review").click().run()
+    reviewed = app.session_state[REVIEWED_RESULT_KEY]
+    assert len(reviewed.findings) == 3
+    assert len(reviewed.action_items) == 2
+    assert len(app.session_state[REVIEW_CHANGE_SUMMARY_KEY].excluded_items) == 2
+    assert app.session_state[ui_support.DELIVERY_ORIGINAL_INDICES_KEY] == (3, 4)
+    assert not app.exception
+
+
+def test_unconfirmed_manifest_is_rejected_before_provider_call(monkeypatch):
+    from unittest.mock import Mock
+
+    from architecture_governance_copilot.governance_service import GovernanceReviewService
+
+    namespace = runpy.run_path(str(APP_PATH), run_name="app_preflight_test")
+    state = {}
+    ui_support.initialize_session_state(state)
+    ui_support.load_sample_into_state(state, ui_support.load_sample_review())
+    calls = []
+
+    def unexpected_call(*args):
+        calls.append(args)
+        raise AssertionError("An unconfirmed package must not reach a provider.")
+
+    monkeypatch.setattr(namespace["st"], "session_state", state)
+    monkeypatch.setattr(namespace["st"], "empty", Mock)
+    monkeypatch.setattr(GovernanceReviewService, "analyze_review", unexpected_call)
+    assert namespace["_analyze_current_inputs"]() is False
+    assert calls == []
+    assert state[OUTPUTS_KEY] is None

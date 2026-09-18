@@ -1,0 +1,156 @@
+{
+  "context": {
+    "project_name": "Synthetic Order Routing Service",
+    "si_title": "Solution Intent - Synthetic Order Routing Service",
+    "si_version": "0.8",
+    "current_si_status": "under_review",
+    "review_round": 1,
+    "ado_ticket_id": "SYN-204",
+    "domain_architect": "Morgan Lee",
+    "review_date": "2026-09-09"
+  },
+  "review_outcome": "changes_requested",
+  "outcome_evidence": [],
+  "findings": [
+    {
+      "title": "Retry controls are undefined",
+      "description": "The design does not define the retry budget, backoff limits, or automatic-processing stop condition for ambiguous provider responses.",
+      "category": "Integration Resilience",
+      "si_section": "Integration Behavior",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Document a bounded retry budget, exponential-backoff limits, and the stop condition before another provider submission.",
+      "owner": null,
+      "due_date": null,
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "The current design does not define the retry budget, exponential-backoff limits, or the point at which an unknown response must stop automatic processing. Without those controls, repeated submission after an ambiguous provider response could create duplicate fulfilment. Provider calls in the demonstration are represented only by deterministic local fixtures.",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Integration Behavior",
+          "reference": "si-2149aae56b2e-017"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[09:12] Morgan Lee: The retry budget and exponential-backoff limits are not defined, so that is a high-severity finding.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:12",
+          "section": null,
+          "reference": "transcript-3d7d65837021-007"
+        }
+      ]
+    },
+    {
+      "title": "Regional failover evidence is missing",
+      "description": "The warm standby design has neither a scheduled exercise nor a measured recovery result.",
+      "category": "Resilience",
+      "si_section": "Resilience and Recovery",
+      "severity": "high",
+      "status": "open",
+      "recommended_change": "Schedule the regional exercise and record measured recovery results against the draft targets.",
+      "owner": null,
+      "due_date": null,
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "Regional recovery uses a warm standby design, but no failover exercise has been scheduled and no measured recovery result exists. The target recovery time is four hours and the target recovery point is fifteen minutes for synthetic routing records. These targets are scenario assumptions until a successful exercise provides evidence.",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Resilience and Recovery",
+          "reference": "si-2149aae56b2e-020"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[09:16] Morgan Lee: The warm standby design has no scheduled regional failover exercise or measured recovery result.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:16",
+          "section": null,
+          "reference": "transcript-3d7d65837021-009"
+        }
+      ]
+    },
+    {
+      "title": "Routing-record retention lacks approval",
+      "description": "The proposed 30-day routing-record retention period has not received formal governance confirmation.",
+      "category": "Security and Privacy",
+      "si_section": "Security and Privacy",
+      "severity": "medium",
+      "status": "open",
+      "recommended_change": "Obtain and record governance approval for the retention period before release readiness.",
+      "owner": null,
+      "due_date": null,
+      "evidence": [
+        {
+          "source_type": "solution_intent",
+          "quote": "The service intentionally excludes personal and payment information. Security logs contain synthetic order identifiers, policy versions, adapters, outcomes, and correlation identifiers. The proposed 30-day routing-record retention period requires governance confirmation before the design can be treated as release ready.",
+          "speaker": null,
+          "timestamp": null,
+          "section": "Security and Privacy",
+          "reference": "si-2149aae56b2e-023"
+        },
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[09:24] Morgan Lee: Formal approval of the 30-day routing-record retention period is missing, so the privacy control remains open.",
+          "speaker": "Morgan Lee",
+          "timestamp": "09:24",
+          "section": null,
+          "reference": "transcript-3d7d65837021-013"
+        }
+      ]
+    }
+  ],
+  "decisions": [],
+  "risks": [],
+  "action_items": [
+    {
+      "title": "Document retry and backoff controls",
+      "owner": "Riley Chen",
+      "due_date": "2026-09-18",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[09:14] Riley Chen: I will document the retry budget, backoff limits, and stop condition by 18 September 2026.",
+          "speaker": "Riley Chen",
+          "timestamp": "09:14",
+          "section": null,
+          "reference": "transcript-3d7d65837021-008"
+        }
+      ]
+    },
+    {
+      "title": "Schedule and document the regional failover exercise",
+      "owner": "Avery Patel",
+      "due_date": "2026-09-21",
+      "priority": "high",
+      "evidence": [
+        {
+          "source_type": "meeting_transcript",
+          "quote": "[09:18] Avery Patel: I will schedule and document the regional failover exercise by 21 September 2026.",
+          "speaker": "Avery Patel",
+          "timestamp": "09:18",
+          "section": null,
+          "reference": "transcript-3d7d65837021-010"
+        }
+      ]
+    }
+  ],
+  "open_questions": [],
+  "missing_evidence": [],
+  "extraction_scope": {
+    "automated_categories": [
+      "finding",
+      "action"
+    ],
+    "not_extracted_categories": [
+      "decisions",
+      "risks",
+      "open_questions",
+      "missing_evidence"
+    ],
+    "review_outcome_origin": "human_completed",
+    "analysis_fingerprint": "8539ef456268b73f430a25e304d1d612783d73f6da3945be80e9362387083a9e"
+  },
+  "outcome_origin": "reviewer_selected"
+}

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from architecture_governance_copilot.candidate_review import CandidateReviewDraft
 from architecture_governance_copilot.extractors import DeterministicDemoExtractor
 from architecture_governance_copilot.governance_service import GovernanceReviewService
 from architecture_governance_copilot.integrations.confluence import (
@@ -22,6 +23,7 @@ from architecture_governance_copilot.publication import (
     AdoPublicationOperation,
     PublicationStatus,
 )
+from architecture_governance_copilot.review_candidates import ReviewCandidateAnalysis
 from architecture_governance_copilot.runtime_dependencies import (
     OFFLINE_PROVIDER_CONFIGURATION_ID,
     ReviewMode,
@@ -128,12 +130,17 @@ from architecture_governance_copilot.ui_support import (
 
 @pytest.fixture
 def sample_result() -> GovernanceResult:
-    """Load the validated expected result through the deterministic extractor."""
+    """Keep historical complete-model reconstruction tests separate from active candidates."""
+    return GovernanceResult.model_validate_json(
+        (Path(__file__).resolve().parents[1] / "samples" / "expected_result.json").read_text()
+    )
+
+
+@pytest.fixture
+def sample_analysis() -> ReviewCandidateAnalysis:
     sample = load_sample_review()
     return DeterministicDemoExtractor().extract(
-        sample.solution_intent,
-        sample.transcript,
-        sample.context,
+        sample.solution_intent, sample.transcript, sample.context
     )
 
 
@@ -337,7 +344,7 @@ def test_loading_sample_invalidates_previous_outputs_and_review_widgets(
 
 
 def test_real_input_change_without_outputs_invalidates_only_analysis(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -346,7 +353,7 @@ def test_real_input_change_without_outputs_invalidates_only_analysis(
     confirm_review_input_manifest(state)
     store_analysis(
         state,
-        sample_result,
+        sample_analysis,
         current_input_fingerprint(state, sample.context),
     )
     state[f"{REVIEW_WIDGET_PREFIX}action_0_owner"] = "Taylor Kim"
@@ -364,7 +371,7 @@ def test_real_input_change_without_outputs_invalidates_only_analysis(
     assert isinstance(invalidation, AnalysisInvalidation)
     assert invalidation.reason == "The Solution Intent changed."
     assert invalidation.outputs_invalidated is False
-    assert state[ANALYZED_RESULT_KEY] is sample_result
+    assert state[ANALYZED_RESULT_KEY] is sample_analysis
     assert state[REVIEW_DRAFT_KEY] is not None
     assert state[REVIEWED_RESULT_KEY] is None
     assert state[REVIEW_CHANGE_SUMMARY_KEY] is None
@@ -375,7 +382,7 @@ def test_real_input_change_without_outputs_invalidates_only_analysis(
 
 
 def test_noop_input_update_does_not_invalidate_analysis(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -384,7 +391,7 @@ def test_noop_input_update_does_not_invalidate_analysis(
     confirm_review_input_manifest(state)
     store_analysis(
         state,
-        sample_result,
+        sample_analysis,
         current_input_fingerprint(state, sample.context),
     )
 
@@ -401,7 +408,7 @@ def test_noop_input_update_does_not_invalidate_analysis(
 
 
 def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -409,7 +416,7 @@ def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
     load_sample_into_state(state, sample)
     confirm_review_input_manifest(state)
     fingerprint = current_input_fingerprint(state, sample.context)
-    store_analysis(state, sample_result, fingerprint)
+    store_analysis(state, sample_analysis, fingerprint)
 
     update_review_inputs(
         state,
@@ -426,17 +433,17 @@ def test_edit_revert_and_failed_attempt_do_not_restore_confirmation_eligibility(
     prepare_analysis_attempt(state)
 
     assert isinstance(current_analysis_invalidation(state), AnalysisInvalidation)
-    assert state[ANALYZED_RESULT_KEY] is sample_result
+    assert state[ANALYZED_RESULT_KEY] is sample_analysis
     assert state[ANALYSIS_SUCCESS_KEY] is False
 
-    store_analysis(state, sample_result, fingerprint)
+    store_analysis(state, sample_analysis, fingerprint)
 
     assert isinstance(current_analysis_invalidation(state), AnalysisInvalidation)
     assert state[ANALYSIS_SUCCESS_KEY] is False
 
 
 def test_missing_metadata_invalidates_an_existing_analysis(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -444,7 +451,7 @@ def test_missing_metadata_invalidates_an_existing_analysis(
     load_sample_into_state(state, sample)
     store_analysis(
         state,
-        sample_result,
+        sample_analysis,
         input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
     )
 
@@ -457,20 +464,19 @@ def test_missing_metadata_invalidates_an_existing_analysis(
 
 
 def test_storing_analysis_creates_independent_draft_and_clears_outputs(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
     state[OUTPUTS_KEY] = object()
 
-    store_analysis(state, sample_result, "fingerprint")
+    store_analysis(state, sample_analysis, "fingerprint")
 
-    assert state[ANALYZED_RESULT_KEY] is sample_result
+    assert state[ANALYZED_RESULT_KEY] is sample_analysis
     draft = state[REVIEW_DRAFT_KEY]
-    assert isinstance(draft, GovernanceResult)
-    assert draft == sample_result
-    assert draft is not sample_result
-    assert draft.findings[0] is not sample_result.findings[0]
+    assert isinstance(draft, CandidateReviewDraft)
+    assert draft is not sample_analysis
+    assert draft.items[0].description == sample_analysis.items[0].text
     assert state[OUTPUTS_KEY] is None
     assert state[ANALYZED_FINGERPRINT_KEY] == "fingerprint"
     assert state[ANALYSIS_SUCCESS_KEY] is True
@@ -719,7 +725,7 @@ def _internal_snapshot(
 
 
 def test_review_mode_defaults_offline_and_switch_revokes_previous_results(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -727,7 +733,7 @@ def test_review_mode_defaults_offline_and_switch_revokes_previous_results(
     load_sample_into_state(state, sample)
     store_analysis(
         state,
-        sample_result,
+        sample_analysis,
         input_fingerprint(sample.solution_intent, sample.transcript, sample.context),
     )
     state[OUTPUTS_KEY] = object()
@@ -743,7 +749,7 @@ def test_review_mode_defaults_offline_and_switch_revokes_previous_results(
     assert state[CONFLUENCE_SNAPSHOT_KEY] is None
     assert state[SOLUTION_INTENT_KEY] == ""
     assert state[TRANSCRIPT_KEY] == ""
-    assert state[ANALYZED_RESULT_KEY] == sample_result
+    assert state[ANALYZED_RESULT_KEY] == sample_analysis
     assert state[OUTPUTS_KEY] is None
     assert state[OUTPUT_ACTION_SELECTION_KEY] is None
     assert current_analysis_invalidation(state) is not None
@@ -805,8 +811,11 @@ def test_internal_source_identity_excludes_retrieval_time_but_includes_version()
 
 
 def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_version(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
+    sample_analysis = sample_analysis.model_copy(
+        update={"provider_configuration_identity": "fake-aif-v2"}
+    )
     state: dict[str, object] = {}
     initialize_session_state(state)
     sample = load_sample_review()
@@ -820,7 +829,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
         provider_configuration_identity="fake-aif-v2",
     )
     confirm_review_input_manifest(state)
-    store_analysis(state, sample_result, current_input_fingerprint(state, sample.context))
+    store_analysis(state, sample_analysis, current_input_fingerprint(state, sample.context))
 
     load_internal_review_into_state(
         state,
@@ -833,7 +842,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
     )
 
     assert current_analysis_invalidation(state) is not None
-    assert state[ANALYZED_RESULT_KEY] == sample_result
+    assert state[ANALYZED_RESULT_KEY] == sample_analysis
 
     load_internal_review_into_state(
         state,
@@ -849,7 +858,7 @@ def test_internal_refresh_keeps_same_content_eligible_and_revokes_changed_versio
 
 
 def test_internal_source_load_and_failure_preserve_explicit_eligibility_rules(
-    sample_result: GovernanceResult,
+    sample_analysis: ReviewCandidateAnalysis,
 ) -> None:
     state: dict[str, object] = {}
     initialize_session_state(state)
@@ -871,7 +880,7 @@ def test_internal_source_load_and_failure_preserve_explicit_eligibility_rules(
     confirm_review_input_manifest(state)
     fingerprint = current_input_fingerprint(state, sample.context)
     assert fingerprint == current_input_fingerprint(state, sample.context)
-    store_analysis(state, sample_result, fingerprint)
+    store_analysis(state, sample_analysis, fingerprint)
 
     record_internal_source_load_failure(state)
 
@@ -1714,7 +1723,7 @@ def test_nonproduction_outcome_does_not_relax_provider_contract():
         def extract(self, *args):
             return reviewed
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError, match="must return review candidates"):
         EvidenceValidatingExtractor(ForgedProvider()).extract("SI", "Transcript", canonical.context)
     with pytest.raises(ValidationError):
         GovernanceResult.model_validate(reviewed.model_dump())
@@ -1856,3 +1865,159 @@ def test_new_demo_run_rejects_non_fake_gateway():
     with pytest.raises(ValueError):
         start_new_demo_run(state, policy)
     assert state == original
+
+
+def _candidate_analysis_and_completed_form():
+    """Explicit synthetic human completion for the new active workflow."""
+    import json
+
+    sample = load_sample_review()
+    analysis = DeterministicDemoExtractor().extract(
+        sample.solution_intent, sample.transcript, sample.context
+    )
+    form = default_review_form_data(analysis)
+    completion = json.loads(
+        (Path(__file__).parent / "fixtures" / "offline_human_completion.json").read_text()
+    )
+    rows = [dict(row) for row in (*form.findings, *form.action_items)]
+    for row, edit in zip(rows, completion["items"], strict=True):
+        row.update({key: value for key, value in edit.items() if key in row})
+    return analysis, replace(
+        form,
+        review_outcome=completion["review_outcome"],
+        findings=tuple(rows[:3]),
+        action_items=tuple(rows[3:]),
+    )
+
+
+def test_candidate_defaults_are_incomplete_and_draft_is_separate():
+    from architecture_governance_copilot.candidate_review import CandidateReviewDraft
+    from architecture_governance_copilot.review_candidates import ReviewCandidateAnalysis
+
+    analysis, _ = _candidate_analysis_and_completed_form()
+    form = default_review_form_data(analysis)
+    assert isinstance(analysis, ReviewCandidateAnalysis)
+    assert form.review_outcome == ""
+    assert form.findings[0]["title"] == ""
+    assert form.findings[0]["status"] is None
+    assert form.findings[0]["severity"] is None
+    assert form.action_items[0]["priority"] is None
+    assert form.action_items[0]["owner"] == ""
+    assert form.action_items[0]["due_date"] == ""
+    with pytest.raises(ValueError):
+        build_reviewed_result(analysis, form, allow_reviewer_outcome=True)
+    state = {}
+    initialize_session_state(state)
+    store_analysis(state, analysis, "confirmed-inputs")
+    assert isinstance(state[REVIEW_DRAFT_KEY], CandidateReviewDraft)
+    assert state[REVIEWED_RESULT_KEY] is None
+    state[REVIEW_DRAFT_KEY].items[0].description = "Human edit"
+    assert analysis.items[0].text != "Human edit"
+
+
+def test_candidate_reclassification_and_exclusion_keep_original_action_positions():
+    analysis, form = _candidate_analysis_and_completed_form()
+    findings = [dict(row) for row in form.findings]
+    actions = [dict(row) for row in form.action_items]
+    findings[0].update(kind="action", priority="high")
+    actions[0].update(include=False, due_date="not a date", priority=None)
+    form = replace(form, findings=tuple(findings), action_items=tuple(actions))
+    result = build_reviewed_result(analysis, form, allow_reviewer_outcome=True)
+    summary = build_review_change_summary(analysis, result, form)
+    assert len(result.findings) == 2
+    assert len(result.action_items) == 2
+    assert [item.model_dump() for item in result.action_items[0].evidence] == [
+        item.model_dump() for item in analysis.items[0].evidence
+    ]
+    assert summary.action_original_indices == (0, 4)
+    outputs = GovernanceReviewService(DeterministicDemoExtractor()).generate_outputs(result)
+    state = {}
+    store_outputs(state, result, summary, outputs)
+    from architecture_governance_copilot.ui_support import delivery_original_action_index
+
+    assert delivery_original_action_index(state, 0) == 0
+    assert delivery_original_action_index(state, 1) == 4
+    assert all(
+        value == []
+        for value in (
+            result.decisions,
+            result.risks,
+            result.open_questions,
+            result.missing_evidence,
+        )
+    )
+    assert result.extraction_scope is not None
+
+
+def test_failed_same_input_candidate_attempt_revokes_previous_confirmation():
+    analysis, form = _candidate_analysis_and_completed_form()
+    sample = load_sample_review()
+    state = {}
+    initialize_session_state(state)
+    load_sample_into_state(state, sample)
+    confirm_review_input_manifest(state)
+    store_analysis(state, analysis, current_input_fingerprint(state, sample.context))
+    result = build_reviewed_result(analysis, form, allow_reviewer_outcome=True)
+    summary = build_review_change_summary(analysis, result, form)
+    store_outputs(
+        state,
+        result,
+        summary,
+        GovernanceReviewService(DeterministicDemoExtractor()).generate_outputs(result),
+    )
+    assert current_analysis_invalidation(state) is None
+    prepare_analysis_attempt(state)
+    state[ERROR_KEY] = "Analysis failed: synthetic provider failure"
+    assert current_analysis_invalidation(state) is not None
+    assert state[REVIEWED_RESULT_KEY] is None
+    assert state[OUTPUTS_KEY] is None
+    assert state[REVIEW_DRAFT_KEY] is None
+    assert state[ANALYZED_RESULT_KEY] is analysis
+    assert state[ANALYSIS_SUCCESS_KEY] is False
+
+
+def test_candidate_contract_change_revokes_output_eligibility():
+    analysis, _ = _candidate_analysis_and_completed_form()
+    sample = load_sample_review()
+    state = {}
+    initialize_session_state(state)
+    load_sample_into_state(state, sample)
+    confirm_review_input_manifest(state)
+    store_analysis(state, analysis, current_input_fingerprint(state, sample.context))
+    state[ANALYZED_RESULT_KEY] = analysis.model_copy(update={"source_index_version": "obsolete"})
+    assert "contract or provider changed" in current_analysis_invalidation(state).reason
+
+
+@pytest.mark.parametrize("text", ["20260918", "2026-W38-5", "2026-02-31"])
+def test_candidate_pending_date_requires_calendar_iso_format(text):
+    analysis, form = _candidate_analysis_and_completed_form()
+    rows = [dict(row) for row in form.findings]
+    rows[0]["due_date"] = text
+    form = replace(form, findings=tuple(rows))
+    issues = build_pending_review_changes(
+        analysis, form, allow_reviewer_outcome=True
+    ).validation_issues
+    assert any(issue.field == "Due date" for issue in issues)
+    with pytest.raises(ValueError):
+        build_reviewed_result(analysis, form, allow_reviewer_outcome=True)
+
+
+def test_legacy_analyzed_state_revokes_outputs_but_keeps_reconciliation(sample_result):
+    state = {}
+    initialize_session_state(state)
+    legacy = AdoPublicationOperation(
+        status=PublicationStatus.UNKNOWN_RESULT,
+        correlation_id="legacy",
+        request_binding_fingerprint="legacy-request",
+        message="Reconcile the original operation.",
+    )
+    state[ANALYZED_RESULT_KEY] = sample_result
+    state[OUTPUTS_KEY] = object()
+    state[REVIEWED_RESULT_KEY] = sample_result
+    state[ADO_PUBLICATION_HISTORY_KEY] = {legacy.correlation_id: legacy}
+    assert "Legacy full-result" in current_analysis_invalidation(state).reason
+    assert state[OUTPUTS_KEY] is None
+    assert state[REVIEWED_RESULT_KEY] is None
+    assert state[ADO_PUBLICATION_HISTORY_KEY] == {legacy.correlation_id: legacy}
+    with pytest.raises(ValueError, match="must return candidates"):
+        store_analysis(state, sample_result, "old-schema")

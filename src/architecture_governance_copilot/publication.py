@@ -26,6 +26,7 @@ from architecture_governance_copilot.integrations.azure_devops import (
 )
 from architecture_governance_copilot.integrations.confluence import ConfluencePageSnapshot
 from architecture_governance_copilot.models import (
+    NOT_EXTRACTED_NOTICE,
     ActionItem,
     GovernanceResult,
     ReviewInputManifest,
@@ -219,6 +220,8 @@ class AdoPublicationPreview(_PublicationModel):
     mapping_fingerprint: NonEmptyString
     preview_fingerprint: NonEmptyString
     request: AdoCreateRequest
+    package_fingerprint: str | None = None
+    analysis_fingerprint: str | None = None
 
 
 class AdoPublicationConfirmation(_PublicationModel):
@@ -249,6 +252,8 @@ class AdoPublicationOperation(_PublicationModel):
     request_binding_fingerprint: NonEmptyString
     message: NonEmptyString
     receipt: AdoPublicationReceipt | None = None
+    package_fingerprint: str | None = None
+    analysis_fingerprint: str | None = None
 
 
 class PublicationValidationError(ValueError):
@@ -270,6 +275,8 @@ def publication_correlations(
     preview: AdoPublicationPreview,
 ) -> tuple[str, ...]:
     """Stable correlation followed by possible pre-migration compact-index aliases."""
+    if result.extraction_scope is not None:
+        return (preview.request.correlation_id,)
     action = result.action_items[preview.action_index]
     return tuple(
         dict.fromkeys(
@@ -384,7 +391,47 @@ def build_ado_publication_preview(
         mapping_fingerprint=mapping_fingerprint,
         preview_fingerprint=preview_fingerprint,
         request=request,
+        package_fingerprint=_fingerprint(
+            {
+                "project": reviewed_result.context.project_name,
+                "si_title": reviewed_result.context.si_title,
+                "review_round": reviewed_result.context.review_round,
+                "page_id": source_snapshot.page_id,
+                "target": target_fingerprint,
+            }
+        ),
+        analysis_fingerprint=(
+            reviewed_result.extraction_scope.analysis_fingerprint
+            if reviewed_result.extraction_scope is not None
+            else None
+        ),
     )
+
+
+def candidate_publication_reconciliation_blocker(
+    preview: AdoPublicationPreview,
+    prior_operations: Mapping[str, AdoPublicationOperation],
+) -> str | None:
+    """Never infer a new remote action from reordered candidates or changed evidence IDs."""
+    if preview.analysis_fingerprint is None:
+        return None
+    for operation in prior_operations.values():
+        if operation.status not in PROTECTED_PUBLICATION_STATUSES:
+            continue
+        if operation.package_fingerprint is None:
+            return (
+                "A protected legacy delivery result has no candidate package binding. "
+                "Reconcile the earlier operation before creating from this candidate analysis."
+            )
+        if operation.package_fingerprint != preview.package_fingerprint:
+            continue
+        if operation.analysis_fingerprint != preview.analysis_fingerprint:
+            return (
+                "This review package has a protected delivery result from another analysis. "
+                "Candidate order, wording, or evidence changes do not prove a new action. "
+                "Reconcile the earlier operation before creating again."
+            )
+    return None
 
 
 def confirm_ado_publication_preview(
@@ -434,6 +481,9 @@ class AdoPublicationCoordinator:
             raise PublicationValidationError(
                 "The publication preview changed and must be previewed and confirmed again."
             )
+        blocker = candidate_publication_reconciliation_blocker(preview, prior_operations or {})
+        if blocker is not None:
+            raise PublicationValidationError(blocker)
         correlations = publication_correlations(reviewed_result, source_snapshot, preview)
         if any(
             operation.status in PROTECTED_PUBLICATION_STATUSES
@@ -614,6 +664,8 @@ class AdoPublicationCoordinator:
             request_binding_fingerprint=preview.request.binding_fingerprint,
             message=message,
             receipt=receipt,
+            package_fingerprint=preview.package_fingerprint,
+            analysis_fingerprint=preview.analysis_fingerprint,
         )
 
     def _finish(
@@ -751,6 +803,18 @@ def _live_description(
         "",
         f"Correlation: {correlation_id}",
     ]
+    if result.extraction_scope is not None:
+        lines.extend(
+            [
+                "",
+                "Extraction Scope:",
+                "Automated categories: Findings and Actions. Review outcome: human-completed.",
+                "Decisions, Risks, Open Questions, and Missing Evidence:",
+                NOT_EXTRACTED_NOTICE,
+                "Source references provide traceability; they do not verify an interpretation.",
+                "The Domain Architect remains responsible for the formal governance decision.",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -926,7 +990,11 @@ def delivery_action_correlations(
             "api_version": target.api_version,
         }
     )
-    positions = (original_action_index, *range(original_action_index))
+    positions = (
+        (original_action_index,)
+        if result.extraction_scope is not None
+        else (original_action_index, *range(original_action_index))
+    )
     return tuple(
         _correlation_id(
             result, snapshot, result.action_items[action_index], index, target_fingerprint

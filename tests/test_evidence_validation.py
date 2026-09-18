@@ -87,6 +87,14 @@ def test_validating_extractor_preserves_protocol_signature_and_delegation(
     transcript: str,
     context: SolutionIntentReviewContext,
 ) -> None:
+    from architecture_governance_copilot.review_candidates import (
+        ReviewCandidateAnalysis,
+        build_candidate_analysis,
+    )
+
+    result = build_candidate_analysis(
+        {"items": []}, solution_intent, transcript, context, provider_configuration_identity="test"
+    )
     delegate = RecordingExtractor(result)
     extractor = EvidenceValidatingExtractor(delegate)
 
@@ -105,7 +113,7 @@ def test_validating_extractor_preserves_protocol_signature_and_delegation(
         "solution_intent": str,
         "review_transcript": str,
         "context": SolutionIntentReviewContext,
-        "return": GovernanceResult,
+        "return": ReviewCandidateAnalysis,
     }
 
 

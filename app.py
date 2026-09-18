@@ -43,7 +43,6 @@ from architecture_governance_copilot.models import (
     GovernanceResult,
     ReviewInputProvenance,
     ReviewOutcome,
-    RiskSeverity,
     SolutionIntentDraft,
     SolutionIntentDraftRequest,
     SolutionIntentReviewContext,
@@ -59,10 +58,13 @@ from architecture_governance_copilot.publication import (
     PublicationValidationError,
     assess_delivery_readiness,
     build_ado_publication_preview,
+    candidate_publication_reconciliation_blocker,
     confirm_ado_publication_preview,
     delivery_action_correlations,
     publication_request_summary,
 )
+from architecture_governance_copilot.review_candidates import ReviewCandidateAnalysis
+from architecture_governance_copilot.review_sources import build_review_source_index
 from architecture_governance_copilot.runtime_dependencies import (
     DeploymentConfigurationError,
     DeploymentPolicy,
@@ -133,6 +135,7 @@ from architecture_governance_copilot.ui_support import (
     PROJECT_CONTEXT_KEY,
     PROJECT_CONTEXT_REFRESHED_KEY,
     REVIEW_CHANGE_SUMMARY_KEY,
+    REVIEW_DRAFT_KEY,
     REVIEW_INPUT_FEEDBACK_KEY,
     REVIEW_MODE_WIDGET_KEY,
     REVIEW_POLICY_RECOVERY_KEY,
@@ -160,6 +163,7 @@ from architecture_governance_copilot.ui_support import (
     build_reviewed_result,
     build_sample_review_snapshot,
     can_start_new_demo_run,
+    candidate_draft_from_form,
     choose_review_action_owner,
     clear_outputs,
     clear_publication_preview,
@@ -210,7 +214,6 @@ from architecture_governance_copilot.ui_support import (
     review_input_readiness,
     save_drafting_evidence,
     select_delivery_action,
-    selected_outcome_evidence,
     set_active_stage,
     start_new_demo_run,
     start_workflow,
@@ -223,7 +226,6 @@ from architecture_governance_copilot.ui_support import (
     store_si_draft,
     store_transcript_component,
     switch_review_mode,
-    transcript_evidence_options,
     update_live_drafting_source_package,
 )
 
@@ -453,7 +455,7 @@ def _render_input_page() -> None:
 def _render_review_page() -> None:
     _enforce_deployment_policy(REVIEW_STAGE)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
-    if not isinstance(analyzed_result, GovernanceResult):
+    if not isinstance(analyzed_result, ReviewCandidateAnalysis):
         _switch_stage(
             INPUT_STAGE,
             error="Complete review analysis before opening the Human Review page.",
@@ -483,10 +485,10 @@ def _render_output_page() -> None:
     retain_review_widget_state(st.session_state)
     invalidation = current_analysis_invalidation(st.session_state)
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
-    if invalidation is not None and isinstance(analyzed_result, GovernanceResult):
+    if invalidation is not None and isinstance(analyzed_result, ReviewCandidateAnalysis):
         clear_outputs(st.session_state)
         _switch_stage(REVIEW_STAGE)
-    if not isinstance(analyzed_result, GovernanceResult):
+    if not isinstance(analyzed_result, ReviewCandidateAnalysis):
         _switch_stage(
             INPUT_STAGE,
             error="Complete review analysis before opening the Generated Outputs page.",
@@ -2527,7 +2529,7 @@ def _render_input_stage(*, restore_input_widgets: bool = False) -> None:
                 _switch_stage(REVIEW_STAGE)
 
     analyzed_result = st.session_state[ANALYZED_RESULT_KEY]
-    if isinstance(analyzed_result, GovernanceResult):
+    if isinstance(analyzed_result, ReviewCandidateAnalysis):
         invalidation = current_analysis_invalidation(st.session_state)
         if invalidation is not None:
             _render_invalidation_notice(invalidation)
@@ -2800,7 +2802,7 @@ def _render_output_navigation() -> None:
         _switch_stage(INPUT_STAGE)
 
 
-def _render_analyzed_input_summary(result: GovernanceResult, *, valid: bool = True) -> None:
+def _render_analyzed_input_summary(result: ReviewCandidateAnalysis, *, valid: bool = True) -> None:
     if valid:
         st.success("Review analysis completed. No outputs were generated automatically.")
     with st.container(border=True):
@@ -2891,6 +2893,7 @@ def _analyze_current_inputs() -> bool:
             raise ValueError("Review transcript must not be blank.")
         if context is None:
             raise ValueError("Review metadata is missing. Load the sample review first.")
+        confirmed_fingerprint = current_input_fingerprint(st.session_state, context)
         mode = current_review_mode(st.session_state)
         if mode is ReviewMode.INTERNAL_FAKE and not isinstance(
             st.session_state.get(CONFLUENCE_SNAPSHOT_KEY),
@@ -2918,7 +2921,7 @@ def _analyze_current_inputs() -> bool:
                 _processing_overlay_markup(
                     "ANALYZE REVIEW",
                     "Extracting governance signals",
-                    "Identifying decisions, findings, risks, actions, and source evidence.",
+                    "Identifying finding/action candidates and resolving source evidence.",
                     step=2,
                     total_steps=3,
                 ),
@@ -2927,7 +2930,7 @@ def _analyze_current_inputs() -> bool:
             runtime = build_review_runtime(mode)
             service = GovernanceReviewService(runtime.extractor)
             result = service.analyze_review(solution_intent, transcript, context)
-            st.write("Governance decisions, findings, risks, and actions extracted")
+            st.write("Finding and action candidates extracted; business fields await human review")
             _demo_pause()
 
             processing_overlay.markdown(
@@ -2940,11 +2943,9 @@ def _analyze_current_inputs() -> bool:
                 ),
                 unsafe_allow_html=True,
             )
-            store_analysis(
-                st.session_state,
-                result,
-                current_input_fingerprint(st.session_state, context),
-            )
+            if current_input_fingerprint(st.session_state, context) != confirmed_fingerprint:
+                raise ValueError("The confirmed review package changed during analysis.")
+            store_analysis(st.session_state, result, confirmed_fingerprint)
             st.write("Human-review workspace prepared with source evidence")
             processing_status.update(
                 label="Analysis complete — opening Human Review",
@@ -2979,71 +2980,54 @@ def _render_error() -> None:
 
 
 def _render_human_review_stage(
-    analyzed_result: GovernanceResult,
+    analyzed_result: ReviewCandidateAnalysis,
 ) -> tuple[ReviewFormData, bool]:
-    st.subheader("Draft Structured Review")
+    st.subheader("Draft Review Candidates")
     st.info(DEMO_REVIEW_GUIDANCE.replace("Offline demo", "Synthetic review"))
     st.caption(
-        "Edit or exclude proposed items. Supporting evidence is read-only. "
-        "This stage does not formally approve the Solution Intent."
+        "Review each proposal, correct its finding/action classification, or exclude it. "
+        "Source traceability does not verify the interpretation or confer formal approval. "
+        "Required business fields must be completed explicitly."
     )
     _render_analysis_summary(analyzed_result)
+    with st.expander("Complete analyzed sources and reviewer clarifications", expanded=False):
+        st.caption("Inspect the full context, including later statements not cited by a candidate.")
+        source_tabs = st.tabs(["Solution Intent", "Review transcript"])
+        with source_tabs[0]:
+            st.code(analyzed_result.solution_intent, language=None, wrap_lines=True)
+        with source_tabs[1]:
+            st.code(analyzed_result.review_transcript, language=None, wrap_lines=True)
+    form_data = current_review_form_data(st.session_state, analyzed_result)
     pending = build_pending_review_changes(
         analyzed_result,
-        current_review_form_data(st.session_state, analyzed_result),
+        form_data,
         allow_reviewer_outcome=resolve_deployment_policy().reviewer_outcome_allowed,
     )
     _render_pending_review_summary(pending)
-
     with _review_item_container("Review outcome", None):
-        st.markdown(
-            '<p class="agc-section-label">GOVERNANCE DISPOSITION</p>',
-            unsafe_allow_html=True,
-        )
         st.markdown("### Review Outcome")
-        _render_pending_item_marker(pending, "Review outcome", None)
-        outcome_column, evidence_column = st.columns([1, 2])
-        with outcome_column:
-            review_outcome = _enum_selectbox(
-                "Review outcome",
-                ReviewOutcome,
-                analyzed_result.review_outcome.value,
-                key="agc_field_outcome",
-            )
-        _render_field_change(pending, "Review outcome", None, "Outcome", target=outcome_column)
-        outcome_evidence = None
-        with evidence_column:
-            if not analyzed_result.outcome_evidence:
-                options = transcript_evidence_options(str(st.session_state[TRANSCRIPT_KEY]))
-                lines = st.multiselect(
-                    "Supporting transcript lines (optional)",
-                    options=list(options),
-                    format_func=lambda line: f"Line {line}: {options[line]}",
-                    key="agc_field_outcome_lines",
-                    help=(
-                        "Select original text that supports your chosen outcome. "
-                        "Quotes remain read-only."
-                    ),
-                )
-                outcome_evidence = selected_outcome_evidence(
-                    str(st.session_state[TRANSCRIPT_KEY]), lines
-                )
-            _render_evidence(
-                analyzed_result.outcome_evidence if outcome_evidence is None else outcome_evidence,
-                "Source evidence (reference only)"
-                if review_outcome != analyzed_result.review_outcome.value
-                else "Outcome supporting evidence",
-            )
-            st.caption(
-                "Optional source references. You may choose any outcome during human review; "
-                "this does not confer formal architecture approval."
-            )
-        if review_outcome != analyzed_result.review_outcome.value:
-            st.info(
-                "Reviewer-selected · This outcome reflects your human review, "
-                "not an extracted statement."
-            )
-
+        _enum_selectbox("Review outcome", ReviewOutcome, "", key="agc_field_outcome")
+        _render_field_change(pending, "Review outcome", None, "Outcome")
+        index = build_review_source_index(
+            analyzed_result.solution_intent, analyzed_result.review_transcript
+        )
+        entries = {
+            entry.source_id: entry
+            for entry in index.entries
+            if entry.source_type is EvidenceSource.MEETING_TRANSCRIPT and entry.text.strip()
+        }
+        selected = st.multiselect(
+            "Supporting transcript lines (optional)",
+            list(entries),
+            key="agc_field_outcome_source_ids",
+            format_func=lambda source_id: entries[source_id].text,
+        )
+        if selected:
+            _render_evidence(index.resolve(selected), "Outcome source references")
+        st.caption(
+            "Human-completed outcome · Your selection is not an extracted meeting decision "
+            "or formal architecture approval."
+        )
     submitted = _workflow_action_button(
         "Confirm Reviewed Record & Generate Outputs",
         summary=_pending_change_caption(pending),
@@ -3051,60 +3035,148 @@ def _render_human_review_stage(
         type="primary",
         width="stretch",
     )
-
     tab_labels = [
-        _pending_tab_label("Decisions", len(analyzed_result.decisions), "Decision", pending),
-        _pending_tab_label("Findings", len(analyzed_result.findings), "Finding", pending),
-        _pending_tab_label("Risks", len(analyzed_result.risks), "Risk", pending),
-        _pending_tab_label("Actions", len(analyzed_result.action_items), "Action item", pending),
-        _pending_tab_label(
-            "Questions", len(analyzed_result.open_questions), "Open question", pending
-        ),
-        _pending_tab_label(
-            "Missing Info",
-            len(analyzed_result.missing_evidence),
-            "Missing information",
-            pending,
-        ),
+        _pending_tab_label("Finding proposals", len(form_data.findings), "Finding", pending),
+        _pending_tab_label("Action proposals", len(form_data.action_items), "Action item", pending),
     ]
     retain_review_tab_selection(st.session_state, tab_labels)
-    review_tabs = st.tabs(
-        tab_labels,
-        key="agc_human_review_tabs",
-        on_change="rerun",
-    )
-    with review_tabs[0]:
-        decisions = _render_decision_edits(analyzed_result, pending)
-    with review_tabs[1]:
-        findings = _render_finding_edits(analyzed_result, pending)
-    with review_tabs[2]:
-        risks = _render_risk_edits(analyzed_result, pending)
-    with review_tabs[3]:
-        actions = _render_action_edits(analyzed_result, pending)
-    with review_tabs[4]:
-        questions = _render_question_edits(analyzed_result, pending)
-    with review_tabs[5]:
-        missing = _render_missing_evidence_edits(analyzed_result, pending)
-
-    st.divider()
+    tabs = st.tabs(tab_labels, key="agc_human_review_tabs", on_change="rerun")
+    for tab, kind in zip(tabs, ("finding", "action"), strict=True):
+        with tab:
+            _render_candidate_edits(analyzed_result, kind, pending)
     st.caption(
-        "Confirmation validates the edited record and generates local demo artifacts. "
-        "It does not publish or create records in an external system."
+        "Decisions, Risks, Open Questions, and Missing Evidence: "
+        "Not extracted in this version; no conclusion about whether such items exist."
     )
+    st.caption(
+        "Confirmation validates your completed record and its original evidence before generating "
+        "local artifacts. Delivery remains a separate, explicitly confirmed step."
+    )
+    current_form = current_review_form_data(st.session_state, analyzed_result)
+    st.session_state[REVIEW_DRAFT_KEY] = candidate_draft_from_form(analyzed_result, current_form)
+    return current_form, submitted
 
-    return (
-        ReviewFormData(
-            review_outcome=review_outcome,
-            outcome_evidence=outcome_evidence,
-            decisions=tuple(decisions),
-            findings=tuple(findings),
-            risks=tuple(risks),
-            action_items=tuple(actions),
-            open_questions=tuple(questions),
-            missing_evidence=tuple(missing),
-        ),
-        submitted,
+
+def _render_candidate_edits(
+    analysis: ReviewCandidateAnalysis, original_kind: str, pending: PendingReviewChanges
+) -> None:
+    originals = [item for item in analysis.items if item.kind == original_kind]
+    if not originals:
+        st.caption("No candidates proposed in this category. Inspect the complete source context.")
+        return
+    original_collection = "Finding" if original_kind == "finding" else "Action item"
+    capability = (
+        configured_delivery_capability(
+            confirmed_manifest=current_review_input_manifest(st.session_state)
+        )
+        if review_input_readiness(st.session_state).confirmed
+        else None
     )
+    for index, original in enumerate(originals):
+        prefix = f"agc_field_{original_kind}_{index}_"
+        with _review_item_container(original_collection, index):
+            st.markdown(f"**{original_collection} proposal {index + 1}**")
+            st.caption("Original proposal")
+            st.text(original.text)
+            _render_pending_item_marker(pending, original_collection, index)
+            included = st.checkbox(
+                "Include in reviewed record",
+                key=prefix + "include",
+                **_review_widget_default(prefix + "include", value=True),
+            )
+            kind = st.selectbox(
+                "Reviewed kind",
+                ["finding", "action"],
+                key=prefix + "kind",
+                format_func=humanize,
+                **_review_widget_default(
+                    prefix + "kind", index=0 if original_kind == "finding" else 1
+                ),
+            )
+            _render_field_change(pending, original_collection, index, "Kind")
+            st.text_input(
+                "Title",
+                key=prefix + "title",
+                **_review_widget_default(
+                    prefix + "title", value=original.text if original_kind == "action" else ""
+                ),
+            )
+            _render_field_change(pending, original_collection, index, "Title")
+            if kind == "finding":
+                st.text_area(
+                    "Description",
+                    key=prefix + "description",
+                    height=100,
+                    **_review_widget_default(prefix + "description", value=original.text),
+                )
+                _render_field_change(pending, original_collection, index, "Description")
+                severity_col, status_col = st.columns(2)
+                with severity_col:
+                    _enum_selectbox("Severity", FindingSeverity, "", key=prefix + "severity")
+                    _render_field_change(pending, original_collection, index, "Severity")
+                with status_col:
+                    _enum_selectbox("Status", FindingStatus, "", key=prefix + "status")
+                    _render_field_change(pending, original_collection, index, "Status")
+                st.text_input("Category (optional)", key=prefix + "category")
+                st.text_area(
+                    "Recommended change (optional)", key=prefix + "recommended_change", height=80
+                )
+            else:
+                _enum_selectbox("Priority", ActionPriority, "", key=prefix + "priority")
+                _render_field_change(pending, original_collection, index, "Priority")
+            owner_col, date_col = st.columns(2)
+            owner = owner_col.text_input(
+                "Owner (required for Delivery)"
+                if kind == "action" and capability
+                else "Owner (optional)",
+                key=prefix + "owner",
+            )
+            _render_field_change(pending, original_collection, index, "Owner", target=owner_col)
+            if original_kind == "action":
+                due_date = date_col.date_input(
+                    "Due date (required for Delivery)" if capability else "Due date (optional)",
+                    key=prefix + "due_date",
+                    format="YYYY-MM-DD",
+                    min_value=date.min,
+                    max_value=date.max,
+                    persist_state="session",
+                    **_review_widget_default(prefix + "due_date", value=None),
+                )
+                date_col.button(
+                    "Clear due date",
+                    key=f"agc_clear_action_{index}_due_date",
+                    on_click=clear_review_action_due_date,
+                    args=(st.session_state, index),
+                    disabled=due_date is None,
+                )
+                if capability:
+                    owner_col.caption("Sample owners (optional), or type your own name above:")
+                    for mapped_owner in ("Avery Patel", "Riley Chen"):
+                        owner_col.button(
+                            mapped_owner,
+                            key=f"agc_choose_owner_{index}_{mapped_owner}",
+                            on_click=choose_review_action_owner,
+                            args=(st.session_state, index, mapped_owner),
+                        )
+            else:
+                due_date = date_col.text_input(
+                    "Due date (optional, YYYY-MM-DD)", key=prefix + "due_date"
+                )
+            _render_field_change(pending, original_collection, index, "Due date", target=date_col)
+            if kind == "action" and capability and included:
+                missing = [
+                    label
+                    for label, value in (("owner", owner.strip()), ("due date", due_date))
+                    if not value
+                ]
+                if missing:
+                    st.warning("Before Delivery, provide: " + ", ".join(missing) + ".")
+                if owner.strip():
+                    st.caption(
+                        "Local simulated assignee (not directory-verified): "
+                        + synthetic_owner_identity(owner, capability.target)
+                    )
+            _render_evidence(original.evidence, "Source traceability (read-only)")
 
 
 def _pending_tab_label(
@@ -3218,468 +3290,15 @@ def _render_pending_item_marker(
         )
 
 
-def _render_analysis_summary(result: GovernanceResult) -> None:
-    labels_and_values = [
-        ("Outcome", humanize(result.review_outcome.value)),
-        ("Decisions", len(result.decisions)),
-        ("Findings", len(result.findings)),
-        ("Risks", len(result.risks)),
-        ("Actions", len(result.action_items)),
-        ("Open Questions", len(result.open_questions)),
-        ("Missing Information", len(result.missing_evidence)),
-    ]
-    first_row = st.columns(4)
-    second_row = st.columns(3)
-    for column, (label, value) in zip([*first_row, *second_row], labels_and_values, strict=True):
-        column.metric(label, value)
-
-
-def _render_decision_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Confirmed Decisions")
-    if not result.decisions:
-        st.caption("None recorded.")
-    edits: list[dict[str, object]] = []
-    for index, decision in enumerate(result.decisions):
-        with _review_item_container("Decision", index):
-            st.markdown(f"**Decision {index + 1}**")
-            _render_pending_item_marker(pending, "Decision", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_decision_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_decision_{index}_include",
-                    value=True,
-                ),
-            )
-            statement = st.text_area(
-                "Statement",
-                key=f"agc_field_decision_{index}_statement",
-                height=80,
-                **_review_widget_default(
-                    f"agc_field_decision_{index}_statement",
-                    value=decision.statement,
-                ),
-            )
-            _render_field_change(pending, "Decision", index, "Statement")
-            rationale = st.text_area(
-                "Rationale (optional)",
-                key=f"agc_field_decision_{index}_rationale",
-                height=70,
-                **_review_widget_default(
-                    f"agc_field_decision_{index}_rationale",
-                    value=decision.rationale or "",
-                ),
-            )
-            _render_field_change(pending, "Decision", index, "Rationale")
-            _render_evidence(decision.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "statement": statement,
-                    "rationale": rationale,
-                }
-            )
-    return edits
-
-
-def _render_finding_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Review Findings")
-    if not result.findings:
-        st.caption("None recorded.")
-    edits: list[dict[str, object]] = []
-    for index, finding in enumerate(result.findings):
-        with _review_item_container("Finding", index):
-            st.markdown(f"**Review Finding {index + 1}**")
-            _render_pending_item_marker(pending, "Finding", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_finding_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_include",
-                    value=True,
-                ),
-            )
-            title = st.text_input(
-                "Title",
-                key=f"agc_field_finding_{index}_title",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_title",
-                    value=finding.title,
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Title")
-            description = st.text_area(
-                "Description",
-                key=f"agc_field_finding_{index}_description",
-                height=80,
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_description",
-                    value=finding.description,
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Description")
-            category_column, section_column = st.columns(2)
-            category = category_column.text_input(
-                "Category (optional)",
-                key=f"agc_field_finding_{index}_category",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_category",
-                    value=finding.category or "",
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Category", target=category_column)
-            si_section = section_column.text_input(
-                "SI section (optional)",
-                key=f"agc_field_finding_{index}_si_section",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_si_section",
-                    value=finding.si_section or "",
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "SI section", target=section_column)
-            severity_column, status_column = st.columns(2)
-            with severity_column:
-                severity = _enum_selectbox(
-                    "Severity",
-                    FindingSeverity,
-                    finding.severity.value,
-                    key=f"agc_field_finding_{index}_severity",
-                )
-                _render_field_change(pending, "Finding", index, "Severity")
-            with status_column:
-                status = _enum_selectbox(
-                    "Status",
-                    FindingStatus,
-                    finding.status.value,
-                    key=f"agc_field_finding_{index}_status",
-                )
-                _render_field_change(pending, "Finding", index, "Status")
-            recommended_change = st.text_area(
-                "Recommended change (optional)",
-                key=f"agc_field_finding_{index}_recommended_change",
-                height=80,
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_recommended_change",
-                    value=finding.recommended_change or "",
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Recommended change")
-            owner_column, date_column = st.columns(2)
-            owner = owner_column.text_input(
-                "Owner (optional)",
-                key=f"agc_field_finding_{index}_owner",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_owner",
-                    value=finding.owner or "",
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Owner", target=owner_column)
-            due_date = date_column.text_input(
-                "Due date (optional, YYYY-MM-DD)",
-                key=f"agc_field_finding_{index}_due_date",
-                **_review_widget_default(
-                    f"agc_field_finding_{index}_due_date",
-                    value=_date_text(finding.due_date),
-                ),
-            )
-            _render_field_change(pending, "Finding", index, "Due date", target=date_column)
-            _render_evidence(finding.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "title": title,
-                    "description": description,
-                    "category": category,
-                    "si_section": si_section,
-                    "severity": severity,
-                    "status": status,
-                    "recommended_change": recommended_change,
-                    "owner": owner,
-                    "due_date": due_date,
-                }
-            )
-    return edits
-
-
-def _render_risk_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Risks")
-    if not result.risks:
-        st.caption("None recorded.")
-    edits: list[dict[str, object]] = []
-    for index, risk in enumerate(result.risks):
-        with _review_item_container("Risk", index):
-            st.markdown(f"**Risk {index + 1}**")
-            _render_pending_item_marker(pending, "Risk", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_risk_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_risk_{index}_include",
-                    value=True,
-                ),
-            )
-            description = st.text_area(
-                "Description",
-                key=f"agc_field_risk_{index}_description",
-                height=80,
-                **_review_widget_default(
-                    f"agc_field_risk_{index}_description",
-                    value=risk.description,
-                ),
-            )
-            _render_field_change(pending, "Risk", index, "Description")
-            severity_column, owner_column = st.columns(2)
-            with severity_column:
-                severity = _enum_selectbox(
-                    "Severity",
-                    RiskSeverity,
-                    risk.severity.value,
-                    key=f"agc_field_risk_{index}_severity",
-                )
-                _render_field_change(pending, "Risk", index, "Severity")
-            owner = owner_column.text_input(
-                "Owner (optional)",
-                key=f"agc_field_risk_{index}_owner",
-                **_review_widget_default(
-                    f"agc_field_risk_{index}_owner",
-                    value=risk.owner or "",
-                ),
-            )
-            _render_field_change(pending, "Risk", index, "Owner", target=owner_column)
-            _render_evidence(risk.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "description": description,
-                    "severity": severity,
-                    "owner": owner,
-                }
-            )
-    return edits
-
-
-def _render_action_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Action Items")
-    if not result.action_items:
-        st.caption("None recorded.")
-    capability = (
-        configured_delivery_capability(
-            confirmed_manifest=current_review_input_manifest(st.session_state), review_result=result
-        )
-        if review_input_readiness(st.session_state).confirmed
-        else None
+def _render_analysis_summary(result: ReviewCandidateAnalysis) -> None:
+    columns = st.columns(3)
+    columns[0].metric("Finding candidates", sum(item.kind == "finding" for item in result.items))
+    columns[1].metric("Action candidates", sum(item.kind == "action" for item in result.items))
+    columns[2].metric("Review outcome", "Human completion required")
+    st.caption(
+        "Automated scope: Findings and Actions. Decisions, Risks, Open Questions, and Missing "
+        "Evidence: Not extracted in this version; no conclusion about whether such items exist."
     )
-    if capability is not None:
-        st.info(
-            "For fake Delivery, each selected action needs an owner and a due date. "
-            "Any nonblank owner name is supported through a local synthetic alias. "
-            "You can still confirm local outputs without delivering an incomplete action."
-        )
-        if not result.context.ado_ticket_id:
-            st.warning(
-                "Before Delivery, enter a governance ticket in Review Inputs. Any nonblank "
-                "reference is supported through a local synthetic parent ID."
-            )
-    edits: list[dict[str, object]] = []
-    for index, action in enumerate(result.action_items):
-        with _review_item_container("Action item", index):
-            st.markdown(f"**Action Item {index + 1}**")
-            _render_pending_item_marker(pending, "Action item", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_action_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_action_{index}_include",
-                    value=True,
-                ),
-            )
-            title = st.text_input(
-                "Title",
-                key=f"agc_field_action_{index}_title",
-                **_review_widget_default(
-                    f"agc_field_action_{index}_title",
-                    value=action.title,
-                ),
-            )
-            _render_field_change(pending, "Action item", index, "Title")
-            owner_column, date_column, priority_column = st.columns(3)
-            owner = owner_column.text_input(
-                "Owner (required for Delivery)" if capability else "Owner (optional)",
-                key=f"agc_field_action_{index}_owner",
-                **_review_widget_default(
-                    f"agc_field_action_{index}_owner",
-                    value=action.owner or "",
-                ),
-            )
-            _render_field_change(pending, "Action item", index, "Owner", target=owner_column)
-            if capability is not None:
-                owner_column.caption("Sample owners (optional), or type your own name above:")
-                for mapped_owner in ("Avery Patel", "Riley Chen"):
-                    owner_column.button(
-                        mapped_owner,
-                        key=f"agc_choose_owner_{index}_{mapped_owner}",
-                        on_click=choose_review_action_owner,
-                        args=(st.session_state, index, mapped_owner),
-                    )
-            due_date = date_column.date_input(
-                "Due date (required for Delivery)" if capability else "Due date (optional)",
-                key=f"agc_field_action_{index}_due_date",
-                format="YYYY-MM-DD",
-                min_value=date.min,
-                max_value=date.max,
-                persist_state="session",
-                **_review_widget_default(
-                    f"agc_field_action_{index}_due_date",
-                    value=action.due_date,
-                ),
-            )
-            _render_field_change(pending, "Action item", index, "Due date", target=date_column)
-            date_column.button(
-                "Clear due date",
-                key=f"agc_clear_action_{index}_due_date",
-                on_click=clear_review_action_due_date,
-                args=(st.session_state, index),
-                disabled=due_date is None,
-                help="Leave this optional review date genuinely unset.",
-            )
-            with priority_column:
-                priority = _enum_selectbox(
-                    "Priority",
-                    ActionPriority,
-                    action.priority.value,
-                    key=f"agc_field_action_{index}_priority",
-                )
-                _render_field_change(pending, "Action item", index, "Priority")
-            if capability is not None and include:
-                missing = []
-                if not owner.strip():
-                    missing.append("owner")
-                if due_date is None:
-                    missing.append("due date")
-                if missing:
-                    st.warning("Before Delivery, provide: " + ", ".join(missing) + ".")
-            if capability is not None and owner.strip():
-                st.caption(
-                    "Local simulated assignee (not directory-verified): "
-                    + synthetic_owner_identity(owner, capability.target)
-                )
-            _render_evidence(action.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "title": title,
-                    "owner": owner,
-                    "due_date": due_date,
-                    "priority": priority,
-                }
-            )
-    return edits
-
-
-def _render_question_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Open Questions")
-    if not result.open_questions:
-        st.caption("None recorded.")
-    edits: list[dict[str, object]] = []
-    for index, question in enumerate(result.open_questions):
-        with _review_item_container("Open question", index):
-            st.markdown(f"**Open Question {index + 1}**")
-            _render_pending_item_marker(pending, "Open question", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_question_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_question_{index}_include",
-                    value=True,
-                ),
-            )
-            question_text = st.text_area(
-                "Question",
-                key=f"agc_field_question_{index}_question",
-                height=70,
-                **_review_widget_default(
-                    f"agc_field_question_{index}_question",
-                    value=question.question,
-                ),
-            )
-            _render_field_change(pending, "Open question", index, "Question")
-            owner = st.text_input(
-                "Owner (optional)",
-                key=f"agc_field_question_{index}_owner",
-                **_review_widget_default(
-                    f"agc_field_question_{index}_owner",
-                    value=question.owner or "",
-                ),
-            )
-            _render_field_change(pending, "Open question", index, "Owner")
-            _render_evidence(question.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "question": question_text,
-                    "owner": owner,
-                }
-            )
-    return edits
-
-
-def _render_missing_evidence_edits(
-    result: GovernanceResult, pending: PendingReviewChanges
-) -> list[dict[str, object]]:
-    st.markdown("### Missing Governance Information")
-    if not result.missing_evidence:
-        st.caption("None recorded.")
-    edits: list[dict[str, object]] = []
-    for index, missing in enumerate(result.missing_evidence):
-        with _review_item_container("Missing information", index):
-            st.markdown(f"**Missing Information {index + 1}**")
-            _render_pending_item_marker(pending, "Missing information", index)
-            include = st.checkbox(
-                "Include in reviewed record",
-                key=f"agc_field_missing_{index}_include",
-                **_review_widget_default(
-                    f"agc_field_missing_{index}_include",
-                    value=True,
-                ),
-            )
-            item = st.text_input(
-                "Item",
-                key=f"agc_field_missing_{index}_item",
-                **_review_widget_default(
-                    f"agc_field_missing_{index}_item",
-                    value=missing.item,
-                ),
-            )
-            _render_field_change(pending, "Missing information", index, "Item")
-            reason = st.text_area(
-                "Reason (optional)",
-                key=f"agc_field_missing_{index}_reason",
-                height=70,
-                **_review_widget_default(
-                    f"agc_field_missing_{index}_reason",
-                    value=missing.reason or "",
-                ),
-            )
-            _render_field_change(pending, "Missing information", index, "Reason")
-            _render_evidence(missing.evidence, "Supporting evidence")
-            edits.append(
-                {
-                    "include": include,
-                    "item": item,
-                    "reason": reason,
-                }
-            )
-    return edits
 
 
 def _render_evidence(
@@ -3734,7 +3353,9 @@ def _enum_selectbox(
         options=options,
         format_func=humanize,
         key=key,
-        **_review_widget_default(key, index=options.index(current_value)),
+        **_review_widget_default(
+            key, index=options.index(current_value) if current_value in options else None
+        ),
     )
 
 
@@ -3766,7 +3387,7 @@ def _demo_pause() -> None:
 
 
 def _generate_reviewed_outputs(
-    analyzed_result: GovernanceResult,
+    analyzed_result: ReviewCandidateAnalysis,
     form_data: ReviewFormData,
 ) -> bool:
     clear_outputs(st.session_state)
@@ -3806,7 +3427,7 @@ def _generate_reviewed_outputs(
                 _processing_overlay_markup(
                     "GENERATE OUTPUTS",
                     "Generating governance artifacts",
-                    "Creating standardized meeting minutes from the approved record.",
+                    "Creating standardized meeting minutes from the human-confirmed record.",
                     step=2,
                     total_steps=3,
                 ),
@@ -3887,6 +3508,12 @@ def _render_output_stage(
         _render_review_change_summary(change_summary)
 
     if isinstance(reviewed_result, GovernanceResult):
+        if reviewed_result.extraction_scope is not None:
+            st.caption(
+                "Decisions, Risks, Open Questions, and Missing Evidence: "
+                "Not extracted in this version; no conclusion about whether such items exist. "
+                "Review outcome was completed by the human reviewer."
+            )
         _render_evidence_to_output_comparison(reviewed_result, outputs)
     _render_minutes_output(outputs.review_minutes)
     _render_ado_outputs(outputs)
@@ -4209,6 +3836,25 @@ def _render_fake_ado_publication(reviewed_result: GovernanceResult) -> None:
         }:
             st.session_state[ERROR_KEY] = operation.message
         protected = operation is not None and operation.status in PROTECTED_PUBLICATION_STATUSES
+        reconciliation_blocker = None
+        if row.ready:
+            candidate_preview = build_ado_publication_preview(
+                reviewed_result,
+                snapshot,
+                selected_index,
+                capability.target,
+                original_action_index=delivery_original_action_index(
+                    st.session_state, selected_index
+                ),
+            )
+            reconciliation_blocker = candidate_publication_reconciliation_blocker(
+                candidate_preview, st.session_state.get(ADO_PUBLICATION_HISTORY_KEY, {})
+            )
+        if reconciliation_blocker:
+            protected = True
+            clear_publication_preview(st.session_state)
+            preview = None
+            st.warning(reconciliation_blocker)
         if protected:
             st.info(
                 "This action has a protected result. Another ready action may be selected; "
